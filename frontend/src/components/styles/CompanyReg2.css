@@ -1,0 +1,191 @@
+/*custom font*/
+@import url(https://fonts.googleapis.com/css?family=Montserrat);
+
+/*basic reset*/
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  background: #213b52; /* fallback for old browsers */
+  background: -webkit-linear-gradient(
+    to left,
+    #213b52,
+    #2a0845
+  ); /* Chrome 10-25, Safari 5.1-6 */
+}
+
+body {
+  font-family: montserrat, arial, verdana;
+  background: transparent;
+  /* width: 95%; */
+  /* margin: 10px; */
+}
+
+/*form styles*/
+#msform {
+  text-align: center;
+  position: relative;
+  margin-top: 20px;
+}
+
+#msform fieldset {
+  background: white;
+  border: 0 none;
+  border-radius: 0px;
+  box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
+  padding: 20px 30px;
+  box-sizing: border-box;
+  width: 90%;
+  margin: 0 10%;
+
+  /*stacking fieldsets above each other*/
+  position: relative;
+}
+
+/*Hide all except first fieldset*/
+#msform fieldset:not(:first-of-type) {
+  display: none;
+}
+
+/*inputs*/
+#msform input,
+#msform textarea,
+#msform select {
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 0px;
+  margin-bottom: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: montserrat;
+  font-size: 13px;
+}
+
+#msform input:focus,
+#msform textarea:focus {
+  -moz-box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+  border: 1px solid #213b52;
+  outline-width: 0;
+  transition: All 0.5s ease-in;
+  -webkit-transition: All 0.5s ease-in;
+  -moz-transition: All 0.5s ease-in;
+  -o-transition: All 0.5s ease-in;
+}
+
+/*buttons*/
+#msform .action-button {
+  width: 100px;
+  background: #213b52;
+  font-weight: bold;
+  color: white;
+  border: 0 none;
+  border-radius: 25px;
+  cursor: pointer;
+  padding: 10px 5px;
+  margin: 10px 5px;
+}
+
+#msform .action-button:hover,
+#msform .action-button:focus {
+  box-shadow: 0 0 0 2px white, 0 0 0 3px #213b52;
+}
+
+#msform .action-button-previous {
+  width: 100px;
+  background: #213b52;
+  font-weight: bold;
+  color: white;
+  border: 0 none;
+  border-radius: 25px;
+  cursor: pointer;
+  padding: 10px 5px;
+  margin: 10px 5px;
+}
+
+#msform .action-button-previous:hover,
+#msform .action-button-previous:focus {
+  box-shadow: 0 0 0 2px white, 0 0 0 3px #213b52;
+}
+
+/*headings*/
+.fs-title {
+  font-size: 18px;
+  text-transform: uppercase;
+  color: #2c3e50;
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+.fs-subtitle {
+  font-weight: normal;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* Not relevant to this form */
+.dme_link {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.dme_link a {
+  background: #fff;
+  font-weight: bold;
+  color: #ee0979;
+  border: 0 none;
+  border-radius: 25px;
+  cursor: pointer;
+  padding: 5px 25px;
+  font-size: 12px;
+}
+
+.dme_link a:hover,
+.dme_link a:focus {
+  background: #c5c5f1;
+  text-decoration: none;
+}
+
+fieldset {
+  display: none;
+  position: absolute;
+  width: 100%;
+  transition: transform 0.8s ease-in-out, opacity 0.8s ease-in-out;
+}
+
+fieldset.active_fieldset {
+  display: block;
+  position: relative;
+  transform: scale(1);
+  opacity: 1;
+}
+
+fieldset.prev_fieldset {
+  transform: scale(0.8);
+  opacity: 0;
+  left: 50%;
+}
+
+fieldset.next_fieldset {
+  transform: scale(1.2);
+  opacity: 0;
+  left: -50%;
+}
+
+.action-button {
+  width: 100px;
+  background: #27AE60;
+  font-weight: bold;
+  color: white;
+  border: 0 none;
+  border-radius: 1px;
+  cursor: pointer;
+  padding: 10px 5px;
+  margin: 10px 5px;
+}

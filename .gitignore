@@ -10,6 +10,9 @@ Finsys/Finsys_App/migrations/
 frontend/node_modules
 frontend/node_modules/*
 frontend/node_modules/
+frontend/static/
+frontend/public/static/
+
 /.pnp
 .pnp.js
 
