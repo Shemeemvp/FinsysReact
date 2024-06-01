@@ -1,0 +1,49 @@
+/*custom font*/
+@import url(https://fonts.googleapis.com/css?family=Montserrat);
+
+@media (max-width: 768px) {
+  #m-head {
+    font-size: 20px !important;
+  }
+  #modulesForm {
+    padding: 5px !important;
+  }
+  .h3 {
+    font-size: 20px;
+  }
+  .modules-body-wrapper {
+    padding: 20px !important;
+  }
+  .modules-action-button {
+    width: 50% !important;
+  }
+}
+.modules-container {
+  background: white;
+  border: 0 none;
+  border-radius: 0px;
+  box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
+  padding: 20px 30px;
+  box-sizing: border-box;
+  width: 90%;
+  margin: auto;
+
+  /*stacking fieldsets above each other*/
+  position: relative;
+}
+.modules-action-button {
+  width: 100px;
+  background: #213b52;
+  font-weight: bold;
+  color: white;
+  border: 0 none;
+  border-radius: 25px;
+  cursor: pointer;
+  padding: 10px 5px;
+  margin: 10px 5px;
+}
+
+.modules-action-button:hover,
+.modules-action-button:focus {
+  box-shadow: 0 0 0 2px white, 0 0 0 3px #213b52;
+}

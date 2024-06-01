@@ -6,6 +6,7 @@ env/pyenv.cfg
 Finsys/Finsys/__pycache__/
 Finsys/Finsys_App/__pycache__/
 Finsys/Finsys_App/migrations/
+Finsys/media/
 # dependencies
 frontend/node_modules
 frontend/node_modules/*

@@ -1,12 +1,32 @@
-import React from "react";
+import React, { useState } from "react";
 import "../styles/CompanyReg2.css";
 import Cookies from "js-cookie";
 import Swal from "sweetalert2";
-import $ from "jquery";
+// import $ from "jquery";
+import axios from "axios";
+import config from "../../functions/config";
+import { useNavigate } from "react-router-dom";
 
 function CompanyReg2() {
+  const navigate = useNavigate();
   const ID = Cookies.get("Login_id");
-  console.log("ID==", ID);
+
+  const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [country, setCountry] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const [businessName, setBusinessName] = useState("");
+  const [industry, setIndustry] = useState("Accounting Services");
+  const [companyType, setCompanyType] = useState("Private Limited Company");
+  const [accountant, setAccountant] = useState("yes");
+  const [payment, setPayment] = useState("Cash");
+  const [registerMode, setRegisterMode] = useState("self");
+  const [distributorId, setDistributorId] = useState("");
+  const [file, setFile] = useState(null);
 
   function validatePhoneNumber() {
     var phoneNumberInput = document.getElementById("ph");
@@ -30,34 +50,72 @@ function CompanyReg2() {
   }
 
   function showSecondFieldset() {
-    var animating;
-    if (animating) return false;
-    animating = true;
-
-    var current_fs = document.getElementById('fieldset1');
-    var next_fs = document.getElementById('fieldset2');
-
-    document.getElementById('fieldset2').classList.add("active_fieldset");
-
-    setTimeout(function () {
-      current_fs.classList.remove("active_fieldset");
-      animating = false;
-    }, 800);
+    document.getElementById("fieldset1").style.display = "none";
+    document.getElementById("fieldset2").style.display = "block";
   }
 
-  function showFirstFieldset(){
-
+  function showFirstFieldset() {
+    document.getElementById("fieldset2").style.display = "none";
+    document.getElementById("fieldset1").style.display = "block";
   }
 
+  function handleSubmit(e) {
+    e.preventDefault();
+    console.log("DATA==");
+    const formData = new FormData();
+    formData.append('Id', ID);
+    formData.append('Company_name', companyName);
+    formData.append('Address', companyAddress);
+    formData.append('City', city);
+    formData.append('State', state);
+    formData.append('Pincode', pincode);
+    formData.append('Country', country);
+    formData.append('Contact', phoneNumber);
+    formData.append('Business_name', businessName);
+    formData.append('Industry', industry);
+    formData.append('Company_Type', companyType);
+    formData.append('Accountant', accountant);
+    formData.append('Payment_Type', payment);
+    formData.append('Registration_Type', registerMode);
+    formData.append('distId', distributorId);
+    if (file) {
+      formData.append('Image', file);
+    }
+
+    axios
+      .put(`${config.base_url}/CompanyReg2_action2/`, formData)
+      .then((res) => {
+        console.log("RESPONSE==", res);
+        if (res.data.status) {
+          navigate("/modules_list");
+        }
+
+      })
+      .catch((err) => {
+        console.log("ERROR==", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  }
+  
+  // Toast.fire({
+  //   icon: "success",
+  //   title: "Registered successfully",
+  // });
   return (
     <>
       <div className="row">
         <div className="col-md-7 mx-auto">
           <form
             id="msform"
-            action="{% url 'Fin_CompanyReg2_action2' data.id %}"
-            enctype="multipart/form-data"
+            action="#"
+            encType="multipart/form-data"
             method="post"
+            onSubmit={handleSubmit}
           >
             {/* {% for message in messages %}
             {% if message %}
@@ -74,17 +132,32 @@ function CompanyReg2() {
             {% endfor %} */}
             <fieldset className="w-100 active_fieldset" id="fieldset1">
               <h2 className="mb-4">Try it free for 30 days !</h2>
-              <input type="text" name="cname" placeholder="Company Name" />
+              <input
+                type="text"
+                name="cname"
+                placeholder="Company Name"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+              />
               <input
                 type="text"
                 name="caddress"
                 placeholder="Company Address"
+                value={companyAddress}
+                onChange={(e) => setCompanyAddress(e.target.value)}
               />
-              <input type="text" name="city" placeholder="City" />
+              <input
+                type="text"
+                name="city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="City"
+              />
               <select
                 type="text"
                 id="plosu"
                 name="state"
+                onChange={(e) => setState(e.target.value)}
                 style={{ backgroundColor: "white" }}
               >
                 <option value="" selected>
@@ -133,18 +206,32 @@ function CompanyReg2() {
                 <option value="West Bengal">West Bengal</option>
                 <option value="Other Territory">Other Territory</option>
               </select>
-              <input type="number" name="pincode" placeholder="Pincode" />
-              <input type="text" name="ccountry" placeholder="country" />
+              <input
+                type="number"
+                name="pincode"
+                placeholder="Pincode"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+              />
+              <input
+                type="text"
+                name="ccountry"
+                placeholder="country"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+              />
               <input
                 type="text"
                 name="phone"
                 placeholder="Phone Number"
                 id="ph"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 onInput={validatePhoneNumber}
                 required
               />
 
-              <input type="file" name="img1" accept="image/*" />
+              <input type="file" name="img1" accept="image/*" onChange={(e) => setFile(e.target.files[0])} />
 
               <input
                 type="button"
@@ -160,15 +247,18 @@ function CompanyReg2() {
                 type="text"
                 name="bname"
                 placeholder="Legal Business Name"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
                 required
               />
-              <label for="industry" style={{ float: "left" }}>
+              <label htmlFor="industry" style={{ float: "left" }}>
                 Your Industry
               </label>
               <select
                 name="industry"
                 id="industry"
                 className="was-validated"
+                onChange={(e) => setIndustry(e.target.value)}
                 required
               >
                 <option value="Accounting Services">Accounting Services</option>
@@ -190,13 +280,14 @@ function CompanyReg2() {
                   Other Finanacial Services
                 </option>
               </select>
-              <label for="ctype" style={{ float: "left" }}>
+              <label htmlFor="ctype" style={{ float: "left" }}>
                 Company type
               </label>
               <select
                 name="ctype"
                 id="ctype"
                 className="was-validated"
+                onChange={(e) => setCompanyType(e.target.value)}
                 required
               >
                 <option value="Private Limited Company">
@@ -219,23 +310,32 @@ function CompanyReg2() {
                   Non Government Organization
                 </option>
               </select>
-              <label for="abt" style={{ float: "left" }}>
+              <label htmlFor="abt" style={{ float: "left" }}>
                 Do you have an Accountant, Bookkeeper or Tax Pro ?
               </label>
 
-              <select name="staff" id="">
+              <select
+                name="staff"
+                id=""
+                onChange={(e) => setAccountant(e.target.value)}
+              >
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
               </select>
               {/* <!-- <input type="radio" id="abt" name="abt" value="Yes" style="position: absolute;" required/>
-                <label for="" style="">Yes</label>
+                <label htmlFor="" style="">Yes</label>
                 <input type="radio" id="abt" name="abt" value="No" style="" required/>
-                <label for="" style="">No</label> --> */}
+                <label htmlFor="" style="">No</label> --> */}
 
               <label style={{ float: "left" }}>
                 How do you like to get paid?
               </label>
-              <select name="paid" className="was-validated" required>
+              <select
+                name="paid"
+                className="was-validated"
+                onChange={(e) => setPayment(e.target.value)}
+                required
+              >
                 <option value="Cash">Cash</option>
                 <option value="Cheque">Cheque</option>
                 <option value="Credit card/Debit card">
@@ -248,7 +348,14 @@ function CompanyReg2() {
               </select>
 
               <label style={{ float: "left" }}>How do you Register?</label>
-              <select name="reg_type" id="reg" onClick={dcode}>
+              <select
+                name="reg_type"
+                id="reg"
+                onChange={(e) => {
+                  dcode();
+                  setRegisterMode(e.target.value);
+                }}
+              >
                 <option value="self">By Self</option>
                 <option value="distributor">By The Distributor</option>
               </select>
@@ -257,6 +364,8 @@ function CompanyReg2() {
                 type="text"
                 name="dis_code"
                 id="dc"
+                value={distributorId}
+                onChange={(e) => setDistributorId(e.target.value)}
                 placeholder="Enter Distributor Code"
                 style={{ display: "none" }}
               />

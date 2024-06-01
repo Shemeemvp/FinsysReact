@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 # Create your models here.
 
@@ -118,7 +119,17 @@ class Fin_Staff_Details(models.Model):
     contact = models.CharField(max_length=255,null=True,blank=True)
     Email = models.CharField(max_length=255,null=True,blank=True) 
     img = models.ImageField(null=True,blank = True,upload_to = 'image/staff')    
-    Company_approval_status = models.CharField(max_length=255,null=True,blank=True)  
+    Company_approval_status = models.CharField(max_length=255,null=True,blank=True)
+
+class TrialPeriod(models.Model):
+    company = models.OneToOneField(Fin_Company_Details, on_delete=models.CASCADE)
+    start_date = models.DateField(auto_now_add=True)
+    end_date = models.DateField()
+    interested_in_buying = models.IntegerField(default=0)
+    feedback = models.TextField(blank=True, null=True)
+
+    def is_active(self):
+        return self.end_date >= timezone.now().date()
 
 class Fin_Payment_Terms_updation(models.Model):
     Login_Id = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE,null=True,blank=True)
@@ -154,3 +165,54 @@ class Fin_DNotification(models.Model):
 class Fin_Units(models.Model):
     Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE,null=True)
     name = models.CharField(max_length=100,null=True)
+
+class Fin_Chart_Of_Account(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    account_type = models.CharField(max_length=255,null=True,blank=True)
+    account_name = models.CharField(max_length=255,null=True,blank=True)
+    account_code = models.CharField(max_length=255,null=True,blank=True)
+    description = models.TextField(null=True,blank=True)
+    balance = models.FloatField(null=True, blank=True, default=0.0)
+    balance_type = models.CharField(max_length=100,null=True,blank=True)
+    credit_card_no = models.CharField(max_length=255,null=True,blank=True)
+    sub_account = models.BooleanField(null=True,blank=True, default=False)
+    parent_account = models.CharField(max_length=255,null=True,blank=True)
+    bank_account_no = models.BigIntegerField(null=True,blank=True)
+    date = models.DateField(auto_now_add=True, auto_now=False, null=True, blank=True)
+    create_status=models.CharField(max_length=255,null=True,blank=True)
+    status = models.CharField(max_length=255,null=True,blank=True)
+
+class Fin_Loan_Term(models.Model):
+    duration= models.IntegerField(null=True,blank=True)
+    term = models.CharField(max_length=255,null=True,blank=True)
+    days = models.IntegerField(null=True,blank=True)
+    company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True,blank=True)
+
+
+class Fin_Company_Payment_Terms(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    term_name = models.CharField(max_length=100, null=True)
+    days = models.IntegerField(null=True, default=0)
+
+
+class Fin_CompanyRepeatEvery(models.Model):
+    company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE,null=True,blank=True)
+    repeat_every = models.CharField(max_length=100,null=True,blank=True) 
+    repeat_type = models.CharField(max_length=100,null=True,blank=True) 
+    duration = models.IntegerField(null=True,blank=True)
+    days = models.IntegerField(null=True,blank=True)
+
+
+class Fin_Eway_Transportation(models.Model):
+    Company = models.ForeignKey('Fin_Company_Details', on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey('Fin_Login_Details', on_delete=models.CASCADE, null=True)
+    
+    Name = models.CharField(max_length=200, null= True)
+    Type = models.CharField(max_length=100, null=True)
+
+
+class Stock_Reason(models.Model):
+    company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True,blank=True)
+    login_details = models.ForeignKey(Fin_Login_Details,on_delete=models.CASCADE,null=True,blank=True)
+    reason = models.CharField(max_length=500)

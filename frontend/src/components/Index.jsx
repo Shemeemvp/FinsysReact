@@ -43,9 +43,9 @@ function Index() {
                 </a>
                 <ul class="dropdown-menu">
                   <li>
-                    <a href="{% url 'Fin_DistributorReg' %}">
+                    <Link to="/distributor_registration">
                       Distributor Registration
-                    </a>
+                    </Link>
                   </li>
                   <li>
                     <Link to="/company_registration">
