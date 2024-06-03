@@ -6,11 +6,12 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 
-function DistributorReg() {
+function StaffReg() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [companyCode, setCompanyCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -42,18 +43,19 @@ function DistributorReg() {
         First_name: firstName,
         Last_name: lastName,
         User_name: username,
+        Company_code: companyCode,
         Email: email,
         password: password,
       };
       axios
-        .post(`${config.base_url}/Distributor_Registration_Action/`, data, {
+        .post(`${config.base_url}/Fin_staffReg_action/`, data, {
           headers: { "Content-Type": "application/json" },
         })
         .then((res) => {
           console.log("RESPONSE==", res);
           if (res.data.status) {
             Cookies.set("Login_id", res.data.data.Login_Id);
-            navigate("/distributor_registration2");
+            navigate("/staff_registration2");
           }
 
           // Toast.fire({
@@ -106,7 +108,7 @@ function DistributorReg() {
                         </div>
                     {% endif %}
                 {% endfor %} */}
-              <h2 className="titleh2" style={{fontWeight: 'bolder'}}>SIGN IN</h2>
+              <h2 className="titleh2" style={{fontWeight:"bolder"}}>Sign in</h2>
               <div className="input-field">
                 <i className="fas fa-user"></i>
                 <input
@@ -134,7 +136,7 @@ function DistributorReg() {
               <msg></msg>
             </form>
             <form action="#" className="sign-up-form" onSubmit={handleSubmit}>
-            <h2 className="mt-4" id="su" style={{fontSize: "2rem", fontWeight: "bolder"}}>DISTRIBUTOR SIGN UP</h2>
+              <h2 className="titleh2" style={{fontWeight:"bolder"}}>Sign up</h2>
 
               <div className="input-field">
                 <i className="fas fa-user"></i>
@@ -180,6 +182,17 @@ function DistributorReg() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   id="user"
+                  required
+                />
+              </div>
+              <div class="input-field">
+                <i class="fa fa-codepen"></i>
+                <input
+                  type="text"
+                  name="Company_Code"
+                  placeholder="Company Code"
+                  value={companyCode}
+                  onChange={(e) => setCompanyCode(e.target.value)}
                   required
                 />
               </div>
@@ -265,4 +278,4 @@ function DistributorReg() {
   );
 }
 
-export default DistributorReg;
+export default StaffReg;

@@ -2,6 +2,7 @@ from django.shortcuts import render
 from Finsys_App.models import *
 from django.http import HttpResponse, JsonResponse
 from .serializers import *
+from django.contrib import auth
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -368,3 +369,238 @@ def Fin_getPaymentTerms(request):
     except Exception as e:
         return Response({"status": False, "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+
+@api_view(['GET'])
+def Fin_getDistributorData(request,id):
+    try:
+        login_id = id
+        data = Fin_Login_Details.objects.get(id=login_id)
+        if data:
+            distr = Fin_Distributors_Details.objects.get(Login_Id=data)
+            dict = {
+                'fName':data.First_name,
+                'lName':data.Last_name,
+                'uName':data.User_name,
+                'email':distr.Email
+            }
+            return JsonResponse({'status':True, 'data': dict}, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({'status': False}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"status": False, "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_DReg2_Action2(request):
+    try:
+        login_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=login_id)
+        ddata = Fin_Distributors_Details.objects.get(Login_Id = data)
+
+        serializer = DistributorDetailsSerializer(ddata, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+
+            # Update the company with trial period dates
+            payment_term = request.data['Payment_Term']
+            terms=Fin_Payment_Terms.objects.get(id=payment_term)
+            
+            start_date=date.today()
+            days=int(terms.days)
+            end = date.today() + timedelta(days=days)
+
+            ddata.Start_Date = start_date
+            ddata.End_date = end
+            ddata.save()
+
+            return Response({"status": True, "data": serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"status": False, "data": serializer.errors},status=status.HTTP_400_BAD_REQUEST)
+
+    except Fin_Login_Details.DoesNotExist:
+        return Response({"status": False, "message": "Login details not found"},status=status.HTTP_404_NOT_FOUND)
+    except Fin_Distributors_Details.DoesNotExist:
+        return Response({"status": False, "message": "Distributor details not found"},status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"status": False, "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(("POST",))
+def Fin_staffReg_action(request):
+    if not Fin_Company_Details.objects.filter(
+        Company_Code=request.data["Company_code"]
+    ).exists():
+        return Response(
+            {
+                "status": False,
+                "message": "This company code does not exists. try again.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    elif Fin_Login_Details.objects.filter(
+        User_name=request.data["User_name"]
+    ).exists():
+        return Response(
+            {
+                "status": False,
+                "message": "This username already exists. Sign up again",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    elif Fin_Staff_Details.objects.filter(Email=request.data["Email"]).exists():
+        return Response(
+            {
+                "status": False,
+                "message": "This email already exists. Sign up again",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    else:
+        com = Fin_Company_Details.objects.get(Company_Code=request.data["Company_code"])
+
+        request.data["User_Type"] = "Staff"
+
+        serializer = LoginDetailsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            loginId = Fin_Login_Details.objects.get(id=serializer.data["id"]).id
+
+            request.data["Login_Id"] = loginId
+            request.data["Company_approval_status"] = "Null"
+            request.data["company_id"] = com.id
+            staffSerializer = StaffDetailsSerializer(data=request.data)
+            if staffSerializer.is_valid():
+                staffSerializer.save()
+                return Response(
+                    {"status": True, "data": staffSerializer.data},
+                    status=status.HTTP_201_CREATED,
+                )
+            else:
+                return Response(
+                    {"status": False, "data": staffSerializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            ) 
+
+@api_view(['GET'])
+def Fin_getStaffData(request,id):
+    try:
+        login_id = id
+        data = Fin_Login_Details.objects.get(id=login_id)
+        if data:
+            stf = Fin_Staff_Details.objects.get(Login_Id=data)
+            dict = {
+                'name':data.First_name +" "+ data.Last_name,
+                'uName':data.User_name,
+                'email':stf.Email
+            }
+            return JsonResponse({'status':True, 'data': dict}, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({'status': False}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"status": False, "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_StaffReg2_Action(request):
+    try:
+        login_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=login_id)
+        sdata = Fin_Staff_Details.objects.get(Login_Id = data)
+
+        serializer = StaffDetailsSerializer(sdata, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response({"status": True, "data": serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"status": False, "data": serializer.errors},status=status.HTTP_400_BAD_REQUEST)
+
+    except Fin_Login_Details.DoesNotExist:
+        return Response({"status": False, "message": "Login details not found"},status=status.HTTP_404_NOT_FOUND)
+    except Fin_Staff_Details.DoesNotExist:
+        return Response({"status": False, "message": "Staff details not found"},status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"status": False, "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(("POST",))
+def Fin_login(request):
+    try:
+        user_name = request.data['username']
+        passw = request.data['password']
+
+        log_user = auth.authenticate(username = user_name,password = passw)
+
+        if log_user is not None:
+            auth.login(request, log_user)
+
+        # ---super admin---
+
+            if request.user.is_staff==1:
+                return Response({"status": True, 'redirect':'admin_home', "user": 'Admin', 'Login_id':""}, status=status.HTTP_200_OK)
+            
+        # -------distributor ------    
+            
+        if Fin_Login_Details.objects.filter(User_name = user_name,password = passw).exists():
+            data =  Fin_Login_Details.objects.get(User_name = user_name,password = passw)  
+            if data.User_Type == 'Distributor':
+                did = Fin_Distributors_Details.objects.get(Login_Id=data.id) 
+                if did.Admin_approval_status == 'Accept':
+                    request.session["s_id"]=data.id
+                    current_day=date.today() 
+                    if current_day > did.End_date:
+                        print("wrong")
+                            
+                        if not Fin_Payment_Terms_updation.objects.filter(Login_Id = data, status = "New").exists():
+                            return Response({"status": False, 'redirect':'wrong', 'message':'Terms Expired'})
+                        else:
+                            return Response({"status": False, 'redirect':'distributor_registration', 'message':'Term Updation Request is pending..'})
+                    else:
+                        return Response({"status": True, 'redirect':'distributor_home', "user": 'Distributor', 'Login_id':data.id}, status=status.HTTP_200_OK)
+                            
+                else:
+                    return Response({"status": False, "message": "Approval is Pending"},status=status.HTTP_404_NOT_FOUND)
+                        
+            if data.User_Type == 'Company':
+                cid = Fin_Company_Details.objects.get(Login_Id=data.id) 
+                if cid.Admin_approval_status == 'Accept' or cid.Distributor_approval_status == 'Accept':
+                    request.session["s_id"]=data.id
+
+                    com = Fin_Company_Details.objects.get(Login_Id = data.id)
+                    
+                    current_day=date.today() 
+                    if current_day > com.End_date:
+                        print("wrong")
+                            
+                        if not Fin_Payment_Terms_updation.objects.filter(Login_Id = data, status = "New").exists():
+                            return Response({"status": False, 'redirect':'wrong', 'message':'Terms Expired'})
+                        else:
+                            return Response({"status": False, 'redirect':'company_registration', 'message':'Term Updation Request is pending..'})
+
+                    else:
+                        return Response({"status": True, 'redirect':'company_home', "user": 'Company','Login_id':data.id}, status=status.HTTP_200_OK)
+                else:
+                    return Response({"status": False, "message": "Approval is Pending"},status=status.HTTP_404_NOT_FOUND)
+            
+            if data.User_Type == 'Staff': 
+                cid = Fin_Staff_Details.objects.get(Login_Id=data.id)   
+                if cid.Company_approval_status == 'Accept':
+                    request.session["s_id"]=data.id
+                    com = Fin_Staff_Details.objects.get(Login_Id=data.id) 
+
+                    current_day=date.today() 
+                    if current_day > com.company_id.End_date:
+                        print("wrong")
+                        return Response({"status": False, 'redirect':'staff_registration', 'message':'Your account is temporarily blocked'})
+                    else:
+                        return Response({"status": True, 'redirect':'company_home', "user": 'Staff','Login_id':data.id}, status=status.HTTP_200_OK)
+                else:
+                    return Response({"status": False, "message": "Approval is Pending"},status=status.HTTP_404_NOT_FOUND)
+
+        else:
+            return Response({"status": False, "message": "Invalid username or password, try again"},status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"status": False, "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)

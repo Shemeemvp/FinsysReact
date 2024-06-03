@@ -6,6 +6,9 @@ import CompanyReg2 from './components/company/CompanyReg2';
 import Modules from './components/company/Modules';
 import DistributorReg from './components/distributor/DistributorReg';
 import DistributorReg2 from './components/distributor/DistributorReg2';
+import StaffReg from './components/staff/StaffReg';
+import StaffReg2 from './components/staff/StaffReg2';
+import AdminHome from './components/admin/AdminHome';
 
 function App() {
   return (
@@ -19,6 +22,11 @@ function App() {
 
           <Route path="/distributor_registration" element={<DistributorReg />}></Route>
           <Route path="/distributor_registration2" element={<DistributorReg2 />}></Route>
+          
+          <Route path="/staff_registration" element={<StaffReg />}></Route>
+          <Route path="/staff_registration2" element={<StaffReg2 />}></Route>
+          
+          <Route path="/admin_home" element={<AdminHome />}></Route>
 
           {/* <Route element={<PrivateRoutes />}>
           </Route> */}

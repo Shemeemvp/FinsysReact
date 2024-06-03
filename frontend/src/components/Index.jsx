@@ -53,7 +53,9 @@ function Index() {
                     </Link>
                   </li>
                   <li>
-                    <a href="{% url 'Fin_StaffReg' %}">Staff Registration</a>
+                    <Link to="/staff_registration">
+                      Staff Registration
+                    </Link>
                   </li>
                 </ul>
               </li>

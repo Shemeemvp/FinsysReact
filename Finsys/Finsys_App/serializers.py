@@ -18,6 +18,11 @@ class DistributorDetailsSerializer(serializers.ModelSerializer):
         model = Fin_Distributors_Details
         fields = '__all__'
 
+class StaffDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Staff_Details
+        fields = '__all__'
+
 class ModulesListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Modules_List

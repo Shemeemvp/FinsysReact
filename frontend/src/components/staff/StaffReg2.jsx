@@ -6,61 +6,32 @@ import axios from "axios";
 import config from "../../functions/config";
 import Swal from "sweetalert2";
 
-function DistributorReg2() {
+function StaffReg2() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
 
-  const [distributorData, setDistributorData] = useState({
-    firstName: "",
-    lastName: "",
+  const [staffData, setStaffData] = useState({
+    name: "",
     userName: "",
     email: "",
   });
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [paymentTerm, setPaymentTerm] = useState("");
   const [file, setFile] = useState(null);
 
-  const [terms, setTerms] = useState([
-    {
-      value: "",
-      text: "Choose Payment terms",
-    },
-  ]);
-
-  function fetchPaymentTerms() {
+  function fetchStaffData() {
     axios
-      .get(`${config.base_url}/get_payment_terms/`)
+      .get(`${config.base_url}/get_staff_data/${ID}/`)
       .then((res) => {
-        const trms = res.data;
-        trms.map((term, index) => {
-          var obj = {
-            value: term.id,
-            text: term.payment_terms_number + " " + term.payment_terms_value,
-          };
-          setTerms((prevState) => [...prevState, obj]);
-        });
-      })
-      .catch((err) => {
-        console.log(err);
-        alert("Something went wrong.!");
-      });
-  }
-
-  function fetchDistributorData() {
-    axios
-      .get(`${config.base_url}/get_distributor_data/${ID}/`)
-      .then((res) => {
-        const distData = res.data;
-        console.log("DISTRIBUTOR==", distData);
-        if (distData.status) {
-          var details = distData.data;
+        const stafData = res.data;
+        console.log("STAFF==", stafData);
+        if (stafData.status) {
+          var details = stafData.data;
           var det = {
-            firstName: details.fName,
-            lastName: details.lName,
+            name: details.name,
             userName: details.uName,
-            email: details.email,
+            email: details.email
           };
-          setDistributorData(det);
+          setStaffData(det);
         }
       })
       .catch((err) => {
@@ -69,11 +40,7 @@ function DistributorReg2() {
   }
 
   useEffect(() => {
-    fetchDistributorData();
-  }, []);
-
-  useEffect(() => {
-    fetchPaymentTerms();
+    fetchStaffData();
   }, []);
 
   function validatePhoneNumber() {
@@ -92,14 +59,13 @@ function DistributorReg2() {
     e.preventDefault();
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("Contact", phoneNumber);
-    formData.append("Payment_Term", paymentTerm);
+    formData.append("contact", phoneNumber);
     if (file) {
-      formData.append("Image", file);
+      formData.append("img", file);
     }
 
     axios
-      .put(`${config.base_url}/Distributor_Registration_Action2/`, formData)
+      .put(`${config.base_url}/StaffReg2_Action/`, formData)
       .then((res) => {
         console.log("RESPONSE==", res);
         if (res.data.status) {
@@ -107,7 +73,7 @@ function DistributorReg2() {
             icon: "success",
             title: "Registered successfully",
           });
-          navigate("/distributor_registration");
+          navigate("/staff_registration");
         }
       })
       .catch((err) => {
@@ -147,35 +113,34 @@ function DistributorReg2() {
             {/* <!-- fieldsets --> */}
             <fieldset className="active_fieldset">
               <h2 className="mb-4">We're Happy you're Here!</h2>
+              <label htmlFor="" style={{float: "left",marginTop: "20px"}}>Name</label>
               <input
                 type="text"
                 name=""
-                placeholder="First Name"
-                value={distributorData.firstName}
+                placeholder="Name"
+                value={staffData.name}
                 readOnly
               />
-              <input
-                type="text"
-                name=""
-                placeholder="last name"
-                value={distributorData.lastName}
-                readOnly
-              />
+
+                <label htmlFor="" style={{float:"left",marginTop:"10px"}}>User Name</label>
               <input
                 type="text"
                 name=""
                 placeholder="username"
-                value={distributorData.userName}
+                value={staffData.userName}
                 readOnly
               />
 
+                <label htmlFor="" style={{float:"left",marginTop:"10px"}}>Email</label>
               <input
                 type="email"
                 name="cemail"
                 placeholder="Email"
-                value={distributorData.email}
+                value={staffData.email}
                 readOnly
               />
+
+              <label htmlFor="" style={{float:"left",marginTop:"10px"}}>Contact</label>
               <input
                 type="number"
                 name="phone"
@@ -185,17 +150,8 @@ function DistributorReg2() {
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 onInput={validatePhoneNumber}
               />
-              <select
-                name="payment_term"
-                id=""
-                onChange={(e) => setPaymentTerm(e.target.value)}
-                style={{ fontWeight: "500" }}
-              >
-                {terms &&
-                  terms.map((term) => (
-                    <option value={term.value}>{term.text}</option>
-                  ))}
-              </select>
+              
+              <label htmlForhtmlFor="" style={{float:"left",marginTop:"10px"}}>Image</label>
               <input
                 type="file"
                 name="img"
@@ -217,4 +173,4 @@ function DistributorReg2() {
   );
 }
 
-export default DistributorReg2;
+export default StaffReg2;

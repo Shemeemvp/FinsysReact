@@ -88,15 +88,47 @@ function CompanyReg() {
     },
   });
 
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const loginData = {
+      username: logUsername,
+      password: logPassword,
+    };
+
+    axios
+      .post(`${config.base_url}/LogIn/`, loginData)
+      .then((res) => {
+        console.log('==RESPONSE==',res)
+        if(res.data.status){
+          Cookies.set('User',res.data.user)
+          Cookies.set('Login_id',res.data.Login_id)
+          if(res.data.redirect != ""){
+            navigate('/'+res.data.redirect)
+          }
+        }
+      })
+      .catch((err) => {
+        console.log('===ERROR===',err)
+        if(!err.response.data.status){
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+          if(err.response.data.redirect && err.response.data.redirect != ""){
+            navigate('/'+err.response.data.redirect)
+          }
+        }
+      });
+  };
+
   return (
     <>
       <div className="container_div">
         <div className="forms-container">
           <div className="signin-signup">
             <form
-              action="{% url 'Fin_login' %}"
-              method="post"
               className="sign-in-form"
+              onSubmit={handleLogin}
             >
               {/* {% for message in messages %}
                     {% if message %}
