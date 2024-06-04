@@ -1,16 +1,17 @@
-import React from "react";
+import React, { useEffect } from "react";
 import AdminBase from "./AdminBase";
+import { Link } from "react-router-dom";
 
 function AdminHome() {
   return (
     <>
       <AdminBase />
-      <div className="body-wrapper p-3">
+      <div className="body-wrapper p-3" style={{backgroundColor: "#2f516f",height: "100vh"}}>
         <div className="container-fluid">
           <div className="row p-3">
             <div className="col-md-4">
               <div className="card radius-15 p-3">
-                <a href="{% url 'Fin_ADistributor' %}">
+                <Link to="/distributors">
                   <div className="card-body">
                     <div className="card-title"></div>
                     <div className="row">
@@ -27,7 +28,7 @@ function AdminHome() {
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               </div>
             </div>
             <div className="col-md-4">

@@ -1,14 +1,40 @@
-import React from "react";
-
+import React, { useEffect } from "react";
+import "../styles/AdminBase.css";
+import { Helmet } from "react-helmet";
+import { Link, useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 function AdminBase() {
-  var listItems = document.querySelectorAll("#myList li");
-  listItems.forEach(function (item) {
-    item.style.display = "none";
-  });
+  const navigate = useNavigate();
+  function handleLogout() {
+    Cookies.remove("User");
+    Cookies.remove("Login_id");
+    navigate("/");
+  }
+  function hideListElements() {
+    var listItems = document.querySelectorAll("#myList li");
+    listItems.forEach(function (item) {
+      item.style.display = "none";
+    });
+
+    
+  }
+  const showMenu =(ele) =>{
+    ele.classList.add("mm-show")
+    ele.classList.remove('mm-collapse')
+  }
+
+  useEffect(()=>{
+    document.querySelector('.submenu').classList.add('mm-collapse')
+  },[])
+
+  useEffect(() => {
+    hideListElements();
+  }, []);
 
   function filter() {
     var value = document.getElementById("myInput").value.toLowerCase();
 
+    var listItems = document.querySelectorAll("#myList li");
     listItems.forEach(function (item) {
       if (value !== "") {
         var text = item.textContent.toLowerCase();
@@ -21,6 +47,101 @@ function AdminBase() {
 
   return (
     <>
+      <Helmet>
+        {/* <!-- Reset styles --> */}
+        <link
+          rel="stylesheet"
+          href="https://unpkg.com/modern-css-reset/dist/reset.min.css"
+        />
+        {/* <!-- Google Fonts Muli --> */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;700&display=swap"
+          rel="stylesheet"
+        ></link>
+        {/* <!-- Vector CSS --> */}
+        {/* <link
+          href={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-2.0.2.css`}
+          rel="stylesheet"
+        /> */}
+        {/* <!--plugins--> */}
+        {/* <link
+          href={`${process.env.PUBLIC_URL}/static/assets/plugins/simplebar/css/simplebar.css`}
+          rel="stylesheet"
+        /> */}
+
+        <link
+          href={`${process.env.PUBLIC_URL}/static/assets/plugins/metismenu/css/metisMenu.min.css`}
+          rel="stylesheet"
+        />
+
+        {/* <!-- Bootstrap CSS --> */}
+        <link
+          rel="stylesheet"
+          href={`${process.env.PUBLIC_URL}/static/assets/css/bootstrap.min.css`}
+        />
+        {/* <!-- Icons CSS --> */}
+        <link
+          rel="stylesheet"
+          href={`${process.env.PUBLIC_URL}/static/assets/css/icons.css`}
+        />
+
+        <link
+          href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css"
+          rel="stylesheet"
+        />
+        <link
+          rel="stylesheet"
+          href={`${process.env.PUBLIC_URL}/static/assets/css/app.css`}
+        />
+
+        {/* jQuery first, then Popper.js, then Bootstrap JS */}
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/js/jquery.min.js`}
+        ></script>
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/js/popper.min.js`}
+        ></script>
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/js/bootstrap.min.js`}
+        ></script>
+
+        {/* <!--plugins--> */}
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/plugins/simplebar/js/simplebar.min.js`}
+        ></script>
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/plugins/metismenu/js/metisMenu.min.js`}
+        ></script>
+        {/* <!-- Vector map JavaScript --> */}
+        {/* <script
+          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-2.0.2.min.js`}
+        ></script>
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-world-mill-en.js`}
+        ></script>
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-in-mill.js`}
+        ></script>
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-us-aea-en.js`}
+        ></script>
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-uk-mill-en.js`}
+        ></script>
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-au-mill.js`}
+        ></script>
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/plugins/apexcharts-bundle/js/apexcharts.min.js`}
+        ></script> */}
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/js/index.js`}
+        ></script>
+        {/* <!-- App JS --> */}
+        <script
+          src={`${process.env.PUBLIC_URL}/static/assets/js/app.js`}
+        ></script>
+      </Helmet>
       {/* <!-- wrapper --> */}
       <div className="wrapper">
         {/* <!--header--> */}
@@ -31,7 +152,7 @@ function AdminBase() {
               <div className="sidebar-header">
                 <div className="d-none d-lg-flex">
                   <img
-                    src="%PUBLIC_URL%/static/assets/images/logo-icon.png"
+                    src={`${process.env.PUBLIC_URL}/static/assets/images/logo-icon.png`}
                     className="logo-icon-2"
                     alt=""
                   />
@@ -41,14 +162,20 @@ function AdminBase() {
                     <b>Fin sYs</b>
                   </h4>
                 </div>
-                <a href="javascript:;" className="toggle-btn ml-lg-auto">
+                <a href="javascript:;" className="toggle-btn ml-lg-auto p-0">
                   {" "}
-                  <i className="bx bx-menu"></i>
+                  <i
+                    className="bx bx-menu text-white"
+                    style={{ fontSize: "28px" }}
+                  ></i>
                 </a>
               </div>
               <div className="flex-grow-1 search-bar">
-                <div className="input-group">
-                  <div className="input-group-prepend search-arrow-back">
+                <div className="input-group d-flex align-items-center">
+                  <div
+                    className="input-group-prepend search-arrow-back"
+                    style={{ display: "none" }}
+                  >
                     <button className="btn btn-search-back" type="button">
                       <i className="bx bx-arrow-back"></i>
                     </button>
@@ -173,7 +300,10 @@ function AdminBase() {
                       textDecoration: "none",
                     }}
                   >
-                    <i className="fa fa-gear" style={{ fontSize: "24px" }}></i>
+                    <i
+                      className="fa fa-gear text-white"
+                      style={{ fontSize: "24px" }}
+                    ></i>
                   </a>
                   <div className="dropdown-menu dropdown-menu-right">
                     <ul
@@ -183,6 +313,7 @@ function AdminBase() {
                         margin: "0",
                         padding: "0",
                         width: "200px",
+                        display: "ruby-text",
                       }}
                     >
                       <li>
@@ -318,12 +449,15 @@ function AdminBase() {
                       data-toggle="dropdown"
                     >
                       {" "}
-                      <i className="bx bx-bell vertical-align-middle"></i>
+                      <i
+                        className="bx bx-bell vertical-align-middle"
+                        style={{ fontSize: "25px" }}
+                      ></i>
                       <span className="msg-count">5</span>
                     </a>
                     <div className="dropdown-menu dropdown-menu-right">
-                      <a href="javascript:;">
-                        <div className="msg-header">
+                      <a className="p-0" href="javascript:;">
+                        <div className="msg-header w-100">
                           <h6 className="msg-header-title">5 New</h6>
                           <p className="msg-header-subtitle">
                             Application Notifications
@@ -367,7 +501,9 @@ function AdminBase() {
                           <p className="user-name mb-0">
                             {/* {% if user.is_authenticated %} */}
                             {/* {% csrf_token %} */}
-                            <label style={{textAlign: "center", fontSize: "15px"}}>
+                            <label
+                              style={{ textAlign: "center", fontSize: "15px" }}
+                            >
                               Admin
                             </label>
                             {/* {% endif %} */}
@@ -375,7 +511,7 @@ function AdminBase() {
                           <p className="designattion mb-0">Online</p>
                         </div>
                         <img
-                          src="%PUBLIC_URL%\static\assets\images\user-1.jpg"
+                          src={`${process.env.PUBLIC_URL}/static/assets/images/user-1.jpg`}
                           className="user-img"
                         />
                       </div>
@@ -385,15 +521,18 @@ function AdminBase() {
                     <div className="dropdown-menu dropdown-menu-right">
                       {/* <!-- <a className="dropdown-item"
                     href="/app1/userprofile/{{ user.id }}"><i className="bx bx-user"></i><span>Profile</span></a> --> */}
-                      <a
-                        className="dropdown-item"
-                        href="{% url 'Fin_Adminhome' %}"
+                      <Link
+                        className="dropdown-item justify-content-start"
+                        to="/admin_home"
                       >
                         <i className="bx bx-tachometer"></i>
                         <span>Dashboard</span>
-                      </a>
+                      </Link>
                       <div className="dropdown-divider mb-0"></div>
-                      <a className="dropdown-item" href="{% url 'logout' %}">
+                      <a
+                        className="dropdown-item justify-content-start"
+                        onClick={handleLogout}
+                      >
                         <i className="bx bx-power-off"></i>
                         <span>Logout</span>
                       </a>
@@ -410,33 +549,33 @@ function AdminBase() {
           <div
             id="nav1"
             className="nav-container"
-            style={{backgroundColor: "#213b52"}}
+            style={{ backgroundColor: "#213b52" }}
           >
             <nav className="topbar-nav">
               <ul className="metismenu" id="menu">
                 <li>
-                  <a href="{% url 'Fin_Adminhome' %}" className="has-arrow">
+                  <Link to="/admin_home" className="has-arrow">
                     <div className="parent-icon">
                       <i className="bx bx-home-alt"></i>
                     </div>
                     <div className="menu-title">Dashboard</div>
-                  </a>
+                  </Link>
                 </li>
                 {/* <!-- <li>
-              <a href="{% url 'Fin_PaymentTerm' %}" className="has-arrow">
-                <div className="parent-icon"><i className='bx bxs-package'></i>
-                </div>
-                <div className="menu-title">Payment Terms</div>
-              </a>
-             
+                  <a href="{% url 'Fin_PaymentTerm' %}" className="has-arrow">
+                    <div className="parent-icon"><i className='bx bxs-package'></i>
+                    </div>
+                    <div className="menu-title">Payment Terms</div>
+                  </a>
+                
 
-            </li> --> */}
+                </li> --> */}
                 <li>
-                  <a href="javascript:;" className="has-arrow">
+                  <a href="javascript:;" className="has-arrow" onClick={(e)=>showMenu(e.target)}>
                     <div className="parent-icon">
                       <i className="bx bxs-package"></i>
                     </div>
-                    <div className="menu-title" style={{marginRight: "20px"}}>
+                    <div className="menu-title" style={{ marginRight: "20px" }}>
                       Payment Terms
                     </div>
                   </a>
@@ -477,7 +616,7 @@ function AdminBase() {
           <div className="page-wrapper">
             <div
               className="page-content-wrapper"
-              style={{backgroundColor: "#2f516f"}}
+              style={{ backgroundColor: "#2f516f" }}
             >
               <div className="container pt-3">
                 {/* {% for message in messages %}
