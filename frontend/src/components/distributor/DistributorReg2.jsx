@@ -32,6 +32,12 @@ function DistributorReg2() {
       .get(`${config.base_url}/get_payment_terms/`)
       .then((res) => {
         const trms = res.data;
+        setTerms([
+          {
+            value: "",
+            text: "Choose Payment terms",
+          },
+        ])
         trms.map((term, index) => {
           var obj = {
             value: term.id,

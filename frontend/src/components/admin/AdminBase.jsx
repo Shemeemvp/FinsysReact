@@ -15,17 +15,45 @@ function AdminBase() {
     listItems.forEach(function (item) {
       item.style.display = "none";
     });
-
-    
   }
-  const showMenu =(ele) =>{
-    ele.classList.add("mm-show")
-    ele.classList.remove('mm-collapse')
+  const showMenu = () => {
+    var ele = document.querySelector("ul.submenu");
+    if (ele.classList.contains("mm-show")) {
+      ele.classList.remove("mm-show");
+      ele.classList.add("mm-collapse");
+    } else {
+      ele.classList.add("mm-show");
+      ele.classList.remove("mm-collapse");
+    }
+  };
+
+  function toggleSidebar() {
+    var wrapper = document.getElementById("headerWrapper");
+    var sidebarWrapper = document.querySelector(".sidebar-wrapper");
+
+    if (wrapper.classList.contains("toggled")) {
+      // unpin sidebar when hovered
+      wrapper.classList.remove("toggled");
+      // sidebarWrapper.removeEventListener("mouseenter", hoverIn);
+      // sidebarWrapper.removeEventListener("mouseleave", hoverOut);
+    } else {
+      wrapper.classList.add("toggled");
+      // sidebarWrapper.addEventListener("mouseenter", hoverIn);
+      // sidebarWrapper.addEventListener("mouseleave", hoverOut);
+    }
+
+    // function hoverIn() {
+    //   wrapper.classList.add("sidebar-hovered");
+    // }
+
+    // function hoverOut() {
+    //   wrapper.classList.remove("sidebar-hovered");
+    // }
   }
 
-  useEffect(()=>{
-    document.querySelector('.submenu').classList.add('mm-collapse')
-  },[])
+  useEffect(() => {
+    document.querySelector(".submenu").classList.add("mm-collapse");
+  }, []);
 
   useEffect(() => {
     hideListElements();
@@ -145,7 +173,7 @@ function AdminBase() {
       {/* <!-- wrapper --> */}
       <div className="wrapper">
         {/* <!--header--> */}
-        <div className="wrapper">
+        <div className="wrapper" id="headerWrapper">
           {/* <!--header--> */}
           <header className="top-header" style={{ backgroundColor: "#213b52" }}>
             <nav className="navbar navbar-expand">
@@ -162,8 +190,7 @@ function AdminBase() {
                     <b>Fin sYs</b>
                   </h4>
                 </div>
-                <a href="javascript:;" className="toggle-btn ml-lg-auto p-0">
-                  {" "}
+                <a href="javascript:;" onClick={toggleSidebar} className="toggle-btn ml-lg-auto p-0">
                   <i
                     className="bx bx-menu text-white"
                     style={{ fontSize: "28px" }}
@@ -571,7 +598,11 @@ function AdminBase() {
 
                 </li> --> */}
                 <li>
-                  <a href="javascript:;" className="has-arrow" onClick={(e)=>showMenu(e.target)}>
+                  <a
+                    href="javascript:;"
+                    className="has-arrow"
+                    onClick={(e) => showMenu()}
+                  >
                     <div className="parent-icon">
                       <i className="bx bxs-package"></i>
                     </div>

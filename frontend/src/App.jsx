@@ -11,6 +11,10 @@ import StaffReg2 from './components/staff/StaffReg2';
 import AdminHome from './components/admin/AdminHome';
 import Distributors from './components/admin/Distributors';
 import AdminPrivateRoutes from './components/routes/AdminPrivateRoutes';
+import DistributorsReq from './components/admin/DistributorsReq';
+import AllDistributors from './components/admin/AllDistributors';
+import DistributorReqOverview from './components/admin/DistributorReqOverview';
+import AllDistributorsOverview from './components/admin/AllDistributorsOverview';
 
 function App() {
   return (
@@ -31,6 +35,10 @@ function App() {
           <Route element={<AdminPrivateRoutes />}>
             <Route path="/admin_home" element={<AdminHome />}></Route>
             <Route path="/distributors" element={<Distributors />}></Route>
+            <Route path="/all_distributors" element={<AllDistributors />}></Route>
+            <Route path="/distributors_requests" element={<DistributorsReq />}></Route>
+            <Route path="/distributors_request_overview/:id/" element={<DistributorReqOverview />}></Route>
+            <Route path="/all_distributors_overview/:id/" element={<AllDistributorsOverview />}></Route>
           </Route>
 
 

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import AdminBase from "./AdminBase";
+import { Link } from "react-router-dom";
 
 function Distributors() {
   return (
@@ -13,7 +14,7 @@ function Distributors() {
           <div className="row p-4">
             <div className="col-md-4">
               <div className="card radius-15 p-3 mb-0 h-100">
-                <a href="{% url 'Fin_Distributor_Request' %}">
+                <Link to="/distributors_requests">
                   <div className="card-body">
                     <div className="card-title"></div>
                     <div className="row">
@@ -30,12 +31,12 @@ function Distributors() {
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               </div>
             </div>
             <div className="col-md-4">
               <div className="card radius-15 p-3 mb-0 h-100">
-                <a href="{% url 'Fin_All_distributors' %}">
+                <Link to="/all_distributors">
                   <div className="card-body">
                     <div className="card-title"></div>
                     <div className="row">
@@ -52,12 +53,12 @@ function Distributors() {
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               </div>
             </div>
 
             <div className="col-md-4">
-              <div className="card radius-15 p-3 mb-0 h-100">
+              {/* <div className="card radius-15 p-3 mb-0 h-100">
                 <a href="{% url 'Fin_Clients_under_distributors' %}">
                   <div className="card-body">
                     <div className="card-title"></div>
@@ -76,7 +77,7 @@ function Distributors() {
                     </div>
                   </div>
                 </a>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

@@ -14,6 +14,11 @@ urlpatterns = [
     path('StaffReg2_Action/',Fin_StaffReg2_Action,name='Fin_StaffReg2_Action'),
 
     path('LogIn/',Fin_login,name='Fin_login'),
+    path('get_distributors_requests/',Fin_getDistributorsRequests, name='Fin_getDistributorsRequests'),
+    path('DReq_Accept/<int:id>/',Fin_DReq_Accept,name='Fin_DReq_Accept'),
+    path('DReq_Reject/<int:id>/',Fin_DReq_Reject,name='Fin_DReq_Reject'),
+    path('get_distributors_overview_data/<int:id>/',Fin_getDistributorsOverviewData, name='Fin_get_distributors_overview_data'),
+
 
 
 ]
