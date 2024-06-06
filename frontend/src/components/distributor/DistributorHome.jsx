@@ -1,59 +1,62 @@
-import React, { useEffect } from "react";
-import AdminBase from "./AdminBase";
-import { Link } from "react-router-dom";
+import React from "react";
+import DistributorBase from "./DistributorBase";
 
-function AdminHome() {
+function DistributorHome() {
   return (
     <>
-      <AdminBase />
-      <div className="body-wrapper p-3" style={{backgroundColor: "#2f516f",height: "100vh"}}>
+      <DistributorBase />
+      <div
+        className="body-wrapper p-3"
+        style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
+      >
         <div className="container-fluid">
-          <div className="row p-3">
-            <div className="col-md-4">
+          <div className="row p-4">
+            <div className="col"></div>
+            <div className="col-md-5">
               <div className="card radius-15 p-3">
-                <Link to="/distributors">
+                <a href="{% url 'Fin_DClient_req' %}">
                   <div className="card-body">
                     <div className="card-title"></div>
                     <div className="row">
                       <div className="col-md-9">
                         <h5 className="card-title mb-9 fw-semibold">
-                          <b className="text-white">DISTRIBUTORS</b>
+                          <b>CLIENT REQUESTS</b>
                         </h5>
                       </div>
                       <div className="col">
                         <i
-                          className="fa fa-users text-white"
-                          style={{ fontSize: "2em" }}
+                          className="fas fa-user-plus text-white"
+                          style={{ fontSize: "2.5em" }}
                         ></i>
                       </div>
                     </div>
                   </div>
-                </Link>
+                </a>
               </div>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-5">
               <div className="card radius-15 p-3">
-                <Link to="/clients">
+                <a href="{% url 'Fin_DClients' %}">
                   <div className="card-body">
                     <div className="card-title"></div>
                     <div className="row">
                       <div className="col-md-9">
                         <h5 className="card-title mb-9 fw-semibold">
-                          <b className="text-white">CLIENTS</b>
+                          <b>ALL CLIENTS</b>
                         </h5>
                       </div>
                       <div className="col">
                         <i
                           className="fa fa-users text-white"
-                          style={{ fontSize: "2em" }}
+                          style={{ fontSize: "2.5em" }}
                         ></i>
                       </div>
                     </div>
                   </div>
-                </Link>
+                </a>
               </div>
             </div>
-            <div className="col-md-4"></div>
+            <div className="col"></div>
           </div>
         </div>
       </div>
@@ -61,4 +64,4 @@ function AdminHome() {
   );
 }
 
-export default AdminHome;
+export default DistributorHome;

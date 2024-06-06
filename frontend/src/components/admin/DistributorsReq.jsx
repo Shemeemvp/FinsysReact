@@ -78,7 +78,7 @@ function DistributorsReq() {
   function handleReject(id) {
     if (user === "Admin") {
       axios
-        .put(`${config.base_url}/DReq_Reject/${id}/`)
+        .delete(`${config.base_url}/DReq_Reject/${id}/`)
         .then((res) => {
           console.log("RESPONSE==", res);
           if (res.data.status) {

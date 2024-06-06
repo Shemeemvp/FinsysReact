@@ -2107,6 +2107,40 @@ def Fin_login(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+@api_view(("POST",))
+def Fin_add_payment_terms(request):
+    try:
+        num=int(request.data['num'])
+        select=request.data['value']
+        if select == 'Years':
+            days=int(num)*365
+            pt = Fin_Payment_Terms(payment_terms_number = num,payment_terms_value = select,days = days)
+            pt.save()
+            return Response({'status':True}, status=status.HTTP_201_CREATED)
+        else:  
+            days=int(num*30)
+            pt = Fin_Payment_Terms(payment_terms_number = num,payment_terms_value = select,days = days)
+            pt.save()
+            return Response({'status':True}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+            print(e)
+            return Response(
+                {"status": False, "message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+    
+@api_view(("DELETE",))
+def Fin_delete_payment_terms(request,id):
+    try:
+        term = Fin_Payment_Terms.objects.get(id=id)
+        term.delete()
+        return Response({'status':True}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+            print(e)
+            return Response(
+                {"status": False, "message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 @api_view(("GET",))
 def Fin_getDistributorsRequests(request):
@@ -2139,6 +2173,36 @@ def Fin_getDistributorsRequests(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+@api_view(("GET",))
+def Fin_getDistributors(request):
+    try:
+        data = Fin_Distributors_Details.objects.filter(Admin_approval_status="Accept")
+        # serializer = DistributorDetailsSerializer(data, many=True)
+        requests = []
+        for i in data:
+            req = {
+                "id": i.id,
+                "name": i.Login_Id.First_name + " " + i.Login_Id.Last_name,
+                "email": i.Email,
+                "contact": i.Contact,
+                "term": (
+                    str(i.Payment_Term.payment_terms_number)
+                    + " "
+                    + i.Payment_Term.payment_terms_value
+                    if i.Payment_Term
+                    else ""
+                ),
+                "endDate": i.End_date,
+            }
+            requests.append(req)
+
+        return Response({"status": True, "data": requests})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 @api_view(("PUT",))
 def Fin_DReq_Accept(request, id):
@@ -2160,7 +2224,7 @@ def Fin_DReq_Accept(request, id):
         )
 
 
-@api_view(("PUT",))
+@api_view(("DELETE",))
 def Fin_DReq_Reject(request, id):
     print("session", request.session)
     try:
@@ -2207,6 +2271,143 @@ def Fin_getDistributorsOverviewData(request, id):
     except Fin_Distributors_Details.DoesNotExist:
         return Response(
             {"status": False, "message": "Distributor details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getClientsRequests(request):
+    try:
+        data = Fin_Company_Details.objects.filter(Registration_Type = "self", Admin_approval_status = "NULL")
+        requests = []
+        for i in data:
+            req = {
+                "id": i.id,
+                "name": i.Login_Id.First_name + " " + i.Login_Id.Last_name,
+                "email": i.Email,
+                "contact": i.Contact,
+                "term": (
+                    str(i.Payment_Term.payment_terms_number)
+                    + " "
+                    + i.Payment_Term.payment_terms_value
+                    if i.Payment_Term
+                    else "Trial Period"
+                ),
+                "endDate": i.End_date,
+            }
+            requests.append(req)
+
+        return Response({"status": True, "data": requests})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("PUT",))
+def Fin_Client_Req_Accept(request, id):
+    try:
+        data = Fin_Company_Details.objects.get(id=id)
+        data.Admin_approval_status = "Accept"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Client details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("DELETE",))
+def Fin_Client_Req_Reject(request, id):
+    print("session", request.session)
+    try:
+        data = Fin_Company_Details.objects.get(id=id)
+        data.Login_Id.delete()
+        data.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Client details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def Fin_getClients(request):
+    try:
+        data = Fin_Company_Details.objects.filter(Admin_approval_status="Accept")
+        # serializer = DistributorDetailsSerializer(data, many=True)
+        requests = []
+        for i in data:
+            req = {
+                "id": i.id,
+                "name": i.Login_Id.First_name + " " + i.Login_Id.Last_name,
+                "email": i.Email,
+                "contact": i.Contact,
+                "term": (
+                    str(i.Payment_Term.payment_terms_number)
+                    + " "
+                    + i.Payment_Term.payment_terms_value
+                    if i.Payment_Term
+                    else "Trial Period"
+                ),
+                "endDate": i.End_date,
+            }
+            requests.append(req)
+
+        return Response({"status": True, "data": requests})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getClientsOverviewData(request, id):
+    try:
+        data = Fin_Company_Details.objects.get(id=id)
+        modules = Fin_Modules_List.objects.get(company_id = id, status = "New")
+        serializer = ModulesListSerializer(modules)
+        req = {
+            "id": data.id,
+            "name": data.Login_Id.First_name + " " + data.Login_Id.Last_name,
+            "email": data.Email,
+            'code':data.Company_Code,
+            "contact": data.Contact,
+            'username':data.Login_Id.User_name,
+            'image':data.Image.url if data.Image else "",
+            "endDate": data.End_date,
+            "term": (
+                str(data.Payment_Term.payment_terms_number)
+                + " "
+                + data.Payment_Term.payment_terms_value
+                if data.Payment_Term
+                else "Trial Period"
+            ),
+        }
+        return Response({"status": True, "data": req, "modules":serializer.data}, status=status.HTTP_200_OK)
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Client details not found"},
             status=status.HTTP_404_NOT_FOUND,
         )
     except Exception as e:

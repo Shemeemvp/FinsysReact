@@ -14,10 +14,18 @@ urlpatterns = [
     path('StaffReg2_Action/',Fin_StaffReg2_Action,name='Fin_StaffReg2_Action'),
 
     path('LogIn/',Fin_login,name='Fin_login'),
+    path('add_payment_terms/',Fin_add_payment_terms,name='Fin_add_payment_terms'),
+    path('delete_payment_term/<int:id>/',Fin_delete_payment_terms,name='Fin_delete_payment_terms'),
     path('get_distributors_requests/',Fin_getDistributorsRequests, name='Fin_getDistributorsRequests'),
+    path('get_distributors/',Fin_getDistributors, name='Fin_getDistributors'),
     path('DReq_Accept/<int:id>/',Fin_DReq_Accept,name='Fin_DReq_Accept'),
     path('DReq_Reject/<int:id>/',Fin_DReq_Reject,name='Fin_DReq_Reject'),
-    path('get_distributors_overview_data/<int:id>/',Fin_getDistributorsOverviewData, name='Fin_get_distributors_overview_data'),
+    path('get_distributors_overview_data/<int:id>/',Fin_getDistributorsOverviewData, name='Fin_getDistributorsOverviewData'),
+    path('get_clients_requests/',Fin_getClientsRequests, name='Fin_getClientsRequests'),
+    path('get_clients/',Fin_getClients, name='Fin_getClients'),
+    path('Client_Req_Accept/<int:id>/',Fin_Client_Req_Accept,name='Fin_Client_Req_Accept'),
+    path('Client_Req_Reject/<int:id>/',Fin_Client_Req_Reject,name='Fin_Client_Req_Reject'),
+    path('get_clients_overview_data/<int:id>/',Fin_getClientsOverviewData, name='Fin_getClientsOverviewData'),
 
 
 

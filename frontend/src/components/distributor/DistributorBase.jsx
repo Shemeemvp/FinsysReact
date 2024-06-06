@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
-import "../styles/AdminBase.css";
+import "../styles/DistributorBase.css";
 import { Helmet } from "react-helmet";
 import { Link, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-function AdminBase() {
+function DistributorBase() {
   const navigate = useNavigate();
   function handleLogout() {
     Cookies.remove("User");
@@ -51,9 +51,9 @@ function AdminBase() {
     // }
   }
 
-  useEffect(() => {
-    document.querySelector(".submenu").classList.add("mm-collapse");
-  }, []);
+//   useEffect(() => {
+//     document.querySelector(".submenu").classList.add("mm-collapse");
+//   }, []);
 
   useEffect(() => {
     hideListElements();
@@ -190,7 +190,11 @@ function AdminBase() {
                     <b>Fin sYs</b>
                   </h4>
                 </div>
-                <a href="javascript:;" onClick={toggleSidebar} className="toggle-btn ml-lg-auto p-0">
+                <a
+                  href="javascript:;"
+                  onClick={toggleSidebar}
+                  className="toggle-btn ml-lg-auto p-0"
+                >
                   <i
                     className="bx bx-menu text-white"
                     style={{ fontSize: "28px" }}
@@ -492,7 +496,7 @@ function AdminBase() {
                         </div>
                       </a>
                       <div className="header-notifications-list">
-                    {/* {% if noti %}
+                        {/* {% if noti %}
                     {% for i in noti %}
                     <a className="dropdown-item" href="{% url 'Fin_Anotification' %}">
                       <div className="media align-items-center">
@@ -505,15 +509,16 @@ function AdminBase() {
                       </div>
                     </a>
                     {% endfor %} */}
-                    
-                  </div>
-                  <a href="{% url 'Fin_Anotification' %}">
-                    <div className="text-center msg-footer">View All Notifications</div>
-                  </a>
-                  {/* {% else %} */}
-                
-                  {/* <p className="msg-info text-center mt-5">Notifications is not found</p> */}
-                  {/* {% endif %} */}
+                      </div>
+                      <a href="{% url 'Fin_Anotification' %}">
+                        <div className="text-center msg-footer">
+                          View All Notifications
+                        </div>
+                      </a>
+                      {/* {% else %} */}
+
+                      {/* <p className="msg-info text-center mt-5">Notifications is not found</p> */}
+                      {/* {% endif %} */}
                     </div>
                   </li>
                   <li className="nav-item dropdown dropdown-user-profile">
@@ -522,32 +527,30 @@ function AdminBase() {
                       href="javascript:;"
                       data-toggle="dropdown"
                     >
-                      {/* {% if user.is_authenticated %} */}
                       <div className="media user-box align-items-center">
                         <div className="media-body user-info">
                           <p className="user-name mb-0">
-                            {/* {% if user.is_authenticated %} */}
-                            {/* {% csrf_token %} */}
-                            <label
-                              style={{ textAlign: "center", fontSize: "15px" }}
-                            >
-                              Admin
+                            <label style={{textAlign: "center", fontSize: "15px"}}>
+                              {"NAME"}
                             </label>
-                            {/* {% endif %} */}
                           </p>
                           <p className="designattion mb-0">Online</p>
                         </div>
+                        {/* {% if data.Image %} */}
+                        {/* <img src="" className="user-img"> */}
+                        {/* {% else %} */}
                         <img
                           src={`${process.env.PUBLIC_URL}/static/assets/images/user-1.jpg`}
                           className="user-img"
                         />
+                        {/* {% endif %} */}
                       </div>
-                      {/* {% endif %} */}
                     </a>
-                    {/* {% if user.is_authenticated %} */}
                     <div className="dropdown-menu dropdown-menu-right">
-                      {/* <!-- <a className="dropdown-item"
-                    href="/app1/userprofile/{{ user.id }}"><i className="bx bx-user"></i><span>Profile</span></a> --> */}
+                      <a className="dropdown-item" href="{% url 'Fin_DProfile' %}">
+                        <i className="bx bx-user"></i>
+                        <span>Profile</span>
+                      </a>
                       <Link
                         className="dropdown-item justify-content-start"
                         to="/admin_home"
@@ -564,7 +567,6 @@ function AdminBase() {
                         <span>Logout</span>
                       </a>
                     </div>
-                    {/* {% endif %} */}
                   </li>
                 </ul>
               </div>
@@ -581,52 +583,16 @@ function AdminBase() {
             <nav className="topbar-nav">
               <ul className="metismenu" id="menu">
                 <li>
-                  <Link to="/admin_home" className="has-arrow">
+                  <Link to="/distributor_home" className="has-arrow">
                     <div className="parent-icon">
                       <i className="bx bx-home-alt"></i>
                     </div>
                     <div className="menu-title">Dashboard</div>
                   </Link>
                 </li>
-                {/* <!-- <li>
-                  <a href="{% url 'Fin_PaymentTerm' %}" className="has-arrow">
-                    <div className="parent-icon"><i className='bx bxs-package'></i>
-                    </div>
-                    <div className="menu-title">Payment Terms</div>
-                  </a>
-                
-
-                </li> --> */}
                 <li>
                   <a
-                    href="javascript:;"
-                    className="has-arrow"
-                    onClick={(e) => showMenu()}
-                  >
-                    <div className="parent-icon">
-                      <i className="bx bxs-package"></i>
-                    </div>
-                    <div className="menu-title" style={{ marginRight: "20px" }}>
-                      Payment Terms
-                    </div>
-                  </a>
-                  <ul className="submenu">
-                    <li id="newTerms">
-                      <Link to={'/payment_terms'}>
-                        <i className="bx bx-right-arrow-alt"></i>New Term
-                      </Link>
-                    </li>
-                    <li id="termExtension">
-                      <a href="{% url 'Fin_adminTermExtensionRequests' %}">
-                        <i className="bx bx-right-arrow-alt"></i>Extension
-                        Requests
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <li>
-                  <a
-                    href="{% url 'Fin_Admin_trial_period_section' %}"
+                    href="#"
                     className="has-arrow"
                   >
                     <div className="parent-icon">
@@ -672,4 +638,4 @@ function AdminBase() {
   );
 }
 
-export default AdminBase;
+export default DistributorBase;

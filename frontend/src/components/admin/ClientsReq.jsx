@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import AdminBase from "./AdminBase";
 import Cookies from "js-cookie";
-import Swal from "sweetalert2";
-import config from "../../functions/config";
-import { Link } from "react-router-dom";
 import axios from "axios";
+import config from "../../functions/config";
+import { Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
-function AllDistributors() {
+function ClientsReq() {
   const [requests, setRequests] = useState([]);
   const user = Cookies.get("User");
-  const fetchAllDistributor = () => {
+  const fetchClientsRequests = () => {
     if (user === "Admin") {
       axios
-        .get(`${config.base_url}/get_distributors/`)
+        .get(`${config.base_url}/get_clients_requests/`)
         .then((res) => {
           console.log("RESPONSE==", res);
           if (res.data.status) {
@@ -44,22 +44,50 @@ function AllDistributors() {
   };
 
   useEffect(() => {
-    fetchAllDistributor();
+    fetchClientsRequests();
   }, []);
 
-  function cancelContract(id) {
+  function handleAccept(id) {
     if (user === "Admin") {
       axios
-        .delete(`${config.base_url}/DReq_Reject/${id}/`)
+        .put(`${config.base_url}/Client_Req_Accept/${id}/`)
         .then((res) => {
           console.log("RESPONSE==", res);
           if (res.data.status) {
             Toast.fire({
               icon: "success",
-              title: "Deleted",
+              title: "Request Accepted",
             });
             setTimeout(() => {
-              fetchAllDistributor();
+                fetchClientsRequests();
+            }, 3000);
+          }
+        })
+        .catch((err) => {
+          console.log("ERROR==", err);
+          if (!err.response.data.status) {
+            Swal.fire({
+              icon: "error",
+              title: `${err.response.data.message}`,
+            });
+          }
+        });
+    }
+  }
+
+  function handleReject(id) {
+    if (user === "Admin") {
+      axios
+        .delete(`${config.base_url}/Client_Req_Reject/${id}/`)
+        .then((res) => {
+          console.log("RESPONSE==", res);
+          if (res.data.status) {
+            Toast.fire({
+              icon: "success",
+              title: "Request Rejected",
+            });
+            setTimeout(() => {
+                fetchClientsRequests();
             }, 3000);
           }
         })
@@ -165,7 +193,7 @@ function AllDistributors() {
                         <tr>
                           <td style={{ textAlign: "center" }}>{index + 1}</td>
                           <td style={{ textAlign: "center" }}>
-                            <Link to={`/all_distributors_overview/${req.id}`}>
+                            <Link to={`/client_request_overview/${req.id}/`}>
                               {req.name}
                             </Link>
                           </td>
@@ -175,10 +203,18 @@ function AllDistributors() {
                           <td style={{ textAlign: "center" }}>{req.endDate}</td>
                           <td style={{ textAlign: "center" }}>
                             <button
-                              onClick={() => cancelContract(`${req.id}`)}
-                              className="btn btn-danger m-1"
+                              onClick={() => handleAccept(`${req.id}`)}
+                              className="btn btn-success m-1"
+                              style={{width:'80px', height:'40px'}}
                             >
-                              Cancel Contract
+                              Accept
+                            </button>
+                            <button
+                              onClick={()=>handleReject(`${req.id}`)}
+                              className="btn btn-danger m-1"
+                              style={{width:'80px', height:'40px'}}
+                            >
+                              Reject
                             </button>
                           </td>
                         </tr>
@@ -194,4 +230,4 @@ function AllDistributors() {
   );
 }
 
-export default AllDistributors;
+export default ClientsReq;

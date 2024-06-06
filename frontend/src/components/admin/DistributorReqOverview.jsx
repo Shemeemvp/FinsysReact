@@ -92,7 +92,7 @@ function DistributorReqOverview() {
   function handleReject(id) {
     if (user === "Admin") {
       axios
-        .put(`${config.base_url}/DReq_Reject/${id}/`)
+        .delete(`${config.base_url}/DReq_Reject/${id}/`)
         .then((res) => {
           console.log("RESPONSE==", res);
           if (res.data.status) {
@@ -168,7 +168,7 @@ function DistributorReqOverview() {
               <div className="row  pb-2 pt-2 p-5">
                 <div className="col-md-6">
                   <h5 className="h5">
-                    <b style={{ marginRight: "10px" }}></b>Distributor Code{" "}
+                    <b style={{ marginRight: "10px" }}>{"->"} </b>Distributor Code{" "}
                   </h5>
                 </div>
                 <div className="col-md-6">
@@ -181,7 +181,7 @@ function DistributorReqOverview() {
               <div className="row  pb-2 pt-2 p-5">
                 <div className="col">
                   <h5 className="h5">
-                    <b style={{ marginRight: "10px" }}></b> Email{" "}
+                    <b style={{ marginRight: "10px" }}>{"->"} </b> Email{" "}
                   </h5>
                 </div>
                 <div className="col">
@@ -193,7 +193,7 @@ function DistributorReqOverview() {
               <div className="row p-5 pt-3 pb-3">
                 <div className="col">
                   <h5 className="h5">
-                    <b style={{ marginRight: "10px" }}></b> User Name
+                    <b style={{ marginRight: "10px" }}>{"->"} </b> User Name
                   </h5>
                 </div>
                 <div className="col">
@@ -205,7 +205,7 @@ function DistributorReqOverview() {
               <div className="row p-5 pt-3 pb-3">
                 <div className="col">
                   <h5 className="h5">
-                    <b style={{ marginRight: "10px" }}></b> Contact{" "}
+                    <b style={{ marginRight: "10px" }}>{"->"} </b> Contact{" "}
                   </h5>
                 </div>
                 <div className="col">
@@ -218,7 +218,7 @@ function DistributorReqOverview() {
               <div className="row p-5 pt-3 pb-3">
                 <div className="col">
                   <h5 className="h5">
-                    <b style={{ marginRight: "10px" }}></b> Payment Terms{" "}
+                    <b style={{ marginRight: "10px" }}>{"->"} </b> Payment Terms{" "}
                   </h5>
                 </div>
                 <div className="col">
@@ -231,7 +231,7 @@ function DistributorReqOverview() {
               <div className="row p-5 pt-3 pb-3">
                 <div className="col">
                   <h5 className="h5">
-                    <b style={{ marginRight: "10px" }}></b> End Date
+                    <b style={{ marginRight: "10px" }}>{"->"} </b> End Date
                   </h5>
                 </div>
                 <div className="col">

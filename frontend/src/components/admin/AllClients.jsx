@@ -6,13 +6,13 @@ import config from "../../functions/config";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-function AllDistributors() {
+function AllClients() {
   const [requests, setRequests] = useState([]);
   const user = Cookies.get("User");
-  const fetchAllDistributor = () => {
+  const fetchAllClients = () => {
     if (user === "Admin") {
       axios
-        .get(`${config.base_url}/get_distributors/`)
+        .get(`${config.base_url}/get_clients/`)
         .then((res) => {
           console.log("RESPONSE==", res);
           if (res.data.status) {
@@ -44,13 +44,13 @@ function AllDistributors() {
   };
 
   useEffect(() => {
-    fetchAllDistributor();
+    fetchAllClients();
   }, []);
 
   function cancelContract(id) {
     if (user === "Admin") {
       axios
-        .delete(`${config.base_url}/DReq_Reject/${id}/`)
+        .delete(`${config.base_url}/Client_Req_Reject/${id}/`)
         .then((res) => {
           console.log("RESPONSE==", res);
           if (res.data.status) {
@@ -59,7 +59,7 @@ function AllDistributors() {
               title: "Deleted",
             });
             setTimeout(() => {
-              fetchAllDistributor();
+              fetchAllClients();
             }, 3000);
           }
         })
@@ -91,7 +91,7 @@ function AllDistributors() {
       <AdminBase />
       <div
         className="body-wrapper p-3"
-        style={{ backgroundColor: "#2f516f", height: "100vh" }}
+        style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="container-fluid">
           <div className="card radius-15">
@@ -165,7 +165,7 @@ function AllDistributors() {
                         <tr>
                           <td style={{ textAlign: "center" }}>{index + 1}</td>
                           <td style={{ textAlign: "center" }}>
-                            <Link to={`/all_distributors_overview/${req.id}`}>
+                            <Link to={`/all_clients_overview/${req.id}/`}>
                               {req.name}
                             </Link>
                           </td>
@@ -194,4 +194,4 @@ function AllDistributors() {
   );
 }
 
-export default AllDistributors;
+export default AllClients;

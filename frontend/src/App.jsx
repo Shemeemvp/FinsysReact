@@ -15,6 +15,14 @@ import DistributorsReq from './components/admin/DistributorsReq';
 import AllDistributors from './components/admin/AllDistributors';
 import DistributorReqOverview from './components/admin/DistributorReqOverview';
 import AllDistributorsOverview from './components/admin/AllDistributorsOverview';
+import Clients from './components/admin/Clients';
+import ClientsReq from './components/admin/ClientsReq';
+import AllClients from './components/admin/AllClients';
+import ClientReqOverview from './components/admin/ClientReqOverview';
+import AllClientsOverview from './components/admin/AllClientsOverview';
+import PaymentTerms from './components/admin/PaymentTerms';
+import DistributorPrivateRoutes from './components/routes/DistributorPrivateRoutes';
+import DistributorHome from './components/distributor/DistributorHome';
 
 function App() {
   return (
@@ -34,11 +42,20 @@ function App() {
           
           <Route element={<AdminPrivateRoutes />}>
             <Route path="/admin_home" element={<AdminHome />}></Route>
+            <Route path="/payment_terms" element={<PaymentTerms />}></Route>
             <Route path="/distributors" element={<Distributors />}></Route>
+            <Route path="/clients" element={<Clients />}></Route>
             <Route path="/all_distributors" element={<AllDistributors />}></Route>
             <Route path="/distributors_requests" element={<DistributorsReq />}></Route>
             <Route path="/distributors_request_overview/:id/" element={<DistributorReqOverview />}></Route>
             <Route path="/all_distributors_overview/:id/" element={<AllDistributorsOverview />}></Route>
+            <Route path="/clients_requests" element={<ClientsReq />}></Route>
+            <Route path="/all_clients" element={<AllClients />}></Route>
+            <Route path="/client_request_overview/:id/" element={<ClientReqOverview />}></Route>
+            <Route path="/all_clients_overview/:id/" element={<AllClientsOverview />}></Route>
+          </Route>
+          <Route element={<DistributorPrivateRoutes />}>
+            <Route path="/distributor_home" element={<DistributorHome />}></Route>
           </Route>
 
 
