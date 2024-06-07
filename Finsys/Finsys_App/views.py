@@ -94,6 +94,8 @@ def Fin_CompanyReg2_action2(request):
         com = Fin_Company_Details.objects.get(Login_Id=data.id)
 
         dis_code = request.data.get("distId", "")
+        print(dis_code)
+        distr_id = None
         if dis_code:
             if not Fin_Distributors_Details.objects.filter(
                 Distributor_Code=dis_code
@@ -106,10 +108,9 @@ def Fin_CompanyReg2_action2(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             else:
-                request.data["Distributor_id"] = Fin_Distributors_Details.objects.get(
-                    Distributor_Code=dis_code
-                ).id
-
+                distr_id = Fin_Distributors_Details.objects.get(Distributor_Code=dis_code)
+                # request.data["Distributor_id"] = Fin_Distributors_Details.objects.filter(Distributor_Code=dis_code).first().id
+                # print('distrId==',request.data['Distributor_id'])
         serializer = CompanyDetailsSerializer(com, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -117,6 +118,7 @@ def Fin_CompanyReg2_action2(request):
             # Update the company with trial period dates
             com.Start_Date = date.today()
             com.End_date = date.today() + timedelta(days=30)
+            com.Distributor_id = distr_id
             com.save()
 
             # Create a trial period instance
@@ -2332,7 +2334,6 @@ def Fin_Client_Req_Accept(request, id):
 
 @api_view(("DELETE",))
 def Fin_Client_Req_Reject(request, id):
-    print("session", request.session)
     try:
         data = Fin_Company_Details.objects.get(id=id)
         data.Login_Id.delete()
@@ -2408,6 +2409,232 @@ def Fin_getClientsOverviewData(request, id):
     except Fin_Company_Details.DoesNotExist:
         return Response(
             {"status": False, "message": "Client details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_DClient_req(request, id):
+    try:
+        data = Fin_Distributors_Details.objects.get(Login_Id = id)
+        lst = Fin_Company_Details.objects.filter(Registration_Type = "distributor",Distributor_approval_status = "NULL",Distributor_id = data.id)
+        requests = []
+        for i in lst:
+            req = {
+                "id": i.id,
+                "name": i.Login_Id.First_name + " " + i.Login_Id.Last_name,
+                "email": i.Email,
+                "contact": i.Contact,
+                "term": (
+                    str(i.Payment_Term.payment_terms_number)
+                    + " "
+                    + i.Payment_Term.payment_terms_value
+                    if i.Payment_Term
+                    else "Trial Period"
+                ),
+                "endDate": i.End_date,
+            }
+            requests.append(req)
+
+        return Response({"status": True, "data": requests})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def Fin_DClients(request, id):
+    try:
+        data = Fin_Distributors_Details.objects.get(Login_Id = id)
+        lst = Fin_Company_Details.objects.filter(Registration_Type = "distributor",Distributor_approval_status = "Accept",Distributor_id = data.id)
+        requests = []
+        for i in lst:
+            req = {
+                "id": i.id,
+                "name": i.Login_Id.First_name + " " + i.Login_Id.Last_name,
+                "email": i.Email,
+                "contact": i.Contact,
+                "term": (
+                    str(i.Payment_Term.payment_terms_number)
+                    + " "
+                    + i.Payment_Term.payment_terms_value
+                    if i.Payment_Term
+                    else "Trial Period"
+                ),
+                "endDate": i.End_date,
+            }
+            requests.append(req)
+
+        return Response({"status": True, "data": requests})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("PUT",))
+def Fin_DClient_Req_Accept(request, id):
+    try:
+        data = Fin_Company_Details.objects.get(id=id)
+        data.Distributor_approval_status = "Accept"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Client details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("DELETE",))
+def Fin_DClient_Req_Reject(request, id):
+    try:
+        data = Fin_Company_Details.objects.get(id=id)
+        data.Login_Id.delete()
+        data.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Client details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def getSelfData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id = id)
+        img = None
+        name = None
+        if data.User_Type == 'Company':
+            usrData = Fin_Company_Details.objects.get(Login_Id = data)
+            img = usrData.Image.url if usrData.Image else None
+            name = usrData.Company_name
+        elif data.User_Type == 'Distributor':
+            usrData = Fin_Distributors_Details.objects.get(Login_Id = data)
+            img = usrData.Image.url if usrData.Image else None
+            name = data.First_name+' '+data.Last_name
+        elif data.User_Type == 'Staff':
+            usrData = Fin_Staff_Details.objects.get(Login_Id = data)
+            img = usrData.img.url if usrData.img else None
+            name = data.First_name+' '+data.Last_name
+        else:
+            usrData = None
+        
+        details = {
+            "name": name,
+            "image": img
+        }
+
+        return Response({"status": True, "data": details})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def Fin_getStaffRequests(request, id):
+    try:
+        # data = Fin_Login_Details.objects.get(id=id)
+        com = Fin_Company_Details.objects.get(Login_Id = id)
+        data1 = Fin_Staff_Details.objects.filter(company_id = com.id,Company_approval_status = "NULL")
+        requests = []
+        for i in data1:
+            req = {
+                "id": i.id,
+                "name": i.Login_Id.First_name + " " + i.Login_Id.Last_name,
+                "email": i.Email,
+                "contact": i.contact,
+                "username": i.Login_Id.User_name,
+            }
+            requests.append(req)
+
+        return Response({"status": True, "data": requests})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("GET",))
+def Fin_getAllStaffs(request, id):
+    try:
+        # data = Fin_Login_Details.objects.get(id=id)
+        com = Fin_Company_Details.objects.get(Login_Id = id)
+        data1 = Fin_Staff_Details.objects.filter(company_id = com.id,Company_approval_status = "Accept")
+        requests = []
+        for i in data1:
+            req = {
+                "id": i.id,
+                "name": i.Login_Id.First_name + " " + i.Login_Id.Last_name,
+                "email": i.Email,
+                "contact": i.contact,
+                "username": i.Login_Id.User_name,
+            }
+            requests.append(req)
+
+        return Response({"status": True, "data": requests})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+
+@api_view(("PUT",))
+def Fin_Staff_Req_Accept(request, id):
+    try:
+        data = Fin_Staff_Details.objects.get(id=id)
+        data.Company_approval_status = "Accept"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Fin_Staff_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Staff details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("DELETE",))
+def Fin_Staff_Req_Reject(request, id):
+    try:
+        data = Fin_Staff_Details.objects.get(id=id)
+        data.Login_Id.delete()
+        data.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Fin_Staff_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Staff details not found"},
             status=status.HTTP_404_NOT_FOUND,
         )
     except Exception as e:

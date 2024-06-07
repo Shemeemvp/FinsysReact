@@ -1,5 +1,6 @@
 import React from "react";
 import DistributorBase from "./DistributorBase";
+import { Link } from "react-router-dom";
 
 function DistributorHome() {
   return (
@@ -14,7 +15,7 @@ function DistributorHome() {
             <div className="col"></div>
             <div className="col-md-5">
               <div className="card radius-15 p-3">
-                <a href="{% url 'Fin_DClient_req' %}">
+                <Link to="/DClient_req">
                   <div className="card-body">
                     <div className="card-title"></div>
                     <div className="row">
@@ -31,12 +32,12 @@ function DistributorHome() {
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               </div>
             </div>
             <div className="col-md-5">
               <div className="card radius-15 p-3">
-                <a href="{% url 'Fin_DClients' %}">
+                <Link to="/DClients">
                   <div className="card-body">
                     <div className="card-title"></div>
                     <div className="row">
@@ -53,7 +54,7 @@ function DistributorHome() {
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               </div>
             </div>
             <div className="col"></div>

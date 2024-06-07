@@ -23,6 +23,14 @@ import AllClientsOverview from './components/admin/AllClientsOverview';
 import PaymentTerms from './components/admin/PaymentTerms';
 import DistributorPrivateRoutes from './components/routes/DistributorPrivateRoutes';
 import DistributorHome from './components/distributor/DistributorHome';
+import DClientReq from './components/distributor/DClientReq';
+import DClientReqOverview from './components/distributor/DClientReqOverview';
+import DAllClients from './components/distributor/DAllClients';
+import DClientOverview from './components/distributor/DClientOverview';
+import CompanyHome from './components/company/CompanyHome';
+import CompanyPrivateRoutes from './components/routes/CompanyPrivateRoutes';
+import StaffReq from './components/company/StaffReq';
+import AllStaffs from './components/company/AllStaffs';
 
 function App() {
   return (
@@ -56,8 +64,17 @@ function App() {
           </Route>
           <Route element={<DistributorPrivateRoutes />}>
             <Route path="/distributor_home" element={<DistributorHome />}></Route>
+            <Route path="/DClient_req" element={<DClientReq />}></Route>
+            <Route path="/DClients" element={<DAllClients />}></Route>
+            <Route path="/DClient_request_overview/:id/" element={<DClientReqOverview />}></Route>
+            <Route path="/DClient_overview/:id/" element={<DClientOverview />}></Route>
           </Route>
 
+          <Route element={<CompanyPrivateRoutes />}>
+            <Route path="/company_home" element={<CompanyHome />}></Route>
+            <Route path="/staff_requests" element={<StaffReq />}></Route>
+            <Route path="/all_staffs" element={<AllStaffs />}></Route>
+          </Route>
 
         </Routes>
       </BrowserRouter>

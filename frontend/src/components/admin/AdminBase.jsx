@@ -601,7 +601,7 @@ function AdminBase() {
                   <a
                     href="javascript:;"
                     className="has-arrow"
-                    onClick={(e) => showMenu()}
+                    onClick={() => showMenu()}
                   >
                     <div className="parent-icon">
                       <i className="bx bxs-package"></i>

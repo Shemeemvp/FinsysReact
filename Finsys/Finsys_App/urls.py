@@ -27,6 +27,16 @@ urlpatterns = [
     path('Client_Req_Reject/<int:id>/',Fin_Client_Req_Reject,name='Fin_Client_Req_Reject'),
     path('get_clients_overview_data/<int:id>/',Fin_getClientsOverviewData, name='Fin_getClientsOverviewData'),
 
+    path('user/<int:id>/',getSelfData),
+    path('get_distributor_clients_requests/<int:id>/',Fin_DClient_req,name='Fin_DClient_req'),
+    path('get_distributor_clients/<int:id>/',Fin_DClients,name='Fin_DClients'),
+    path('DClient_Req_Accept/<int:id>/',Fin_DClient_Req_Accept,name='Fin_DClient_Req_Accept'),
+    path('DClient_Req_Reject/<int:id>/',Fin_DClient_Req_Reject,name='Fin_DClient_Req_Reject'),
+    path('get_staff_requests/<int:id>/',Fin_getStaffRequests, name='Fin_getStaffRequests'),
+    path('get_all_staffs/<int:id>/',Fin_getAllStaffs, name='Fin_getAllStaffs'),
+    path('Staff_Req_Accept/<int:id>/',Fin_Staff_Req_Accept,name='Fin_Staff_Req_Accept'),
+    path('Staff_Req_Reject/<int:id>/',Fin_Staff_Req_Reject,name='Fin_Staff_Req_Reject'),
+
 
 
 ]

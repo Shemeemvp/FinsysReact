@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from "react";
-import "../styles/DistributorBase.css";
+import "../styles/FinBase.css";
 import { Helmet } from "react-helmet";
 import { Link, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../functions/config";
-function DistributorBase() {
+function FinBase() {
+  const user = Cookies.get("User");
+  let is_company = false;
+  if (user === "Company") {
+    is_company = true;
+  }
   const navigate = useNavigate();
   function handleLogout() {
     Cookies.remove("User");
@@ -53,9 +58,9 @@ function DistributorBase() {
     // }
   }
 
-  //   useEffect(() => {
-  //     document.querySelector(".submenu").classList.add("mm-collapse");
-  //   }, []);
+  useEffect(() => {
+    document.querySelector(".submenu").classList.add("mm-collapse");
+  }, []);
 
   useEffect(() => {
     hideListElements();
@@ -75,30 +80,30 @@ function DistributorBase() {
     });
   }
 
-  const [loginName, setLoginName] = useState('')
-  const [loginImage, setLoginImage] = useState('');
+  const [loginName, setLoginName] = useState("");
+  const [loginImage, setLoginImage] = useState("");
 
   const ID = Cookies.get("Login_id");
-  const getDistributorDetails = () => {
+  const getLogDetails = () => {
     axios
       .get(`${config.base_url}/user/${ID}/`)
       .then((res) => {
-        console.log('RESPONSE==',res)
-        if(res.data.status){
-          const details = res.data.data
+        console.log("RESPONSE==", res);
+        if (res.data.status) {
+          const details = res.data.data;
           const logImg = `${config.base_url}/${details.image}`;
-          setLoginImage(logImg)
+          setLoginImage(logImg);
           setLoginName(details.name);
         }
       })
       .catch((err) => {
-        console.log("ERROR==",err)
+        console.log("ERROR==", err);
       });
   };
 
-  useEffect(()=>{
-    getDistributorDetails();
-  },[])
+  useEffect(() => {
+    getLogDetails();
+  }, []);
 
   return (
     <>
@@ -264,15 +269,32 @@ function DistributorBase() {
                   >
                     <ul
                       id="myList"
-                      className="one"
+                      class="one"
                       style={{ backgroundColor: "#213b52" }}
                     >
                       <li>
-                        <a href="">Dashboard</a>
+                        <a href="{% url 'Fin_Com_Home' %}">Dashboard</a>
+                      </li>
+
+                      <li>
+                        <a href="{% url 'Fin_Staff_Req' %}">Staff Requests</a>
                       </li>
                       <li>
-                        <a href="">Item</a>
+                        <a href="{% url 'Fin_All_Staff' %}">All Staff</a>
                       </li>
+
+                      <li>
+                        <a href="{% url 'Fin_items' %}">Item</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_priceList' %}">Price Lists</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'StockAdjustment' %}">
+                          Stock Adjustments
+                        </a>
+                      </li>
+
                       <li>
                         <a href="">Online Banking</a>
                       </li>
@@ -280,64 +302,270 @@ function DistributorBase() {
                         <a href="">Bank Reconcilation</a>
                       </li>
                       <li>
+                        <a href="">Reconcile</a>
+                      </li>
+                      <li>
+                        <a href="">Cash Position</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_banking_listout' %}">
+                          Offline Banking
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_bankholder' %}">Bank Holders</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_cashInHand' %}">Cash In Hand</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_cheques' %}">Cheques</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'loan_ac_listoutpage' %}">
+                          Loan Account
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_upiPayments' %}">UPI</a>
+                      </li>
+
+                      <li>
                         <a href="">Sales Records</a>
-                      </li>
-                      <li>
-                        <a href="">Invoices</a>
-                      </li>
-                      <li>
-                        <a href="">Customers</a>
-                      </li>
-                      <li>
-                        <a href="">Product and Services</a>
-                      </li>
-                      <li>
-                        <a href="">Expenses</a>
                       </li>
                       <li>
                         <a href="">Suppliers</a>
                       </li>
                       <li>
-                        <a href="">Chart of Accounts</a>
+                        <a href="">Product and Services</a>
                       </li>
                       <li>
-                        <a href="">Reconcile</a>
+                        <a href="{% url 'Fin_customers' %}">Customers</a>
                       </li>
                       <li>
-                        <a href="">Cash Position</a>
+                        <a href="{% url 'Fin_estimates' %}">Estimate</a>
                       </li>
                       <li>
-                        <a href="">Reconcile</a>
+                        <a href="{% url 'Fin_salesOrder' %}">Sales Order</a>
                       </li>
                       <li>
-                        <a href="">Cash Position</a>
+                        <a href="{% url 'Fin_invoice' %}">Invoices</a>
                       </li>
                       <li>
-                        <a href="">Vendor</a>
+                        <a href="{% url 'Fin_creditNotes' %}">Credit Note</a>
                       </li>
                       <li>
-                        <a href="">Purchase Order</a>
+                        <a href="{% url 'Fin_view_payment_received' %}">
+                          Payments Received
+                        </a>
                       </li>
                       <li>
-                        <a href="">Bill</a>
+                        <a href="{% url 'Fin_RET_INV_Listout' %}">
+                          Retainer Invoices
+                        </a>
                       </li>
                       <li>
-                        <a href="">Cash In Hand</a>
+                        <a href="{% url 'deliverylist' %}">Delivery Challan</a>
                       </li>
                       <li>
-                        <a href="">Offline Banking</a>
+                        <a href="{% url 'Fin_recurringInvoice' %}">
+                          Recurring Invoices
+                        </a>
+                      </li>
+
+                      <li>
+                        <a href="{% url 'Fin_vendors' %}">Vendor</a>
                       </li>
                       <li>
-                        <a href="">Loan Account</a>
+                        <a href="{% url 'Fin_purchaseOrder' %}">
+                          Purchase Order
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_List_Purchase_Bill' %}">Bill</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_expense' %}">Expenses</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_paymentmade' %}">Payment Made</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_debitnotelist' %}">Debit Note</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_recurring_bill_list' %}">
+                          Recurring Bill
+                        </a>
+                      </li>
+
+                      <li>
+                        <a href="">Transaction Reports</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_report_bill_details' %}">
+                          Bill Details
+                        </a>
                       </li>
                       <li>
                         <a href="">Sales</a>
                       </li>
                       <li>
-                        <a href="">Employee</a>
+                        <a href="">Sales by Customer</a>
                       </li>
                       <li>
-                        <a href="">Employee Loan</a>
+                        <a href="">Sales by Items</a>
+                      </li>
+                      <li>
+                        <a href="">Purchase</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_purchase_report_vendor' %}">
+                          Purchase by Vendor
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_purchase_report_item' %}">
+                          Purchase by Item
+                        </a>
+                      </li>
+                      <li>
+                        <a href="">All Transactions</a>
+                      </li>
+                      <li>
+                        <a href="">Profit and Loss</a>
+                      </li>
+                      <li>
+                        <a href="">Balance Sheet</a>
+                      </li>
+                      <li>
+                        <a href="">Cash Flow</a>
+                      </li>
+                      <li>
+                        <a href="">Day Book</a>
+                      </li>
+                      <li>
+                        <a href="">Party</a>
+                      </li>
+                      <li>
+                        <a href="">Party Statements</a>
+                      </li>
+                      <li>
+                        <a href="">All Parties</a>
+                      </li>
+                      <li>
+                        <a href="">GST Reports</a>
+                      </li>
+                      <li>
+                        <a href="">GSTR-1</a>
+                      </li>
+                      <li>
+                        <a href="">GSTR-2</a>
+                      </li>
+                      <li>
+                        <a href="">GSTR-3B</a>
+                      </li>
+                      <li>
+                        <a href="">GSTR-9</a>
+                      </li>
+                      <li>
+                        <a href="">Sales Summary by HSN</a>
+                      </li>
+                      <li>
+                        <a href="">Profit and Loss</a>
+                      </li>
+                      <li>
+                        <a href="">Balance Sheet</a>
+                      </li>
+                      <li>
+                        <a href="">Trial Balance</a>
+                      </li>
+                      <li>
+                        <a href="">Accounts Receivables</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_aging_summary' %}">
+                          Aging Summary
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_aging_details' %}">
+                          Aging Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="">Credit Note Details</a>
+                      </li>
+                      <li>
+                        <a href="">Debit Note Report</a>
+                      </li>
+                      <li>
+                        <a href="">Accounts Payables</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_report_account_outstanding_payables' %}">
+                          <i class="bx bx-right-arrow-alt"></i> Outstanding
+                          Payables{" "}
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_report_account_outstanding_receivable' %}">
+                          <i class="bx bx-right-arrow-alt"></i> Outstanding
+                          Receivables{" "}
+                        </a>
+                      </li>
+                      <li>
+                        <a href="">Stock Summary</a>
+                      </li>
+                      <li>
+                        <a href="">Stock Valuation</a>
+                      </li>
+                      <li>
+                        <a href="">Sales Summary Report</a>
+                      </li>
+                      <li>
+                        <a href="">Purchase Order Details</a>
+                      </li>
+                      <li>
+                        <a href="">Purchase Order By Vendor</a>
+                      </li>
+                      <li>
+                        <a href="">Recurring Bill</a>
+                      </li>
+
+                      <li>
+                        <a href="{% url 'Fin_Eway_bills' %}">Eway Bills</a>
+                      </li>
+
+                      <li>
+                        <a href="{% url 'Fin_chartOfAccounts' %}">
+                          Chart of Accounts
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_manualJournals' %}">
+                          Manual Journal
+                        </a>
+                      </li>
+
+                      <li>
+                        <a href="{% url 'employee_list' %}">Employee</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'employee_loan_list' %}">
+                          Employee Loan
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'holiday_list' %}">Holidays</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_Attendance' %}">Attendance</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_salary_details' %}">
+                          Salary Details
+                        </a>
                       </li>
                     </ul>
                   </div>
@@ -566,15 +794,12 @@ function DistributorBase() {
                           <p className="designattion mb-0">Online</p>
                         </div>
                         {loginImage && loginImage != "" ? (
+                          <img src={loginImage} className="user-img" />
+                        ) : (
                           <img
-                          src={loginImage}
-                          className="user-img"
-                        />
-                        ):(
-                        <img
-                          src={`${process.env.PUBLIC_URL}/static/assets/images/user-1.jpg`}
-                          className="user-img"
-                        />
+                            src={`${process.env.PUBLIC_URL}/static/assets/images/user-1.jpg`}
+                            className="user-img"
+                          />
                         )}
                       </div>
                     </a>
@@ -588,7 +813,7 @@ function DistributorBase() {
                       </a>
                       <Link
                         className="dropdown-item justify-content-start"
-                        to="/distributor_home"
+                        to="/company_home"
                       >
                         <i className="bx bx-tachometer"></i>
                         <span>Dashboard</span>
@@ -618,21 +843,36 @@ function DistributorBase() {
             <nav className="topbar-nav">
               <ul className="metismenu" id="menu">
                 <li>
-                  <Link to="/distributor_home" className="has-arrow">
-                    <div className="parent-icon">
-                      <i className="bx bx-home-alt"></i>
-                    </div>
+                  <Link to="/company_home">
                     <div className="menu-title">Dashboard</div>
                   </Link>
                 </li>
-                <li>
-                  <a href="#" className="has-arrow">
-                    <div className="parent-icon">
-                      <i className="fa fa-tags"></i>
-                    </div>
-                    <div className="menu-title">Trial Period</div>
-                  </a>
-                </li>
+                {is_company ? (
+                  <li>
+                    <a
+                      href="javascript:;"
+                      class="has-arrow"
+                      onClick={() => showMenu()}
+                    >
+                      <div class="parent-icon">
+                        <i class="bx bxs-user"></i>
+                      </div>
+                      <div class="menu-title">Staff</div>
+                    </a>
+                    <ul className="submenu">
+                      <li id="items">
+                        <Link to="/staff_requests">
+                          <i class="bx bx-right-arrow-alt"></i>Staff Requests
+                        </Link>
+                      </li>
+                      <li id="pricelist">
+                        <Link to="/all_staffs">
+                          <i class="bx bx-right-arrow-alt"></i>All Staff
+                        </Link>
+                      </li>
+                    </ul>
+                  </li>
+                ) : null}
                 <li></li>
                 <li></li>
                 <li></li>
@@ -670,4 +910,4 @@ function DistributorBase() {
   );
 }
 
-export default DistributorBase;
+export default FinBase;

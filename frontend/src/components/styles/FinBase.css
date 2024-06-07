@@ -1,0 +1,35 @@
+.a {
+  font-family: "Poppins", sans-serif;
+}
+
+body{
+    background-color: #2f516f
+}
+
+li {
+  list-style: none;
+  padding-top: 10px;
+}
+
+.one {
+  border-collapse: separate;
+  white-space: normal;
+  line-height: normal;
+  font-weight: normal;
+  font-size: medium;
+  font-style: normal;
+  color: -internal-quirk-inherit;
+  text-align: start;
+  border-spacing: 0px !important;
+  font-variant: normal;
+  display: ruby-text !important;
+}
+
+.submenu {
+  max-height: 500px;
+  overflow: auto;
+}
+
+.submenu::-webkit-scrollbar {
+  display: none;
+}
