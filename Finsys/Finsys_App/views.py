@@ -2643,3 +2643,131 @@ def Fin_Staff_Req_Reject(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+    
+@api_view(("GET",))
+def getProfileData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id = id)
+        if data.User_Type == 'Company':
+            usrData = Fin_Company_Details.objects.get(Login_Id = data)
+            personal = {
+                "companyLogo": usrData.Image.url if usrData.Image else False,
+                "userImage": False,
+                "firstName": data.First_name,
+                "lastName": data.Last_name,
+                "email": usrData.Email,
+                "username": data.User_name,
+                "companyContact": usrData.Contact,
+                "userContact": ""
+            }
+            company = {
+                "businessName": usrData.Business_name,
+                "companyName": usrData.Company_name,
+                "companyType": usrData.Company_Type,
+                "industry": usrData.Industry,
+                "companyCode": usrData.Company_Code,
+                "companyEmail": usrData.Email,
+                "panNumber": usrData.Pan_NO,
+                "gstType": usrData.GST_Type,
+                "gstNo": usrData.GST_NO,
+                "paymentTerm": (
+                    str(usrData.Payment_Term.payment_terms_number)
+                        + " "
+                        + usrData.Payment_Term.payment_terms_value
+                        if usrData.Payment_Term
+                        else "Trial Period"
+                    ),
+                "endDate": usrData.End_date,
+                "address": usrData.Address,
+                "city": usrData.City,
+                "state": usrData.State,
+                "pincode": usrData.Pincode
+            }
+        
+        if data.User_Type == 'Staff':
+            staffData = Fin_Staff_Details.objects.get(Login_Id = data)
+            personal = {
+                "companyLogo": False,
+                "userImage": staffData.img.url if staffData.img else False,
+                "firstName": data.First_name,
+                "lastName": data.Last_name,
+                "email": staffData.Email,
+                "username": data.User_name,
+                "companyContact": "",
+                "userContact": staffData.contact
+            }
+            company = {
+                "businessName": staffData.company_id.Business_name,
+                "companyName": staffData.company_id.Company_name,
+                "companyType": staffData.company_id.Company_Type,
+                "industry": staffData.company_id.Industry,
+                "companyCode": staffData.company_id.Company_Code,
+                "companyEmail": staffData.company_id.Email,
+                "panNumber": staffData.company_id.Pan_NO,
+                "gstType": staffData.company_id.GST_Type,
+                "gstNo": staffData.company_id.GST_NO,
+                "paymentTerm": (
+                    str(staffData.company_id.Payment_Term.payment_terms_number)
+                        + " "
+                        + staffData.company_id.Payment_Term.payment_terms_value
+                        if staffData.company_id.Payment_Term
+                        else "Trial Period"
+                    ),
+                "endDate": staffData.company_id.End_date,
+                "address": staffData.company_id.Address,
+                "city": staffData.company_id.City,
+                "state": staffData.company_id.State,
+                "pincode": staffData.company_id.Pincode
+            }
+
+        return Response({"status": True, "personalData": personal, 'companyData': company}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_editCompanyProfile(request):
+    try:
+        login_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=login_id)
+        com = Fin_Company_Details.objects.get(Login_Id=data.id)
+
+        logSerializer = LoginDetailsSerializer(data, data=request.data)
+        serializer = CompanyDetailsSerializer(com, data=request.data, partial=True)
+        if logSerializer.is_valid():
+            logSerializer.save()
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {"status": False, "data": logSerializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    except Fin_Login_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Login details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Company details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

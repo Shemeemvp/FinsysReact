@@ -59,7 +59,11 @@ function FinBase() {
   }
 
   useEffect(() => {
-    document.querySelector(".submenu").classList.add("mm-collapse");
+    try {
+      document.querySelector(".submenu").classList.add("mm-collapse");
+    } catch (error) {
+      
+    }
   }, []);
 
   useEffect(() => {
@@ -804,13 +808,13 @@ function FinBase() {
                       </div>
                     </a>
                     <div className="dropdown-menu dropdown-menu-right">
-                      <a
+                      <Link
                         className="dropdown-item justify-content-start"
-                        href="{% url 'Fin_DProfile' %}"
+                        to="/company_profile"
                       >
                         <i className="bx bx-user"></i>
                         <span>Profile</span>
-                      </a>
+                      </Link>
                       <Link
                         className="dropdown-item justify-content-start"
                         to="/company_home"

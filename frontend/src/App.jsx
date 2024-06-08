@@ -31,6 +31,9 @@ import CompanyHome from './components/company/CompanyHome';
 import CompanyPrivateRoutes from './components/routes/CompanyPrivateRoutes';
 import StaffReq from './components/company/StaffReq';
 import AllStaffs from './components/company/AllStaffs';
+import CompanyProfile from './components/company/CompanyProfile';
+import CompanyStaffPrivateRoutes from './components/routes/CompanyStaffPrivateRoutes';
+import EditCompanyProfile from './components/company/EditCompanyProfile';
 
 function App() {
   return (
@@ -71,11 +74,15 @@ function App() {
           </Route>
 
           <Route element={<CompanyPrivateRoutes />}>
-            <Route path="/company_home" element={<CompanyHome />}></Route>
             <Route path="/staff_requests" element={<StaffReq />}></Route>
             <Route path="/all_staffs" element={<AllStaffs />}></Route>
+            <Route path="/edit_company_profile" element={<EditCompanyProfile />}></Route>
           </Route>
 
+          <Route element={<CompanyStaffPrivateRoutes />}>
+            <Route path="/company_home" element={<CompanyHome />}></Route>
+            <Route path="/company_profile" element={<CompanyProfile />}></Route>
+          </Route>
         </Routes>
       </BrowserRouter>
   </>
