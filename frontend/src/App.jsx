@@ -34,6 +34,9 @@ import AllStaffs from './components/company/AllStaffs';
 import CompanyProfile from './components/company/CompanyProfile';
 import CompanyStaffPrivateRoutes from './components/routes/CompanyStaffPrivateRoutes';
 import EditCompanyProfile from './components/company/EditCompanyProfile';
+import EditStaffProfile from './components/staff/EditStaffProfile';
+import DistributorProfile from './components/distributor/DistributorProfile';
+import DistributorProfileEdit from './components/distributor/DistributorProfileEdit';
 
 function App() {
   return (
@@ -67,6 +70,8 @@ function App() {
           </Route>
           <Route element={<DistributorPrivateRoutes />}>
             <Route path="/distributor_home" element={<DistributorHome />}></Route>
+            <Route path="/distributor_profile" element={<DistributorProfile />}></Route>
+            <Route path="/edit_distributor_profile" element={<DistributorProfileEdit />}></Route>
             <Route path="/DClient_req" element={<DClientReq />}></Route>
             <Route path="/DClients" element={<DAllClients />}></Route>
             <Route path="/DClient_request_overview/:id/" element={<DClientReqOverview />}></Route>
@@ -82,6 +87,7 @@ function App() {
           <Route element={<CompanyStaffPrivateRoutes />}>
             <Route path="/company_home" element={<CompanyHome />}></Route>
             <Route path="/company_profile" element={<CompanyProfile />}></Route>
+            <Route path="/edit_staff_profile" element={<EditStaffProfile />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

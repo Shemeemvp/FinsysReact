@@ -32,3 +32,13 @@ class PaymentTermsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Payment_Terms
         fields = '__all__'
+
+class CNotificationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_CNotification
+        fields = '__all__'
+
+class DNotificationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_DNotification
+        fields = '__all__'

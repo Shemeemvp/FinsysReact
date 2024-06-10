@@ -216,3 +216,18 @@ class Stock_Reason(models.Model):
     company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True,blank=True)
     login_details = models.ForeignKey(Fin_Login_Details,on_delete=models.CASCADE,null=True,blank=True)
     reason = models.CharField(max_length=500)
+
+
+class Fin_CNotification(models.Model): 
+    Login_Id = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE,null=True,blank=True)
+    Company_id = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE,null=True,blank=True)
+    # Item = models.ForeignKey(Fin_Items, on_delete = models.CASCADE, null=True, blank=True) # Added - shemeem -> Handle Item's min stock alerts
+    # Customers = models.ForeignKey(Fin_Customers, on_delete = models.CASCADE, null=True,blank=True) # Added - shemeem -> Handle customer's credit limit alerts
+    # Vendors = models.ForeignKey(Fin_Vendors, on_delete = models.CASCADE, null=True,blank=True) # Added - shemeem -> Handle vendor's credit limit alerts
+    
+    Title = models.CharField(max_length=255,null=True,blank=True)
+    Discription = models.CharField(max_length=255,null=True,blank=True) 
+    Noti_date = models.DateTimeField(auto_now_add=True,null=True)
+    date_created = models.DateField(auto_now_add=True,null=True)
+    time=models.TimeField(auto_now_add=True,null=True)
+    status = models.CharField(max_length=100,null=True,default='New')   

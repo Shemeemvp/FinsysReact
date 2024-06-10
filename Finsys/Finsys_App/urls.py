@@ -28,6 +28,9 @@ urlpatterns = [
     path('get_clients_overview_data/<int:id>/',Fin_getClientsOverviewData, name='Fin_getClientsOverviewData'),
 
     path('user/<int:id>/',getSelfData),
+    path('check_payment_term/<int:id>/',Fin_checkPaymentTerms),
+    path('fetch_notifications/<int:id>/',Fin_fetchNotifications),
+    path('fetch_dist_notifications/<int:id>/',Fin_fetchDistNotifications),
     path('get_profile_data/<int:id>/',getProfileData),
     path('get_distributor_clients_requests/<int:id>/',Fin_DClient_req,name='Fin_DClient_req'),
     path('get_distributor_clients/<int:id>/',Fin_DClients,name='Fin_DClients'),
@@ -37,7 +40,15 @@ urlpatterns = [
     path('get_all_staffs/<int:id>/',Fin_getAllStaffs, name='Fin_getAllStaffs'),
     path('Staff_Req_Accept/<int:id>/',Fin_Staff_Req_Accept,name='Fin_Staff_Req_Accept'),
     path('Staff_Req_Reject/<int:id>/',Fin_Staff_Req_Reject,name='Fin_Staff_Req_Reject'),
-    path('edit_company_profile/',Fin_editCompanyProfile)
+    path('edit_company_profile/',Fin_editCompanyProfile),
+    path('edit_staff_profile/',Fin_editStaffProfile),
+    path('edit_gsttype/',company_gsttype_change,name='company_gsttype_change'),
+    path('Change_payment_terms/',Fin_Change_payment_terms,name='Fin_Change_payment_terms'),
+    path('get_distributor_profile_data/<int:id>/',getDistributorProfileData),
+    path('check_distributor_payment_term/<int:id>/',Fin_checkDistributorPaymentTerms),
+    path('Change_distributor_payment_terms/',Fin_Change_distributor_payment_terms,name='Fin_Change_distributor_payment_terms'),
+    path('edit_distributor_profile/',Fin_editDistributorProfile),
+
 
 
 ]

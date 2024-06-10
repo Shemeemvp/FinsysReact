@@ -2650,6 +2650,7 @@ def getProfileData(request, id):
         data = Fin_Login_Details.objects.get(id = id)
         if data.User_Type == 'Company':
             usrData = Fin_Company_Details.objects.get(Login_Id = data)
+            payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=data,status='New').exists()
             personal = {
                 "companyLogo": usrData.Image.url if usrData.Image else False,
                 "userImage": False,
@@ -2686,6 +2687,8 @@ def getProfileData(request, id):
         
         if data.User_Type == 'Staff':
             staffData = Fin_Staff_Details.objects.get(Login_Id = data)
+            payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=staffData.company_id.Login_Id,status='New').exists()
+
             personal = {
                 "companyLogo": False,
                 "userImage": staffData.img.url if staffData.img else False,
@@ -2693,7 +2696,7 @@ def getProfileData(request, id):
                 "lastName": data.Last_name,
                 "email": staffData.Email,
                 "username": data.User_name,
-                "companyContact": "",
+                "companyContact": staffData.company_id.Contact,
                 "userContact": staffData.contact
             }
             company = {
@@ -2720,7 +2723,7 @@ def getProfileData(request, id):
                 "pincode": staffData.company_id.Pincode
             }
 
-        return Response({"status": True, "personalData": personal, 'companyData': company}, status=status.HTTP_200_OK)
+        return Response({"status": True, "personalData": personal, 'companyData': company, 'payment_request':payment_request}, status=status.HTTP_200_OK)
     except Exception as e:
         print(e)
         return Response(
@@ -2766,6 +2769,352 @@ def Fin_editCompanyProfile(request):
             {"status": False, "message": "Company details not found"},
             status=status.HTTP_404_NOT_FOUND,
         )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_editStaffProfile(request):
+    try:
+        login_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=login_id)
+        stf = Fin_Staff_Details.objects.get(Login_Id=data.id)
+
+        logSerializer = LoginDetailsSerializer(data, data=request.data)
+        serializer = StaffDetailsSerializer(stf, data=request.data, partial=True)
+        if logSerializer.is_valid():
+            logSerializer.save()
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {"status": False, "data": logSerializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    except Fin_Login_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Login details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Fin_Staff_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Staff details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def company_gsttype_change(request):
+    try:
+        s_id = request.data['ID']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        com = Fin_Company_Details.objects.get(Login_Id = s_id)
+
+        # Get data from the form
+        
+        # gstno = request.POST.get('gstno')
+        gsttype = request.data['gsttype']
+
+        com.GST_Type = gsttype
+
+        com.save()
+
+        # Check if gsttype is one of the specified values
+        if gsttype in ['unregistered Business', 'Overseas', 'Consumer']:
+            com.GST_NO=''
+            com.save()
+            return Response(
+                {"status": True, "message": 'GST Type changed'}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": True, "message": 'GST Type changed, add GST Number'}, status=status.HTTP_200_OK
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_Change_payment_terms(request):
+    try:
+        s_id = request.data['ID']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        com = Fin_Company_Details.objects.get(Login_Id = s_id)
+        pt = request.data['payment_term']
+
+        pay = Fin_Payment_Terms.objects.get(id=pt)
+
+        data1 = Fin_Payment_Terms_updation(Login_Id = data,Payment_Term = pay)
+        data1.save()
+
+        if com.Registration_Type == 'self':
+            noti = Fin_ANotification(Login_Id = data,PaymentTerms_updation = data1,Title = "Change Payment Terms",Discription = com.Company_name + " wants to subscribe a new plan")
+            noti.save()
+        else:
+            noti = Fin_DNotification(Distributor_id = com.Distributor_id,Login_Id = data,PaymentTerms_updation = data1,Title = "Change Payment Terms",Discription = com.Company_name + " wants to subscribe a new plan")
+            noti.save()
+
+        return Response(
+            {"status": True, 'message':'Request Sent.!'}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def getDistributorProfileData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id = id)
+        usrData = Fin_Distributors_Details.objects.get(Login_Id = data)
+        payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=data,status='New').exists()
+        personal = {
+            "userImage": usrData.Image.url if usrData.Image else False,
+            "distributorCode": usrData.Distributor_Code,
+            "firstName": data.First_name,
+            "lastName": data.Last_name,
+            "email": usrData.Email,
+            "username": data.User_name,
+            "userContact": usrData.Contact,
+            "joinDate": usrData.Start_Date,
+            "paymentTerm": (
+                str(usrData.Payment_Term.payment_terms_number)
+                    + " "
+                    + usrData.Payment_Term.payment_terms_value
+                    if usrData.Payment_Term
+                    else ""
+                ),
+            "endDate": usrData.End_date,
+        }
+
+        return Response({"status": True, "personalData": personal, 'payment_request':payment_request}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_Change_distributor_payment_terms(request):
+    try:
+        s_id = request.data['ID']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        com = Fin_Distributors_Details.objects.get(Login_Id = s_id)
+        pt = request.data['payment_term']
+
+        pay = Fin_Payment_Terms.objects.get(id=pt)
+
+        data1 = Fin_Payment_Terms_updation(Login_Id = data,Payment_Term = pay)
+        data1.save()
+        
+        noti = Fin_ANotification(Login_Id = data,PaymentTerms_updation = data1,Title = "Change Payment Terms",Discription = com.Login_Id.First_name + ' ' + com.Login_Id.Last_name + " wants to subscribe a new plan")
+        noti.save()
+
+        return Response(
+            {"status": True, 'message':'Request Sent.!'}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_editDistributorProfile(request):
+    try:
+        login_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=login_id)
+        distr = Fin_Distributors_Details.objects.get(Login_Id=data.id)
+
+        logSerializer = LoginDetailsSerializer(data, data=request.data)
+        serializer = DistributorDetailsSerializer(distr, data=request.data, partial=True)
+        if logSerializer.is_valid():
+            logSerializer.save()
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {"status": False, "data": logSerializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    except Fin_Login_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Login details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Fin_Distributors_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Distributor details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkPaymentTerms(request, id):
+    try:
+        s_id = id
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = s_id)
+            payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=com.Login_Id,status='New').exists()
+
+            title2=['Modules Updated..!','New Plan Activated..!']
+            today_date = date.today()
+            notification=Fin_CNotification.objects.filter(status = 'New',Company_id = com,Title__in=title2,Noti_date__lt=today_date).order_by('-id','-Noti_date')
+            notification.update(status='old')
+
+            diff = (com.End_date - today_date).days
+            
+            # payment term and trial period alert notifications for notification page
+            cmp_name=com.Company_name
+            if com.Payment_Term:
+                if not Fin_CNotification.objects.filter(Company_id=com, Title="Payment Terms Alert",status = 'New').exists() and diff <= 20:
+                    
+                    n = Fin_CNotification(Login_Id=data, Company_id=com, Title="Payment Terms Alert", Discription="Your Payment Terms End Soon")
+                    n.save()
+                    if com.Registration_Type == 'self':
+                        d = Fin_ANotification(Login_Id=data, Title="Payment Terms Alert", Discription=f"Current  payment terms of {cmp_name} is expiring")
+                    else:
+                        d = Fin_DNotification(Login_Id=data, Distributor_id=com.Distributor_id, Title="Payment Terms Alert", Discription=f"Current  payment terms of {cmp_name} is expiring")
+
+                    d.save()
+            else:
+                if not Fin_CNotification.objects.filter(Company_id=com, Title="Trial Period Alert",status = 'New').exists() and diff <= 10:
+                    n = Fin_CNotification(Login_Id=data, Company_id=com, Title="Trial Period Alert", Discription="Your Trial Period End Soon")
+                    n.save()
+                    print('NOTIFICATION SAVED>>>')
+                    if com.Registration_Type == 'self':
+                        d = Fin_ANotification(Login_Id=data, Title="Payment Terms Alert", Discription=f"Current  payment terms of {cmp_name} is expiring")
+                    else:
+                        d = Fin_DNotification(Login_Id=data, Distributor_id=com.Distributor_id, Title="Payment Terms Alert", Discription=f"Current  payment terms of {cmp_name} is expiring")
+
+                    d.save()
+
+            # Calculate the date 20 days before the end date for payment term renew and 10 days before for trial period renew
+            if com.Payment_Term:
+                term = True
+                reminder_date = com.End_date - timedelta(days=20)
+            else:
+                term = False
+                reminder_date = com.End_date - timedelta(days=10)
+            current_date = date.today()
+            alert_message = current_date >= reminder_date
+            print(current_date,reminder_date)
+            print('alert message', alert_message)
+
+            # Calculate the number of days between the reminder date and end date
+            days_left = (com.End_date - current_date).days
+            return Response({'status':True, 'alert_message':alert_message, 'endDate':com.End_date, 'days_left':days_left, 'paymentTerm': term,'payment_request':payment_request, 'companyName':cmp_name},status=status.HTTP_200_OK)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+            return Response({'status':True, 'companyName':com.Company_name},status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchNotifications(request, id):
+    try:
+        s_id = id
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = s_id)
+            noti = Fin_CNotification.objects.filter(status = 'New',Company_id = com).order_by('-id','-Noti_date')
+            serializer = CNotificationsSerializer(noti, many=True)
+            return Response({'status':True, 'notifications':serializer.data},status=status.HTTP_200_OK)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+            return Response({'status':True, 'notifications':None},status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchDistNotifications(request, id):
+    try:
+        s_id = id
+        data = Fin_Login_Details.objects.get(id = s_id)
+        com = Fin_Distributors_Details.objects.get(Login_Id = s_id)
+        noti = Fin_DNotification.objects.filter(status = 'New',Distributor_id = com.id).order_by('-id','-Noti_date')
+        serializer = DNotificationsSerializer(noti, many=True)
+        return Response({'status':True, 'notifications':serializer.data},status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkDistributorPaymentTerms(request, id):
+    try:
+        s_id = id
+        data = Fin_Login_Details.objects.get(id = s_id)
+        com = Fin_Distributors_Details.objects.get(Login_Id = s_id)
+        payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=com.Login_Id,status='New').exists()
+
+        title2=['Modules Updated..!','New Plan Activated..!','Change Payment Terms']
+        today_date = date.today()
+        notification=Fin_DNotification.objects.filter(status = 'New',Distributor_id = com,Title__in=title2,Noti_date__lt=today_date)
+        notification.update(status='old')
+
+        diff = (com.End_date - today_date).days
+        
+        # payment term and trial period alert notifications for notification page
+        dis_name=com.Login_Id.First_name +"  "+ com.Login_Id.Last_name
+        if not Fin_DNotification.objects.filter(Login_Id = com.Login_Id,Distributor_id = com,Title="Payment Terms Alert", status = 'New').exists() and diff <= 20:
+            n = Fin_DNotification(Login_Id=com.Login_Id, Distributor_id = com, Title="Payment Terms Alert", Discription="Your Payment Terms End Soon")
+            n.save()
+            d = Fin_ANotification(Login_Id=data.Login_Id, Title="Payment Terms Alert", Discription=f"Current  payment terms of {dis_name} is expiring")
+            d.save()
+        noti = Fin_DNotification.objects.filter(status = 'New',Distributor_id = com.id).order_by('-id','-Noti_date')
+        n = len(noti)
+
+        # Calculate the date 20 days before the end date for payment term renew and 10 days before for trial period renew
+        reminder_date = com.End_date - timedelta(days=20)
+        current_date = date.today()
+        alert_message = current_date >= reminder_date
+
+        # Calculate the number of days between the reminder date and end date
+        days_left = (com.End_date - current_date).days
+        return Response({'status':True, 'alert_message':alert_message, 'endDate':com.End_date, 'days_left':days_left,'payment_request':payment_request},status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},

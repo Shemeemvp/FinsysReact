@@ -37,7 +37,7 @@ function DistributorReg2() {
             value: "",
             text: "Choose Payment terms",
           },
-        ])
+        ]);
         trms.map((term, index) => {
           var obj = {
             value: term.id,

@@ -11,6 +11,39 @@ function FinBase() {
   if (user === "Company") {
     is_company = true;
   }
+  const ID = Cookies.get("Login_id");
+  const [noti, setNoti] = useState(false);
+  const [notification, setNotification] = useState([]);
+
+  const fetchNotifications = () => {
+    axios
+      .get(`${config.base_url}/fetch_notifications/${ID}/`)
+      .then((res) => {
+        console.log("NOTIFICATIONS", res);
+        if (res.data.status) {
+          var ntfs = res.data.notifications;
+          setNoti(res.data.status);
+          setNotification([]);
+          ntfs.map((i) => {
+            var obj = {
+              title: i.Title,
+              desc: i.Discription,
+              date: i.date_created,
+              time: i.time,
+            };
+            setNotification((prevState) => [...prevState, obj]);
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR", err);
+      });
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
   const navigate = useNavigate();
   function handleLogout() {
     Cookies.remove("User");
@@ -61,9 +94,7 @@ function FinBase() {
   useEffect(() => {
     try {
       document.querySelector(".submenu").classList.add("mm-collapse");
-    } catch (error) {
-      
-    }
+    } catch (error) {}
   }, []);
 
   useEffect(() => {
@@ -87,7 +118,6 @@ function FinBase() {
   const [loginName, setLoginName] = useState("");
   const [loginImage, setLoginImage] = useState("");
 
-  const ID = Cookies.get("Login_id");
   const getLogDetails = () => {
     axios
       .get(`${config.base_url}/user/${ID}/`)
@@ -108,6 +138,21 @@ function FinBase() {
   useEffect(() => {
     getLogDetails();
   }, []);
+
+
+  function formatTimeInput(timeString) {
+      let [hours, minutes] = timeString.split(':').slice(0, 2);
+
+      hours = parseInt(hours, 10);
+
+      let meridiem = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12; // Handle midnight (0) and noon (12)
+
+      hours = String(hours).padStart(2, '0');
+      minutes = String(minutes).padStart(2, '0');
+
+      return `${hours}:${minutes} ${meridiem}`;
+  }
 
   return (
     <>
@@ -273,7 +318,7 @@ function FinBase() {
                   >
                     <ul
                       id="myList"
-                      class="one"
+                      className="one"
                       style={{ backgroundColor: "#213b52" }}
                     >
                       <li>
@@ -508,13 +553,13 @@ function FinBase() {
                       </li>
                       <li>
                         <a href="{% url 'Fin_report_account_outstanding_payables' %}">
-                          <i class="bx bx-right-arrow-alt"></i> Outstanding
+                          <i className="bx bx-right-arrow-alt"></i> Outstanding
                           Payables{" "}
                         </a>
                       </li>
                       <li>
                         <a href="{% url 'Fin_report_account_outstanding_receivable' %}">
-                          <i class="bx bx-right-arrow-alt"></i> Outstanding
+                          <i className="bx bx-right-arrow-alt"></i> Outstanding
                           Receivables{" "}
                         </a>
                       </li>
@@ -732,54 +777,201 @@ function FinBase() {
               </div>
               <div className="right-topbar ml-auto">
                 <ul className="navbar-nav">
-                  <li className="nav-item dropdown dropdown-lg">
-                    <a
-                      className="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative"
-                      href="javascript:;"
-                      data-toggle="dropdown"
-                    >
-                      {" "}
-                      <i
-                        className="bx bx-bell vertical-align-middle"
-                        style={{ fontSize: "25px" }}
-                      ></i>
-                      <span className="msg-count">5</span>
-                    </a>
-                    <div className="dropdown-menu dropdown-menu-right">
-                      <a className="p-0" href="javascript:;">
-                        <div className="msg-header w-100">
-                          <h6 className="msg-header-title">5 New</h6>
-                          <p className="msg-header-subtitle">
-                            Application Notifications
-                          </p>
-                        </div>
+                  {is_company ? (
+                    <li className="nav-item dropdown dropdown-lg">
+                      <a
+                        className="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative"
+                        href="javascript:;"
+                        data-toggle="dropdown"
+                      >
+                        <i
+                          className="bx bx-bell vertical-align-middle"
+                          style={{ fontSize: "25px" }}
+                        ></i>
+                        <span className="msg-count">{notification.length}</span>
                       </a>
-                      <div className="header-notifications-list">
-                        {/* {% if noti %}
-                    {% for i in noti %}
-                    <a className="dropdown-item" href="{% url 'Fin_Anotification' %}">
-                      <div className="media align-items-center">
-                        <div className="notify bg-light-primary text-primary"><i className="bx bx-file"></i>
-                        </div>
-                        <div className="media-body">
-                          <h6 className="msg-name">{{i.Title}}<span className="msg-time float-right">{{i.date_created}} {{i.time}}</span></h6>
-                          <p className="msg-info">{{i.Discription|truncatewords:4}}</p>
+                      <div className="dropdown-menu dropdown-menu-right">
+                        <a className="p-0" href="javascript:;">
+                          <div className="msg-header w-100">
+                            <h6 className="msg-header-title">
+                              {notification.length} New
+                            </h6>
+                            <p className="msg-header-subtitle">
+                              Application Notifications
+                            </p>
+                          </div>
+                        </a>
+                        <div className="header-notifications-list">
+                          {noti ? (
+                            <>
+                              {notification.map((item) => (
+                                  <a
+                                    className="dropdown-item w-100"
+                                    href="{% url 'Fin_Cnotification' %}"
+                                  >
+                                    <div className="media align-items-center w-100">
+                                      <div className="notify bg-light-primary text-primary">
+                                        <i className="bx bx-file"></i>
+                                      </div>
+                                      <div className="media-body">
+                                        <h6 className="msg-name w-100">
+                                          {item.title}
+                                          <span className="msg-time float-right">
+                                            {item.date} {formatTimeInput(item.time)}
+                                          </span>
+                                        </h6>
+                                        <p className="msg-info">
+                                          {item.desc}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </a>
+                                ))}
+                              <a
+                                className="w-100 justify-content-center"
+                                href="{% url 'Fin_Cnotification' %}"
+                              >
+                                <p className="msg-info text-center">
+                                  View All Notifications
+                                </p>
+                                {/* <div className="text-center msg-footer w-100">View All Notifications</div> */}
+                              </a>
+                            </>
+                          ) : (
+                            <p className="msg-info text-center mt-5">
+                              Notifications is not found
+                            </p>
+                          )}
                         </div>
                       </div>
-                    </a>
-                    {% endfor %} */}
-                      </div>
-                      <a href="{% url 'Fin_Anotification' %}">
-                        <div className="text-center msg-footer">
-                          View All Notifications
-                        </div>
+                    </li>
+                  ) : (
+                    <li className="nav-item dropdown dropdown-lg">
+                      <a
+                        className="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative"
+                        href="javascript:;"
+                        data-toggle="dropdown"
+                      >
+                        <i
+                          className="bx bx-bell vertical-align-middle"
+                          style={{ fontSize: "25px" }}
+                        ></i>
+                        <span className="msg-count">{notification.length}</span>
                       </a>
-                      {/* {% else %} */}
-
-                      {/* <p className="msg-info text-center mt-5">Notifications is not found</p> */}
-                      {/* {% endif %} */}
-                    </div>
-                  </li>
+                      <div className="dropdown-menu dropdown-menu-right">
+                        <a className="p-0" href="javascript:;">
+                          <div className="msg-header w-100">
+                            <h6 className="msg-header-title">
+                              {notification.length} New
+                            </h6>
+                            <p className="msg-header-subtitle">
+                              Application Notifications
+                            </p>
+                          </div>
+                        </a>
+                        <div className="header-notifications-list">
+                          <a className="dropdown-item" href="javascript:;">
+                            <div className="media align-items-center">
+                              <div className="notify bg-light-primary text-primary">
+                                <i className="bx bx-group"></i>
+                              </div>
+                              <div className="media-body">
+                                <h6 className="msg-name">
+                                  New Customers
+                                  <span className="msg-time float-right">
+                                    14 Sec ago
+                                  </span>
+                                </h6>
+                                <p className="msg-info">
+                                  5 new user registered
+                                </p>
+                              </div>
+                            </div>
+                          </a>
+                          <a className="dropdown-item" href="javascript:;">
+                            <div className="media align-items-center">
+                              <div className="notify bg-light-danger text-danger">
+                                <i className="bx bx-cart-alt"></i>
+                              </div>
+                              <div className="media-body">
+                                <h6 className="msg-name">
+                                  New Orders{" "}
+                                  <span className="msg-time float-right">
+                                    2 min ago
+                                  </span>
+                                </h6>
+                                <p className="msg-info">
+                                  You have recived new orders
+                                </p>
+                              </div>
+                            </div>
+                          </a>
+                          <a className="dropdown-item" href="javascript:;">
+                            <div className="media align-items-center">
+                              <div className="notify bg-light-shineblue text-shineblue">
+                                <i className="bx bx-file"></i>
+                              </div>
+                              <div className="media-body">
+                                <h6 className="msg-name">
+                                  24 PDF File
+                                  <span className="msg-time float-right">
+                                    19 min ago
+                                  </span>
+                                </h6>
+                                <p className="msg-info">
+                                  The pdf files generated
+                                </p>
+                              </div>
+                            </div>
+                          </a>
+                          <a className="dropdown-item" href="javascript:;">
+                            <div className="media align-items-center">
+                              <div className="notify bg-light-shineblue text-shineblue">
+                                <i className="bx bx-file"></i>
+                              </div>
+                              <div className="media-body">
+                                <h6 className="msg-name">
+                                  24 PDF File
+                                  <span className="msg-time float-right">
+                                    19 min ago
+                                  </span>
+                                </h6>
+                                <p className="msg-info">
+                                  The pdf files generated
+                                </p>
+                              </div>
+                            </div>
+                          </a>
+                          <a className="dropdown-item" href="javascript:;">
+                            <div className="media align-items-center">
+                              <div className="notify bg-light-cyne text-cyne">
+                                <i className="bx bx-send"></i>
+                              </div>
+                              <div className="media-body">
+                                <h6 className="msg-name">
+                                  Time Response{" "}
+                                  <span className="msg-time float-right">
+                                    28 min ago
+                                  </span>
+                                </h6>
+                                <p className="msg-info">
+                                  5.1 min avarage time response
+                                </p>
+                              </div>
+                            </div>
+                          </a>
+                        </div>
+                        <a
+                          className="w-100 justify-content-center"
+                          href="javascript:;"
+                        >
+                          <div className="text-center msg-footer">
+                            View All Notifications
+                          </div>
+                        </a>
+                      </div>
+                    </li>
+                  )}
                   <li className="nav-item dropdown dropdown-user-profile">
                     <a
                       className="nav-link dropdown-toggle dropdown-toggle-nocaret"
@@ -855,23 +1047,24 @@ function FinBase() {
                   <li>
                     <a
                       href="javascript:;"
-                      class="has-arrow"
+                      className="has-arrow"
                       onClick={() => showMenu()}
                     >
-                      <div class="parent-icon">
-                        <i class="bx bxs-user"></i>
+                      <div className="parent-icon">
+                        <i className="bx bxs-user"></i>
                       </div>
-                      <div class="menu-title">Staff</div>
+                      <div className="menu-title">Staff</div>
                     </a>
                     <ul className="submenu">
                       <li id="items">
                         <Link to="/staff_requests">
-                          <i class="bx bx-right-arrow-alt"></i>Staff Requests
+                          <i className="bx bx-right-arrow-alt"></i>Staff
+                          Requests
                         </Link>
                       </li>
                       <li id="pricelist">
                         <Link to="/all_staffs">
-                          <i class="bx bx-right-arrow-alt"></i>All Staff
+                          <i className="bx bx-right-arrow-alt"></i>All Staff
                         </Link>
                       </li>
                     </ul>
