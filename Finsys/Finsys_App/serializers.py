@@ -38,6 +38,11 @@ class CNotificationsSerializer(serializers.ModelSerializer):
         model = Fin_CNotification
         fields = '__all__'
 
+class ANotificationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_ANotification
+        fields = '__all__'
+
 class DNotificationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_DNotification

@@ -599,14 +599,14 @@ function CompanyProfile() {
                         </Link>
                       </div>
                       <div className="col-md-3">
-                        <a href="{% url 'Fin_Edit_Modules' %}">
+                        <Link to="/edit_modules">
                           <button
                             className="btn btn-outline-danger rounded-pill w-100 h-100 text-light"
                             type="button"
                           >
                             Edit Modules
                           </button>
-                        </a>
+                        </Link>
                       </div>
                       <div className="col-md-3"></div>
                     </div>

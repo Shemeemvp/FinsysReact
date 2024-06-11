@@ -133,7 +133,10 @@ function DistributorBase() {
         console.log('RESPONSE==',res)
         if(res.data.status){
           const details = res.data.data
-          const logImg = `${config.base_url}/${details.image}`;
+          var logImg = null;
+          if(details.image){
+            logImg = `${config.base_url}/${details.image}`;
+          }          
           setLoginImage(logImg)
           setLoginName(details.name);
         }
@@ -574,9 +577,9 @@ function DistributorBase() {
                           {noti ? (
                             <>
                               {notification.map((item) => (
-                                  <a
+                                  <Link
                                     className="dropdown-item w-100"
-                                    href="{% url 'Fin_Cnotification' %}"
+                                    to="/distributor_notifications"
                                   >
                                     <div className="media align-items-center w-100">
                                       <div className="notify bg-light-primary text-primary">
@@ -594,17 +597,17 @@ function DistributorBase() {
                                         </p>
                                       </div>
                                     </div>
-                                  </a>
+                                  </Link>
                                 ))}
-                              <a
+                              <Link
                                 className="w-100 justify-content-center"
-                                href="{% url 'Fin_Cnotification' %}"
+                                to="/distributor_notifications"
                               >
                                 <p className="msg-info text-center">
                                   View All Notifications
                                 </p>
                                 {/* <div className="text-center msg-footer w-100">View All Notifications</div> */}
-                              </a>
+                              </Link>
                             </>
                           ) : (
                             <p className="msg-info text-center mt-5">

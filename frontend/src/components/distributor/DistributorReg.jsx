@@ -105,6 +105,8 @@ function DistributorReg() {
           if(res.data.redirect != ""){
             navigate('/'+res.data.redirect)
           }
+        }else if(!res.data.status && res.data.redirect != ""){
+          navigate('/'+res.data.redirect)
         }
       })
       .catch((err) => {

@@ -213,7 +213,7 @@ function AllClientsOverview() {
               <div className="row  pb-2 pt-2 p-5">
                 <div className="col-md-6">
                   <h5 className="h5">
-                    <b style={{ marginRight: "10px" }}>{"->"} </b>Distributor
+                    <b style={{ marginRight: "10px" }}>{"->"} </b>Company
                     Code{" "}
                   </h5>
                 </div>

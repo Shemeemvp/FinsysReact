@@ -37,6 +37,12 @@ import EditCompanyProfile from './components/company/EditCompanyProfile';
 import EditStaffProfile from './components/staff/EditStaffProfile';
 import DistributorProfile from './components/distributor/DistributorProfile';
 import DistributorProfileEdit from './components/distributor/DistributorProfileEdit';
+import EditModules from './components/company/EditModules';
+import AdminNotifications from './components/admin/AdminNotifications';
+import Wrong from './components/company/Wrong';
+import NotificationOverview from './components/admin/NotificationOverview';
+import DistNotifications from './components/distributor/DistNotifications';
+import DistNotificationOverview from './components/distributor/DistNotificationOverview';
 
 function App() {
   return (
@@ -47,6 +53,7 @@ function App() {
           <Route path="/company_registration" element={<CompanyReg />}></Route>
           <Route path="/Company_Registration2" element={<CompanyReg2 />}></Route>
           <Route path="/modules_list" element={<Modules />}></Route>
+          <Route path="/wrong" element={<Wrong />}></Route>
 
           <Route path="/distributor_registration" element={<DistributorReg />}></Route>
           <Route path="/distributor_registration2" element={<DistributorReg2 />}></Route>
@@ -56,6 +63,7 @@ function App() {
           
           <Route element={<AdminPrivateRoutes />}>
             <Route path="/admin_home" element={<AdminHome />}></Route>
+            <Route path="/admin_notifications" element={<AdminNotifications />}></Route>
             <Route path="/payment_terms" element={<PaymentTerms />}></Route>
             <Route path="/distributors" element={<Distributors />}></Route>
             <Route path="/clients" element={<Clients />}></Route>
@@ -67,21 +75,25 @@ function App() {
             <Route path="/all_clients" element={<AllClients />}></Route>
             <Route path="/client_request_overview/:id/" element={<ClientReqOverview />}></Route>
             <Route path="/all_clients_overview/:id/" element={<AllClientsOverview />}></Route>
+            <Route path="/anotification_overview/:id/" element={<NotificationOverview />}></Route>
           </Route>
           <Route element={<DistributorPrivateRoutes />}>
             <Route path="/distributor_home" element={<DistributorHome />}></Route>
+            <Route path="/distributor_notifications" element={<DistNotifications />}></Route>
             <Route path="/distributor_profile" element={<DistributorProfile />}></Route>
             <Route path="/edit_distributor_profile" element={<DistributorProfileEdit />}></Route>
             <Route path="/DClient_req" element={<DClientReq />}></Route>
             <Route path="/DClients" element={<DAllClients />}></Route>
             <Route path="/DClient_request_overview/:id/" element={<DClientReqOverview />}></Route>
             <Route path="/DClient_overview/:id/" element={<DClientOverview />}></Route>
+            <Route path="/dnotification_overview/:id/" element={<DistNotificationOverview />}></Route>
           </Route>
 
           <Route element={<CompanyPrivateRoutes />}>
             <Route path="/staff_requests" element={<StaffReq />}></Route>
             <Route path="/all_staffs" element={<AllStaffs />}></Route>
             <Route path="/edit_company_profile" element={<EditCompanyProfile />}></Route>
+            <Route path="/edit_modules" element={<EditModules />}></Route>
           </Route>
 
           <Route element={<CompanyStaffPrivateRoutes />}>

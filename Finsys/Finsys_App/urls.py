@@ -26,6 +26,10 @@ urlpatterns = [
     path('Client_Req_Accept/<int:id>/',Fin_Client_Req_Accept,name='Fin_Client_Req_Accept'),
     path('Client_Req_Reject/<int:id>/',Fin_Client_Req_Reject,name='Fin_Client_Req_Reject'),
     path('get_clients_overview_data/<int:id>/',Fin_getClientsOverviewData, name='Fin_getClientsOverviewData'),
+    path('fetch_admin_notifications/',Fin_fetchAdminNotifications),
+    path('admin_notification_overview/<int:id>/',Fin_getAdminNotificationOverview),
+    path('accept_module_updation_request/', Fin_Module_Updation_Accept),
+    path('reject_module_updation_request/', Fin_Module_Updation_Reject),
 
     path('user/<int:id>/',getSelfData),
     path('check_payment_term/<int:id>/',Fin_checkPaymentTerms),
@@ -48,6 +52,13 @@ urlpatterns = [
     path('check_distributor_payment_term/<int:id>/',Fin_checkDistributorPaymentTerms),
     path('Change_distributor_payment_terms/',Fin_Change_distributor_payment_terms,name='Fin_Change_distributor_payment_terms'),
     path('edit_distributor_profile/',Fin_editDistributorProfile),
+    path('get_modules/<int:id>/',Fin_getModules),
+    path('Edit_Modules/',Fin_EditModules),
+
+    path('fetch_distributor_notifications/<int:id>/',Fin_fetchDistributorNotifications),
+    path('distributor_notification_overview/<int:id>/',Fin_getDistributorNotificationOverview),
+    path('accept_dmodule_updation_request/', Fin_DModule_Updation_Accept),
+    path('reject_dmodule_updation_request/', Fin_DModule_Updation_Reject),
 
 
 

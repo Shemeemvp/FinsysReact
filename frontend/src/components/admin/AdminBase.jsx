@@ -1,14 +1,62 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "../styles/AdminBase.css";
 import { Helmet } from "react-helmet";
 import { Link, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import axios from "axios";
+import config from "../../functions/config";
 function AdminBase() {
   const navigate = useNavigate();
   function handleLogout() {
     Cookies.remove("User");
     Cookies.remove("Login_id");
     navigate("/");
+  }
+
+  const [noti, setNoti] = useState(false);
+  const [notification, setNotification] = useState([]);
+
+  const fetchNotifications = () => {
+    axios
+      .get(`${config.base_url}/fetch_admin_notifications/`)
+      .then((res) => {
+        console.log("NOTIFICATIONS", res);
+        if (res.data.status) {
+          var ntfs = res.data.notifications;
+          setNoti(res.data.status);
+          setNotification([]);
+          ntfs.map((i) => {
+            var obj = {
+              title: i.Title,
+              desc: i.Discription,
+              date: i.date_created,
+              time: i.time,
+            };
+            setNotification((prevState) => [...prevState, obj]);
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR", err);
+      });
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  function formatTimeInput(timeString) {
+    let [hours, minutes] = timeString.split(':').slice(0, 2);
+
+    hours = parseInt(hours, 10);
+
+    let meridiem = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12; // Handle midnight (0) and noon (12)
+
+    hours = String(hours).padStart(2, '0');
+    minutes = String(minutes).padStart(2, '0');
+
+    return `${hours}:${minutes} ${meridiem}`;
   }
   function hideListElements() {
     var listItems = document.querySelectorAll("#myList li");
@@ -469,53 +517,73 @@ function AdminBase() {
               </div>
               <div className="right-topbar ml-auto">
                 <ul className="navbar-nav">
-                  <li className="nav-item dropdown dropdown-lg">
-                    <a
-                      className="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative"
-                      href="javascript:;"
-                      data-toggle="dropdown"
-                    >
-                      {" "}
-                      <i
-                        className="bx bx-bell vertical-align-middle"
-                        style={{ fontSize: "25px" }}
-                      ></i>
-                      <span className="msg-count">5</span>
-                    </a>
-                    <div className="dropdown-menu dropdown-menu-right">
-                      <a className="p-0" href="javascript:;">
-                        <div className="msg-header w-100">
-                          <h6 className="msg-header-title">5 New</h6>
-                          <p className="msg-header-subtitle">
-                            Application Notifications
-                          </p>
-                        </div>
+                <li className="nav-item dropdown dropdown-lg">
+                      <a
+                        className="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative"
+                        href="javascript:;"
+                        data-toggle="dropdown"
+                      >
+                        <i
+                          className="bx bx-bell vertical-align-middle"
+                          style={{ fontSize: "25px" }}
+                        ></i>
+                        <span className="msg-count">{notification.length}</span>
                       </a>
-                      <div className="header-notifications-list">
-                    {/* {% if noti %}
-                    {% for i in noti %}
-                    <a className="dropdown-item" href="{% url 'Fin_Anotification' %}">
-                      <div className="media align-items-center">
-                        <div className="notify bg-light-primary text-primary"><i className="bx bx-file"></i>
-                        </div>
-                        <div className="media-body">
-                          <h6 className="msg-name">{{i.Title}}<span className="msg-time float-right">{{i.date_created}} {{i.time}}</span></h6>
-                          <p className="msg-info">{{i.Discription|truncatewords:4}}</p>
+                      <div className="dropdown-menu dropdown-menu-right">
+                        <a className="p-0" href="javascript:;">
+                          <div className="msg-header w-100">
+                            <h6 className="msg-header-title">
+                              {notification.length} New
+                            </h6>
+                            <p className="msg-header-subtitle">
+                              Application Notifications
+                            </p>
+                          </div>
+                        </a>
+                        <div className="header-notifications-list">
+                          {noti ? (
+                            <>
+                              {notification.map((item) => (
+                                  <Link
+                                    className="dropdown-item w-100"
+                                    to="/admin_notifications"
+                                  >
+                                    <div className="media align-items-center w-100">
+                                      <div className="notify bg-light-primary text-primary">
+                                        <i className="bx bx-file"></i>
+                                      </div>
+                                      <div className="media-body">
+                                        <h6 className="msg-name w-100">
+                                          {item.title}
+                                          <span className="msg-time float-right">
+                                            {item.date} {formatTimeInput(item.time)}
+                                          </span>
+                                        </h6>
+                                        <p className="msg-info">
+                                          {item.desc}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </Link>
+                                ))}
+                              <Link
+                                className="w-100 justify-content-center"
+                                to="/admin_notifications"
+                              >
+                                <p className="msg-info text-center">
+                                  View All Notifications
+                                </p>
+                                {/* <div className="text-center msg-footer w-100">View All Notifications</div> */}
+                              </Link>
+                            </>
+                          ) : (
+                            <p className="msg-info text-center mt-5">
+                              Notifications is not found
+                            </p>
+                          )}
                         </div>
                       </div>
-                    </a>
-                    {% endfor %} */}
-                    
-                  </div>
-                  <a href="{% url 'Fin_Anotification' %}">
-                    <div className="text-center msg-footer">View All Notifications</div>
-                  </a>
-                  {/* {% else %} */}
-                
-                  {/* <p className="msg-info text-center mt-5">Notifications is not found</p> */}
-                  {/* {% endif %} */}
-                    </div>
-                  </li>
+                    </li>
                   <li className="nav-item dropdown dropdown-user-profile">
                     <a
                       className="nav-link dropdown-toggle dropdown-toggle-nocaret"

@@ -3033,8 +3033,6 @@ def Fin_checkPaymentTerms(request, id):
                 reminder_date = com.End_date - timedelta(days=10)
             current_date = date.today()
             alert_message = current_date >= reminder_date
-            print(current_date,reminder_date)
-            print('alert message', alert_message)
 
             # Calculate the number of days between the reminder date and end date
             days_left = (com.End_date - current_date).days
@@ -3116,6 +3114,387 @@ def Fin_checkDistributorPaymentTerms(request, id):
         days_left = (com.End_date - current_date).days
         return Response({'status':True, 'alert_message':alert_message, 'endDate':com.End_date, 'days_left':days_left,'payment_request':payment_request},status=status.HTTP_200_OK)
     except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getModules(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        com = Fin_Company_Details.objects.get(Login_Id = data)
+        modules = Fin_Modules_List.objects.get(Login_Id = data,status = 'New')
+        module_request=Fin_Modules_List.objects.filter(company_id=com, status = 'pending').exists()
+        serializer = ModulesListSerializer(modules)
+        return Response({"status": True, "module_request": module_request, "modules":serializer.data}, status=status.HTTP_200_OK)
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Company not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_EditModules(request):
+    try:
+        login_id = request.data["Login_Id"]
+        data = Fin_Login_Details.objects.get(id=login_id)
+        com = Fin_Company_Details.objects.get(Login_Id=data.id)
+
+        request.data["company_id"] = com.id
+        request.data["status"] = 'pending'
+
+        serializer = ModulesListSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            data1=Fin_Modules_List.objects.filter(company_id = com).update(update_action=1)
+            modules = Fin_Modules_List.objects.get(id=serializer.data['id'])
+            if com.Registration_Type == 'self':
+                noti = Fin_ANotification(Login_Id = data,Modules_List = modules,Title = "Module Updation",Discription = com.Company_name + " wants to update current Modules")
+                noti.save()
+            else:
+                noti = Fin_DNotification(Distributor_id = com.Distributor_id,Login_Id = data,Modules_List = modules,Title = "Module Updation",Discription = com.Company_name + " wants to update current Modules")
+                noti.save()   
+
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Fin_Login_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Login details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Company details not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchAdminNotifications(request):
+    try:
+        noti = Fin_ANotification.objects.filter(status = 'New').order_by('-id','-Noti_date')
+        serializer = ANotificationsSerializer(noti, many=True)
+        return Response({'status':True, 'notifications':serializer.data},status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchDistributorNotifications(request, id):
+    try:
+        dist = Fin_Distributors_Details.objects.get(Login_Id = id)
+        noti = Fin_DNotification.objects.filter(Distributor_id=dist,status = 'New').order_by('-id','-Noti_date')
+        serializer = DNotificationsSerializer(noti, many=True)
+        return Response({'status':True, 'notifications':serializer.data},status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getAdminNotificationOverview(request, id):
+    try:
+        data = Fin_ANotification.objects.get(id=id)
+        if data.Login_Id.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = data.Login_Id)
+            modules = Fin_Modules_List.objects.get(company_id = com, status = "New")
+            serializer = ModulesListSerializer(modules)
+            req = {
+                "id": data.id,
+                "user": 'Company',
+                "name": com.Company_name,
+                "email": com.Email,
+                'code':com.Company_Code,
+                "contact": com.Contact,
+                'username':com.Login_Id.User_name,
+                'image':com.Image.url if com.Image else "",
+                "endDate": com.End_date,
+                "termUpdation": True if data.PaymentTerms_updation else False,
+                "moduleUpdation": True if data.Modules_List else False,
+                "term": (
+                    str(com.Payment_Term.payment_terms_number)
+                    + " "
+                    + com.Payment_Term.payment_terms_value
+                    if com.Payment_Term
+                    else "Trial Period"
+                ),
+                "newTerm": (
+                    str(data.PaymentTerms_updation.Payment_Term.payment_terms_number)
+                    + " "
+                    + data.PaymentTerms_updation.Payment_Term.payment_terms_value
+                    if data.PaymentTerms_updation
+                    else ""
+                ),
+            }
+            if data.Modules_List :
+                modules_pending = Fin_Modules_List.objects.filter(Login_Id = data.Login_Id,status = "pending")
+                current_modules = Fin_Modules_List.objects.filter(Login_Id = data.Login_Id,status = "New")
+
+                # Extract the field names related to modules
+                module_fields = [field.name for field in Fin_Modules_List._meta.fields if field.name not in ['id', 'company', 'status', 'update_action','company_id', 'Login_Id' ]]
+
+                # Get the previous and new values for the selected modules
+                previous_values = current_modules.values(*module_fields).first()
+                new_values = modules_pending.values(*module_fields).first()
+
+                # Iterate through the dictionary and replace None with 0
+                for key, value in previous_values.items():
+                    if value is None:
+                        previous_values[key] = 0
+
+                # Iterate through the dictionary and replace None with 0
+                for key, value in new_values.items():
+                    if value is None:
+                        new_values[key] = 0
+
+                # Identify added and deducted modules
+                added_modules = {}
+                deducted_modules = {}
+
+                for field in module_fields:
+                    if new_values[field] > previous_values[field]:
+                        added_modules[field] = new_values[field] - previous_values[field]
+                    elif new_values[field] < previous_values[field]:
+                        deducted_modules[field] = previous_values[field] - new_values[field]
+                
+                return Response({"status": True, "data": req, "modules":serializer.data, 'added_modules': added_modules, 'deducted_modules': deducted_modules,}, status=status.HTTP_200_OK)
+            else:
+                return Response({"status": True, "data": req}, status=status.HTTP_200_OK)
+        else:
+            com = Fin_Distributors_Details.objects.get(Login_Id = data.Login_Id)
+            req = {
+                "id": data.id,
+                "user": 'Distributor',
+                "name": com.Login_Id.First_name+" "+com.Login_Id.Last_name,
+                "email": com.Email,
+                'code':com.Distributor_Code,
+                "contact": com.Contact,
+                'username':com.Login_Id.User_name,
+                'image':com.Image.url if com.Image else "",
+                "endDate": com.End_date,
+                "termUpdation": True if data.PaymentTerms_updation else False,
+                "moduleUpdation": False,
+                "term": (
+                    str(com.Payment_Term.payment_terms_number)
+                    + " "
+                    + com.Payment_Term.payment_terms_value
+                    if com.Payment_Term
+                    else "Trial Period"
+                ),
+                "newTerm": (
+                    str(data.PaymentTerms_updation.Payment_Term.payment_terms_number)
+                    + " "
+                    + data.PaymentTerms_updation.Payment_Term.payment_terms_value
+                    if data.PaymentTerms_updation
+                    else ""
+                ),
+            }
+            return Response({"status": True, "data": req}, status=status.HTTP_200_OK)
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Company not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Fin_Distributors_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Distributor not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def  Fin_Module_Updation_Accept(request):
+    try:
+        id = request.data['id']
+        data = Fin_ANotification.objects.get(id=id)
+        allmodules = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "New")
+        allmodules.delete()
+
+        allmodules1 = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "pending")
+        allmodules1.status = "New"
+        allmodules1.save()
+
+        data.status = 'old'
+        data.save()
+
+        # notification
+        Fin_CNotification.objects.create(Login_Id=allmodules1.Login_Id, Company_id=allmodules1.company_id,Title='Modules Updated..!',Discription='Your module update request is approved')
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def  Fin_Module_Updation_Reject(request):
+    try:
+        id = request.data['id']
+        data = Fin_ANotification.objects.get(id=id)
+        allmodules = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "pending")
+        allmodules.delete()
+
+        data.delete()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getDistributorNotificationOverview(request, id):
+    try:
+        data = Fin_DNotification.objects.get(id=id)
+        com = Fin_Company_Details.objects.get(Login_Id = data.Login_Id)
+        modules = Fin_Modules_List.objects.get(company_id = com, status = "New")
+        serializer = ModulesListSerializer(modules)
+        req = {
+            "id": data.id,
+            "user": 'Company',
+            "name": com.Company_name,
+            "email": com.Email,
+            'code':com.Company_Code,
+            "contact": com.Contact,
+            'username':com.Login_Id.User_name,
+            'image':com.Image.url if com.Image else None,
+            "endDate": com.End_date,
+            "termUpdation": True if data.PaymentTerms_updation else False,
+            "moduleUpdation": True if data.Modules_List else False,
+            "term": (
+                str(com.Payment_Term.payment_terms_number)
+                + " "
+                + com.Payment_Term.payment_terms_value
+                if com.Payment_Term
+                else "Trial Period"
+            ),
+            "newTerm": (
+                str(data.PaymentTerms_updation.Payment_Term.payment_terms_number)
+                + " "
+                + data.PaymentTerms_updation.Payment_Term.payment_terms_value
+                if data.PaymentTerms_updation
+                else ""
+            ),
+        }
+        if data.Modules_List :
+            modules_pending = Fin_Modules_List.objects.filter(Login_Id = data.Login_Id,status = "pending")
+            current_modules = Fin_Modules_List.objects.filter(Login_Id = data.Login_Id,status = "New")
+
+            # Extract the field names related to modules
+            module_fields = [field.name for field in Fin_Modules_List._meta.fields if field.name not in ['id', 'company', 'status', 'update_action','company_id', 'Login_Id' ]]
+
+            # Get the previous and new values for the selected modules
+            previous_values = current_modules.values(*module_fields).first()
+            new_values = modules_pending.values(*module_fields).first()
+
+            # Iterate through the dictionary and replace None with 0
+            for key, value in previous_values.items():
+                if value is None:
+                    previous_values[key] = 0
+
+            # Iterate through the dictionary and replace None with 0
+            for key, value in new_values.items():
+                if value is None:
+                    new_values[key] = 0
+
+            # Identify added and deducted modules
+            added_modules = {}
+            deducted_modules = {}
+
+            for field in module_fields:
+                if new_values[field] > previous_values[field]:
+                    added_modules[field] = new_values[field] - previous_values[field]
+                elif new_values[field] < previous_values[field]:
+                    deducted_modules[field] = previous_values[field] - new_values[field]
+            
+            return Response({"status": True, "data": req, "modules":serializer.data, 'added_modules': added_modules, 'deducted_modules': deducted_modules,}, status=status.HTTP_200_OK)
+        else:
+            return Response({"status": True, "data": req}, status=status.HTTP_200_OK)
+    except Fin_Company_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Company not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Fin_Distributors_Details.DoesNotExist:
+        return Response(
+            {"status": False, "message": "Distributor not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def  Fin_DModule_Updation_Accept(request):
+    try:
+        id = request.data['id']
+        data = Fin_DNotification.objects.get(id=id)
+        allmodules = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "New")
+        allmodules.delete()
+
+        allmodules1 = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "pending")
+        allmodules1.status = "New"
+        allmodules1.save()
+
+        data.status = 'old'
+        data.save()
+
+        # notification
+        Fin_CNotification.objects.create(Login_Id=allmodules1.Login_Id, Company_id=allmodules1.company_id,Title='Modules Updated..!',Discription='Your module update request is approved')
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def  Fin_DModule_Updation_Reject(request):
+    try:
+        id = request.data['id']
+        data = Fin_DNotification.objects.get(id=id)
+        allmodules = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "pending")
+        allmodules.delete()
+
+        data.delete()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

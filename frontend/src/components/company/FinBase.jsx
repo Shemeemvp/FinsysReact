@@ -68,27 +68,16 @@ function FinBase() {
   };
 
   function toggleSidebar() {
-    var wrapper = document.getElementById("headerWrapper");
-    var sidebarWrapper = document.querySelector(".sidebar-wrapper");
+    // var wrapper = document.getElementById("headerWrapper");
+    var wrapper = document.querySelector(".wrapper");
 
     if (wrapper.classList.contains("toggled")) {
-      // unpin sidebar when hovered
-      wrapper.classList.remove("toggled");
-      // sidebarWrapper.removeEventListener("mouseenter", hoverIn);
-      // sidebarWrapper.removeEventListener("mouseleave", hoverOut);
-    } else {
       wrapper.classList.add("toggled");
-      // sidebarWrapper.addEventListener("mouseenter", hoverIn);
-      // sidebarWrapper.addEventListener("mouseleave", hoverOut);
+      wrapper.classList.remove("toggled");
+    } else {
+      wrapper.classList.remove("toggled");
+      wrapper.classList.add("toggled");
     }
-
-    // function hoverIn() {
-    //   wrapper.classList.add("sidebar-hovered");
-    // }
-
-    // function hoverOut() {
-    //   wrapper.classList.remove("sidebar-hovered");
-    // }
   }
 
   useEffect(() => {
@@ -122,10 +111,13 @@ function FinBase() {
     axios
       .get(`${config.base_url}/user/${ID}/`)
       .then((res) => {
-        console.log("RESPONSE==", res);
+        console.log("BASE RESPONSE==", res);
         if (res.data.status) {
           const details = res.data.data;
-          const logImg = `${config.base_url}/${details.image}`;
+          var logImg = null;
+          if(details.image){
+            logImg = `${config.base_url}/${details.image}`;
+          }
           setLoginImage(logImg);
           setLoginName(details.name);
         }
@@ -252,9 +244,9 @@ function FinBase() {
         ></script>
       </Helmet>
       {/* <!-- wrapper --> */}
-      <div className="wrapper">
+      {/* <div className="wrapper"> */}
         {/* <!--header--> */}
-        <div className="wrapper" id="headerWrapper">
+        <div className="wrapper headerWrapper" id="headerWrapper">
           {/* <!--header--> */}
           <header className="top-header" style={{ backgroundColor: "#213b52" }}>
             <nav className="navbar navbar-expand">
@@ -989,7 +981,7 @@ function FinBase() {
                           </p>
                           <p className="designattion mb-0">Online</p>
                         </div>
-                        {loginImage && loginImage != "" ? (
+                        {loginImage ? (
                           <img src={loginImage} className="user-img" />
                         ) : (
                           <img
@@ -1102,7 +1094,7 @@ function FinBase() {
             </div>
           </div>
         </div>
-      </div>
+      {/* </div> */}
     </>
   );
 }
