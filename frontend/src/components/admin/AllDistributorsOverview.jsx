@@ -32,7 +32,10 @@ function AllDistributorsOverview() {
           if (res.data.status) {
             const distReq = res.data.data;
             const img = distReq.image;
-            const imageUrl = `${config.base_url}/${img}`;
+            var imageUrl = null
+            if(distReq.image){
+              imageUrl = `${config.base_url}/${distReq.image}`;
+            }
             const r = {
               name: distReq.name,
               image: imageUrl,
@@ -118,7 +121,7 @@ function AllDistributorsOverview() {
                 <hr />
               </div>
               <center>
-                {distributorData.image !== "" ? (
+                {distributorData.image ? (
                   <img
                     className="img-thumbnail"
                     width="20%"

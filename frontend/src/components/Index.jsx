@@ -3,6 +3,24 @@ import '../styles/Index.css';
 import { Link } from "react-router-dom";
 
 function Index() {
+
+  function handleToggle() {
+    const toggleButton = document.getElementById("navbarToggleBtn");
+    const navbar = document.getElementById("navbar");
+    if (navbar.classList.contains("navbar-mobile")) {
+      navbar.classList.remove("navbar-mobile");
+    } else {
+      navbar.classList.add("navbar-mobile");
+    }
+
+    if (toggleButton.classList.contains("bi-list")) {
+      toggleButton.classList.remove("bi-list");
+      toggleButton.classList.add("bi-x");
+    } else {
+      toggleButton.classList.remove("bi-x");
+      toggleButton.classList.add("bi-list");
+    }
+  }
   return (
     <>
       <header id="header">
@@ -66,7 +84,7 @@ function Index() {
                 </a>
               </li>
             </ul>
-            <i class="bi bi-list mobile-nav-toggle"></i>
+            <i class="bi bi-list mobile-nav-toggle" onClick={handleToggle} id="navbarToggleBtn"></i>
           </nav>
         </div>
       </header>

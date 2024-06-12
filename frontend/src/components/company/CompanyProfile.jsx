@@ -878,6 +878,12 @@ function CompanyProfile() {
                         padding: "8px",
                       }}
                     >
+                      <option
+                        value=""
+                        style={{ backgroundColor: "white" }}
+                      >
+                        Choose
+                      </option>
                       {terms.map((term) => (
                         <option
                           value={term.value}
@@ -926,6 +932,12 @@ function CompanyProfile() {
                         padding: "8px",
                       }}
                     >
+                      <option
+                        value=""
+                        style={{ backgroundColor: "white" }}
+                      >
+                        Choose
+                      </option>
                       {terms.map((term) => (
                         <option
                           value={term.value}

@@ -19,6 +19,8 @@ from datetime import timedelta
 
 # Create your views here.
 
+def home(request):
+    return HttpResponse('Okay')
 
 @api_view(("POST",))
 def Fin_companyReg_action(request):
@@ -2259,7 +2261,7 @@ def Fin_getDistributorsOverviewData(request, id):
             'code':data.Distributor_Code,
             "contact": data.Contact,
             'username':data.Login_Id.User_name,
-            'image':data.Image.url if data.Image else "",
+            'image':data.Image.url if data.Image else None,
             "endDate": data.End_date,
             "term": (
                 str(data.Payment_Term.payment_terms_number)

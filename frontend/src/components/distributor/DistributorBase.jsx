@@ -163,16 +163,6 @@ function DistributorBase() {
           href="https://fonts.googleapis.com/css2?family=Muli:wght@300;400;700&display=swap"
           rel="stylesheet"
         ></link>
-        {/* <!-- Vector CSS --> */}
-        {/* <link
-          href={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-2.0.2.css`}
-          rel="stylesheet"
-        /> */}
-        {/* <!--plugins--> */}
-        {/* <link
-          href={`${process.env.PUBLIC_URL}/static/assets/plugins/simplebar/css/simplebar.css`}
-          rel="stylesheet"
-        /> */}
 
         <link
           href={`${process.env.PUBLIC_URL}/static/assets/plugins/metismenu/css/metisMenu.min.css`}
@@ -200,9 +190,9 @@ function DistributorBase() {
         />
 
         {/* jQuery first, then Popper.js, then Bootstrap JS */}
-        <script
+        {/* <script
           src={`${process.env.PUBLIC_URL}/static/assets/js/jquery.min.js`}
-        ></script>
+        ></script> */}
         <script
           src={`${process.env.PUBLIC_URL}/static/assets/js/popper.min.js`}
         ></script>
@@ -212,33 +202,8 @@ function DistributorBase() {
 
         {/* <!--plugins--> */}
         <script
-          src={`${process.env.PUBLIC_URL}/static/assets/plugins/simplebar/js/simplebar.min.js`}
-        ></script>
-        <script
           src={`${process.env.PUBLIC_URL}/static/assets/plugins/metismenu/js/metisMenu.min.js`}
         ></script>
-        {/* <!-- Vector map JavaScript --> */}
-        {/* <script
-          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-2.0.2.min.js`}
-        ></script>
-        <script
-          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-world-mill-en.js`}
-        ></script>
-        <script
-          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-in-mill.js`}
-        ></script>
-        <script
-          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-us-aea-en.js`}
-        ></script>
-        <script
-          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-uk-mill-en.js`}
-        ></script>
-        <script
-          src={`${process.env.PUBLIC_URL}/static/assets/plugins/vectormap/jquery-jvectormap-au-mill.js`}
-        ></script>
-        <script
-          src={`${process.env.PUBLIC_URL}/static/assets/plugins/apexcharts-bundle/js/apexcharts.min.js`}
-        ></script> */}
         <script
           src={`${process.env.PUBLIC_URL}/static/assets/js/index.js`}
         ></script>
@@ -269,7 +234,6 @@ function DistributorBase() {
                 </div>
                 <a
                   href="javascript:;"
-                  onClick={toggleSidebar}
                   className="toggle-btn ml-lg-auto p-0"
                 >
                   <i

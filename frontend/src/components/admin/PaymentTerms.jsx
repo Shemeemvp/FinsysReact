@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 
 function PaymentTerms() {
   const [number, setNumber] = useState("");
-  const [termValue, setTermValue] = useState("");
+  const [termValue, setTermValue] = useState("Months");
   const [terms, setTerms] = useState([]);
   const user = Cookies.get("User");
 

@@ -69,7 +69,10 @@ function ClientReqOverview() {
             const distReq = res.data.data;
             const modules = res.data.modules;
             const img = distReq.image;
-            const imageUrl = `${config.base_url}/${img}`;
+            var imageUrl = null
+            if(distReq.image){
+              imageUrl = `${config.base_url}/${distReq.image}`;
+            }
             const r = {
               name: distReq.name,
               image: imageUrl,
@@ -217,7 +220,7 @@ function ClientReqOverview() {
                 <hr />
               </div>
               <center>
-                {clientsData.image !== "" ? (
+                {clientsData.image ? (
                   <img
                     className="img-thumbnail"
                     width="20%"

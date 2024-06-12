@@ -108,6 +108,10 @@ function StaffReg() {
             navigate('/'+res.data.redirect)
           }
         }else if(!res.data.status && res.data.redirect != ""){
+          Swal.fire({
+            icon: "error",
+            title: `${res.data.message}`,
+          });
           navigate('/'+res.data.redirect)
         }
       })

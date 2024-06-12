@@ -2,6 +2,7 @@ from django.urls import path
 from Finsys_App.views import *
 
 urlpatterns = [
+    path('',home),
     path("companyReg_action/", Fin_companyReg_action, name="Fin_companyReg_action"),
     path('CompanyReg2_action2/',Fin_CompanyReg2_action2,name='Fin_CompanyReg2_action2'),
     path('Add_Modules/',Fin_Add_Modules,name='Fin_Add_Modules'),

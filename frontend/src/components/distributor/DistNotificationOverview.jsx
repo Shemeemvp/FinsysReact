@@ -79,8 +79,6 @@ function DistNotificationOverview() {
             if(notiData.image){
                 imageUrl = `${config.base_url}/${notiData.image}`;
             }
-            const am = res.data.added_modules;
-            const dm = res.data.deducted_modules;
             const r = {
               user: notiData.user,
               name: notiData.name,
@@ -96,45 +94,49 @@ function DistNotificationOverview() {
               code: notiData.code,
               id: notiData.id,
             };
-            const m = {
-              Items: modules.Items,
-              Price_List: modules.Price_List,
-              Stock_Adjustment: modules.Stock_Adjustment,
-              Cash_in_hand: modules.Cash_in_hand,
-              Offline_Banking: modules.Offline_Banking,
-              UPI: modules.UPI,
-              Bank_Holders: modules.Bank_Holders,
-              Cheque: modules.Cheque,
-              Loan_Account: modules.Loan_Account,
-              Customers: modules.Customers,
-              Invoice: modules.Invoice,
-              Estimate: modules.Estimate,
-              Sales_Order: modules.Sales_Order,
-              Recurring_Invoice: modules.Recurring_Invoice,
-              Retainer_Invoice: modules.Retainer_Invoice,
-              Credit_Note: modules.Credit_Note,
-              Payment_Received: modules.Payment_Received,
-              Delivery_Challan: modules.Delivery_Challan,
-              Vendors: modules.Vendors,
-              Bills: modules.Bills,
-              Recurring_Bills: modules.Recurring_Bills,
-              Debit_Note: modules.Debit_Note,
-              Purchase_Order: modules.Purchase_Order,
-              Expenses: modules.Expenses,
-              Payment_Made: modules.Payment_Made,
-              EWay_Bill: modules.EWay_Bill,
-              Chart_of_Accounts: modules.Chart_of_Accounts,
-              Manual_Journal: modules.Manual_Journal,
-              Employees: modules.Employees,
-              Employees_Loan: modules.Employees_Loan,
-              Holiday: modules.Holiday,
-              Attendance: modules.Attendance,
-              Salary_Details: modules.Salary_Details,
-            };
-            setModules(m);
+            if(notiData.moduleUpdation){
+              const am = res.data.added_modules;
+              const dm = res.data.deducted_modules;
+              const m = {
+                Items: modules.Items,
+                Price_List: modules.Price_List,
+                Stock_Adjustment: modules.Stock_Adjustment,
+                Cash_in_hand: modules.Cash_in_hand,
+                Offline_Banking: modules.Offline_Banking,
+                UPI: modules.UPI,
+                Bank_Holders: modules.Bank_Holders,
+                Cheque: modules.Cheque,
+                Loan_Account: modules.Loan_Account,
+                Customers: modules.Customers,
+                Invoice: modules.Invoice,
+                Estimate: modules.Estimate,
+                Sales_Order: modules.Sales_Order,
+                Recurring_Invoice: modules.Recurring_Invoice,
+                Retainer_Invoice: modules.Retainer_Invoice,
+                Credit_Note: modules.Credit_Note,
+                Payment_Received: modules.Payment_Received,
+                Delivery_Challan: modules.Delivery_Challan,
+                Vendors: modules.Vendors,
+                Bills: modules.Bills,
+                Recurring_Bills: modules.Recurring_Bills,
+                Debit_Note: modules.Debit_Note,
+                Purchase_Order: modules.Purchase_Order,
+                Expenses: modules.Expenses,
+                Payment_Made: modules.Payment_Made,
+                EWay_Bill: modules.EWay_Bill,
+                Chart_of_Accounts: modules.Chart_of_Accounts,
+                Manual_Journal: modules.Manual_Journal,
+                Employees: modules.Employees,
+                Employees_Loan: modules.Employees_Loan,
+                Holiday: modules.Holiday,
+                Attendance: modules.Attendance,
+                Salary_Details: modules.Salary_Details,
+              };
+              setModules(m);
+              setAddedModules(am);
+              setDeductedModules(dm);
+            }
             setNotificationData(r);
-            setAddedModules(am);
-            setDeductedModules(dm);
           }
         })
         .catch((err) => {
