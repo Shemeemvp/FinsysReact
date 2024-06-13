@@ -61,6 +61,9 @@ urlpatterns = [
     path('accept_dmodule_updation_request/', Fin_DModule_Updation_Accept),
     path('reject_dmodule_updation_request/', Fin_DModule_Updation_Reject),
 
+    # ITEMS
+    path('get_company_item_units/<int:id>/',Fin_getCompanyItemUnits),
+
 
 
 ]

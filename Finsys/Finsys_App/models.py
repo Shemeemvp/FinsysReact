@@ -217,11 +217,57 @@ class Stock_Reason(models.Model):
     login_details = models.ForeignKey(Fin_Login_Details,on_delete=models.CASCADE,null=True,blank=True)
     reason = models.CharField(max_length=500)
 
+# ITEMS
+class Fin_Items(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    name = models.CharField(max_length=100,null=True)
+    item_type = models.CharField(max_length=100,null=True)
+    unit = models.CharField(max_length=100,null=True)
+    hsn = models.BigIntegerField(null=True, blank = True)
+    sac = models.BigIntegerField(null=True, blank = True)
+    tax_reference = models.CharField(max_length=100,null=True)
+    intra_state_tax = models.IntegerField(null=True, default=0)
+    inter_state_tax = models.IntegerField(null=True, default=0)
+    sales_account = models.CharField(max_length=100,null=True)
+    selling_price = models.FloatField(null=True, default=0.0)
+    sales_description = models.CharField(max_length=100,null=True)
+    purchase_account = models.CharField(max_length=100,null=True)
+    purchase_price = models.FloatField(null=True, default=0.0)
+    purchase_description = models.CharField(max_length=100,null=True)
+    item_created = models.DateField(auto_now_add = True, auto_now = False, null=True)
+    min_stock=models.IntegerField(null=True,default=0)
+    inventory_account = models.CharField(max_length=100, null=True, blank=True)
+    opening_stock = models.IntegerField(null=True, blank=True,default = 0)
+    current_stock = models.IntegerField(default=0,blank=True,null=True)
+    stock_in = models.IntegerField(default=0,blank=True,null=True)
+    stock_out = models.IntegerField(default=0,blank=True,null=True)
+    stock_unit_rate= models.FloatField(default=0.0,blank=True,null=True)
+    status = models.CharField(max_length=100,null=True, default='Active')
+
+
+class Fin_Items_Transaction_History(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    item = models.ForeignKey(Fin_Items, on_delete=models.CASCADE, null=True)
+    date = models.DateField(auto_now_add=True, auto_now=False, null=True)
+    action_choices = [
+        ('Created', 'Created'),
+        ('Edited', 'Edited'),
+    ]
+    action = models.CharField(max_length=20, null=True, blank = True, choices=action_choices)
+
+
+class Fin_Items_Comments(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    item = models.ForeignKey(Fin_Items,on_delete=models.CASCADE,null=True,blank=True)
+    comments = models.CharField(max_length=500,null=True,blank=True)
+
 
 class Fin_CNotification(models.Model): 
     Login_Id = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE,null=True,blank=True)
     Company_id = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE,null=True,blank=True)
-    # Item = models.ForeignKey(Fin_Items, on_delete = models.CASCADE, null=True, blank=True) # Added - shemeem -> Handle Item's min stock alerts
+    Item = models.ForeignKey(Fin_Items, on_delete = models.CASCADE, null=True, blank=True) # Added - shemeem -> Handle Item's min stock alerts
     # Customers = models.ForeignKey(Fin_Customers, on_delete = models.CASCADE, null=True,blank=True) # Added - shemeem -> Handle customer's credit limit alerts
     # Vendors = models.ForeignKey(Fin_Vendors, on_delete = models.CASCADE, null=True,blank=True) # Added - shemeem -> Handle vendor's credit limit alerts
     

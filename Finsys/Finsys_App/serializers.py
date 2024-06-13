@@ -47,3 +47,8 @@ class DNotificationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_DNotification
         fields = '__all__'
+
+class ItemUnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Units
+        fields = '__all__'

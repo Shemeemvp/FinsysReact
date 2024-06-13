@@ -43,6 +43,8 @@ import Wrong from './components/company/Wrong';
 import NotificationOverview from './components/admin/NotificationOverview';
 import DistNotifications from './components/distributor/DistNotifications';
 import DistNotificationOverview from './components/distributor/DistNotificationOverview';
+import Items from './components/company/items/Items';
+import AddItem from './components/company/items/AddItem';
 
 function App() {
   return (
@@ -100,6 +102,8 @@ function App() {
             <Route path="/company_home" element={<CompanyHome />}></Route>
             <Route path="/company_profile" element={<CompanyProfile />}></Route>
             <Route path="/edit_staff_profile" element={<EditStaffProfile />}></Route>
+            <Route path="/items" element={<Items />}></Route>
+            <Route path="/add_item" element={<AddItem />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

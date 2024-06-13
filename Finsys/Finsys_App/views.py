@@ -3501,3 +3501,21 @@ def  Fin_DModule_Updation_Reject(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
+# ITEMS
+@api_view(("GET",))
+def  Fin_getCompanyItemUnits(request, id):
+    try:
+        cmp = Fin_Company_Details.objects.get(Login_Id = id)
+        units = Fin_Units.objects.filter(Company = cmp)
+        serializer = ItemUnitSerializer(units, many=True)
+        print('units',units)
+        print(serializer.data)
+        return Response({"status": True, 'units':serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
