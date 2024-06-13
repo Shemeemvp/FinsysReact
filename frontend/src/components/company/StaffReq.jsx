@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
 function StaffReq() {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const user = Cookies.get("User");
   const ID = Cookies.get('Login_id');
@@ -58,9 +59,10 @@ function StaffReq() {
               icon: "success",
               title: "Request Accepted",
             });
+            // navigate('/staff_requests')
             setTimeout(() => {
-                fetchStaffRequests();
-            }, 3000);
+              fetchStaffRequests();
+            }, 2000);
           }
         })
         .catch((err) => {
@@ -87,8 +89,8 @@ function StaffReq() {
               title: "Request Rejected",
             });
             setTimeout(() => {
-                fetchStaffRequests();
-            }, 3000);
+              fetchStaffRequests();
+            }, 2000);
           }
         })
         .catch((err) => {
@@ -131,7 +133,7 @@ function StaffReq() {
             </div>
           </div>
           <div className="card radius-15">
-            <a href="">
+            {/* <a href=""> */}
               <div className="card-body">
                 <div className="card-title"></div>
                 <table className="table table-responsive-md mt-4 table-hover">
@@ -193,7 +195,7 @@ function StaffReq() {
                         <tr>
                           <td style={{ textAlign: "center" }}>{index + 1}</td>
                           <td style={{ textAlign: "center" }}>
-                            <Link to={`/client_request_overview/${req.id}/`}>
+                            <Link to="#">
                               {req.name}
                             </Link>
                           </td>
@@ -221,7 +223,7 @@ function StaffReq() {
                   </tbody>
                 </table>
               </div>
-            </a>
+            {/* </a> */}
           </div>
         </div>
       </div>

@@ -59,8 +59,8 @@ function ClientsReq() {
               title: "Request Accepted",
             });
             setTimeout(() => {
-                fetchClientsRequests();
-            }, 3000);
+              fetchClientsRequests();
+            }, 2000);
           }
         })
         .catch((err) => {
@@ -87,8 +87,8 @@ function ClientsReq() {
               title: "Request Rejected",
             });
             setTimeout(() => {
-                fetchClientsRequests();
-            }, 3000);
+              fetchClientsRequests();
+            }, 2000);
           }
         })
         .catch((err) => {
@@ -123,7 +123,7 @@ function ClientsReq() {
       >
         <div className="container-fluid">
           <div className="card radius-15">
-            <a href="">
+            {/* <a href=""> */}
               <div className="card-body">
                 <div className="card-title"></div>
                 <table className="table table-responsive-md mt-4 table-hover">
@@ -222,7 +222,7 @@ function ClientsReq() {
                   </tbody>
                 </table>
               </div>
-            </a>
+            {/* </a> */}
           </div>
         </div>
       </div>

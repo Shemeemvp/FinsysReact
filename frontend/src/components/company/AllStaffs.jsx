@@ -104,7 +104,7 @@ function AllStaffs() {
             </div>
           </div>
           <div className="card radius-15">
-            <a href="">
+            {/* <a href=""> */}
               <div className="card-body">
                 <div className="card-title"></div>
                 <table className="table table-responsive-md mt-4 table-hover">
@@ -187,7 +187,7 @@ function AllStaffs() {
                   </tbody>
                 </table>
               </div>
-            </a>
+            {/* </a> */}
           </div>
         </div>
       </div>

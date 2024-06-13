@@ -75,7 +75,10 @@ function NotificationOverview() {
           if (res.data.status) {
             const notiData = res.data.data;
             const img = notiData.image;
-            const imageUrl = `${config.base_url}/${img}`;
+            var imageUrl = null;
+            if(notiData.image){
+              imageUrl = `${config.base_url}/${img}`;
+            }
             
             const r = {
               user: notiData.user,
@@ -238,7 +241,7 @@ function NotificationOverview() {
                 <hr />
               </div>
               <center>
-                {notificationData.image !== "" ? (
+                {notificationData.image? (
                   <img
                     className="img-thumbnail"
                     width="20%"

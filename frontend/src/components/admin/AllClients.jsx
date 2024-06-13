@@ -95,7 +95,7 @@ function AllClients() {
       >
         <div className="container-fluid">
           <div className="card radius-15">
-            <a href="">
+            {/* <a href=""> */}
               <div className="card-body">
                 <div className="card-title"></div>
                 <table className="table table-responsive-md mt-4 table-hover">
@@ -186,7 +186,7 @@ function AllClients() {
                   </tbody>
                 </table>
               </div>
-            </a>
+            {/* </a> */}
           </div>
         </div>
       </div>

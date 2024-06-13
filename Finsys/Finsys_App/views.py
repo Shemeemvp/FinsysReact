@@ -2168,7 +2168,7 @@ def Fin_getDistributorsRequests(request):
                 "endDate": i.End_date,
             }
             requests.append(req)
-
+        print('DIST DATA==',requests)
         return Response({"status": True, "data": requests})
     except Exception as e:
         print(e)
