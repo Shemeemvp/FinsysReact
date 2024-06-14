@@ -63,6 +63,15 @@ urlpatterns = [
 
     # ITEMS
     path('get_company_item_units/<int:id>/',Fin_getCompanyItemUnits),
+    path('get_company_accounts/<int:id>/',Fin_getCompanyAccounts),
+    path('create_new_item/',Fin_createNewItem),
+    path('change_item_status/',Fin_changeItemStatus),
+    path('fetch_items/<int:id>/',Fin_fetchItems),
+    path('fetch_item_details/<int:id>/',Fin_fetchItemDetails),
+    path('fetch_item_history/<int:id>/',Fin_fetchItemHistory),
+    path('delete_item/<int:id>/',Fin_deleteItem),
+    path('delete_item_comment/<int:id>/',Fin_deleteItemComment),
+    path('add_item_comment/',Fin_addItemComment),
 
 
 

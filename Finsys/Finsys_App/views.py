@@ -16,6 +16,7 @@ import random
 import string
 from datetime import date
 from datetime import timedelta
+from django.db.models import Q
 
 # Create your views here.
 
@@ -3510,11 +3511,203 @@ def  Fin_getCompanyItemUnits(request, id):
         cmp = Fin_Company_Details.objects.get(Login_Id = id)
         units = Fin_Units.objects.filter(Company = cmp)
         serializer = ItemUnitSerializer(units, many=True)
-        print('units',units)
-        print(serializer.data)
         return Response({"status": True, 'units':serializer.data}, status=status.HTTP_200_OK)
     except Exception as e:
         print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def  Fin_getCompanyAccounts(request, id):
+    try:
+        cmp = Fin_Company_Details.objects.get(Login_Id = id)
+        acc = Fin_Chart_Of_Account.objects.filter(Q(account_type='Expense') | Q(account_type='Other Expense') | Q(account_type='Cost Of Goods Sold'), Company=cmp).order_by('account_name')
+        serializer = AccountsSerializer(acc, many=True)
+        return Response({"status": True, 'accounts':serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("POST",))
+def Fin_createNewItem(request):
+    try:
+        s_id = request.data['Id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+
+        createdDate = date.today()
+        if request.data['item_type'] == 'Goods':
+            request.data['sac'] = None
+        else:
+            request.data['hsn'] = None
+        request.data['intra_state_tax'] = 0 if request.data['tax_reference'] == 'non taxable' else request.data['intra_state_tax']
+        request.data['inter_state_tax'] = 0 if request.data['tax_reference'] == 'non taxable' else request.data['inter_state_tax']
+        request.data['sales_account'] = None if request.data['sales_account'] == '' else request.data['sales_account']
+        request.data['purchase_account'] = None if request.data['purchase_account'] == '' else request.data['purchase_account']
+        request.data['created_date'] = createdDate
+
+        #save item and transaction if item or hsn doesn't exists already
+        if Fin_Items.objects.filter(Company=com, name__iexact=request.data['name']).exists():
+            return Response({'status':False, 'message':'Item Name already exists'})
+        elif Fin_Items.objects.filter(Q(Company=com) & (Q(hsn__iexact=request.data['hsn']) & Q(hsn__isnull=False))).exists():
+            return Response({'status':False, 'message':'HSN already exists'})
+        elif Fin_Items.objects.filter(Q(Company=com) & (Q(sac__iexact=request.data['sac']) & Q(sac__isnull=False))).exists():
+            return Response({'status':False, 'message':'SAC already exists'})
+        else:
+            request.data['Company'] = com.id
+            request.data['LoginDetails'] = com.Login_Id.id
+            serializer = ItemSerializer(data=request.data)
+            if serializer.is_valid():
+                #save transaction
+                serializer.save()
+
+                Fin_Items_Transaction_History.objects.create(
+                    Company = com,
+                    LoginDetails = com.Login_Id,
+                    item = Fin_Items.objects.get(id=serializer.data['id']),
+                    action = 'Created'
+                )
+                
+                return Response({'status':True, 'data':serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({'status':False, 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def  Fin_fetchItems(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id = id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+
+        items = Fin_Items.objects.filter(Company = com)
+        serializer = ItemSerializer(items, many=True)
+        return Response({"status": True, 'items':serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def  Fin_fetchItemDetails(request, id):
+    try:
+        item = Fin_Items.objects.get(id = id)
+        hist = Fin_Items_Transaction_History.objects.filter(item = item).last()
+        his = None
+        if hist:
+            his = {
+                'action': hist.action,
+                'date': hist.date,
+                'doneBy': hist.LoginDetails.First_name+" "+hist.LoginDetails.Last_name
+            }
+        cmt = Fin_Items_Comments.objects.filter(item = item)
+        itemSerializer = ItemSerializer(item)
+        commentsSerializer = ItemCommentsSerializer(cmt, many=True)
+        return Response({"status": True, 'item':itemSerializer.data, 'history':his, 'comments':commentsSerializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def  Fin_fetchItemHistory(request, id):
+    try:
+        item = Fin_Items.objects.get(id = id)
+        hist = Fin_Items_Transaction_History.objects.filter(item = item)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    'action': i.action,
+                    'date': i.date,
+                    'name': i.LoginDetails.First_name+" "+i.LoginDetails.Last_name
+                }
+                his.append(h)
+        itemSerializer = ItemSerializer(item)
+        return Response({"status": True, 'item':itemSerializer.data, 'history':his}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def  Fin_deleteItem(request, id):
+    try:
+        item = Fin_Items.objects.get(id = id)
+        item.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def  Fin_deleteItemComment(request, id):
+    try:
+        cmt = Fin_Items_Comments.objects.get(id = id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("POST",))
+def Fin_changeItemStatus(request):
+    try:
+        itemId = request.data['id']
+        data = Fin_Items.objects.get(id = itemId)
+        data.status = request.data['status']
+        data.save()
+        return Response({'status':True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addItemComment(request):
+    try:
+        id = request.data['Id']
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+
+        request.data['Company'] = com.id
+        serializer = ItemCommentsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'status':True, 'data':serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({'status':False, 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

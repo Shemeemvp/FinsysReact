@@ -52,3 +52,23 @@ class ItemUnitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Units
         fields = '__all__'
+
+class AccountsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Chart_Of_Account
+        fields = '__all__'
+
+class ItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Items
+        fields = '__all__'
+
+class ItemHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Items_Transaction_History
+        fields = '__all__'
+
+class ItemCommentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Items_Comments
+        fields = '__all__'

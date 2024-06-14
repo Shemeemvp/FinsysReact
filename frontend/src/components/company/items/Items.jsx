@@ -1,9 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
 import * as XLSX from "xlsx";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import Cookies from 'js-cookie';
+import axios from "axios";
+import config from "../../../functions/config";
 
 function Items() {
+  const navigate = useNavigate();
   function exportToExcel() {
     const Table = document.getElementById("itemsTable");
     const ws = XLSX.utils.table_to_sheet(Table);
@@ -91,6 +95,45 @@ function Items() {
     });
   }
 
+  const ID = Cookies.get('Login_id');
+  const [items, setItems] = useState([]);
+
+  const fetchItems = () =>{
+    axios.get(`${config.base_url}/fetch_items/${ID}/`).then((res)=>{
+      console.log("ITMS RES=",res)
+      if(res.data.status){
+        var itms = res.data.items;
+        setItems([])
+        itms.map((i)=>{
+          var obj = {
+            id: i.id,
+            name: i.name,
+            hsn: i.hsn,
+            sac: i.sac,
+            salesRate: i.selling_price,
+            purchaseRate: i.purchase_price,
+            openingStock: i.opening_stock,
+            currentStock: i.current_stock,
+            status: i.status
+          }
+          setItems((prevState)=>[
+            ...prevState, obj
+          ])
+        })
+      }
+    }).catch((err)=>{
+      console.log('ERR',err)
+    })
+  }
+
+  useEffect(()=>{
+    fetchItems();
+  },[])
+  
+  function refreshAll(){
+    setItems([])
+    fetchItems();
+  }
   return (
     <>
       <FinBase />
@@ -141,7 +184,7 @@ function Items() {
                       >
                         <a
                           className="dropdown-item"
-                          onClick={()=>filterTable(7,'all')}
+                          onClick={refreshAll}
                           style={{
                             height: "40px",
                             fontSize: "15px",
@@ -272,22 +315,22 @@ function Items() {
                 </tr>
               </thead>
               <tbody>
-                {/* {% for a in items %} */}
-                <tr
-                  className="clickable-row"
-                  data-href="Fin_view_item/{{ a.id }}"
-                  style={{ cursor: "pointer" }}
-                >
-                  <td>{"{ forloop.counter }"}</td>
-                  <td>{"{ a.name }"}</td>
-                  <td>{"% if a.hsn %}HSN{% else %}SAC{% endif %"}</td>
-                  <td>{"{ a.selling_price }"}</td>
-                  <td>{"{ a.purchase_price }"}</td>
-                  <td>{"{ a.opening_stock }"}</td>
-                  <td>{"{ a.current_stock }"}</td>
-                  <td>{"{ a.status }"}</td>
-                </tr>
-                {/* {% endfor %} */}
+                {items && items.map((i,index)=>(
+                  <tr
+                    className="clickable-row"
+                    onClick={()=>navigate(`/view_item/${i.id}/`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <td>{index+1}</td>
+                    <td>{i.name}</td>
+                    <td>{i.hsn ? i.hsn : i.sac}</td>
+                    <td>{i.salesRate}</td>
+                    <td>{i.purchaseRate}</td>
+                    <td>{i.openingStock}</td>
+                    <td>{i.currentStock}</td>
+                    <td>{i.status}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

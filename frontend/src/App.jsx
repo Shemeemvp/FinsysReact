@@ -45,6 +45,8 @@ import DistNotifications from './components/distributor/DistNotifications';
 import DistNotificationOverview from './components/distributor/DistNotificationOverview';
 import Items from './components/company/items/Items';
 import AddItem from './components/company/items/AddItem';
+import ViewItem from './components/company/items/ViewItem';
+import ItemHistory from './components/company/items/ItemHistory';
 
 function App() {
   return (
@@ -104,6 +106,8 @@ function App() {
             <Route path="/edit_staff_profile" element={<EditStaffProfile />}></Route>
             <Route path="/items" element={<Items />}></Route>
             <Route path="/add_item" element={<AddItem />}></Route>
+            <Route path="/view_item/:itemId/" element={<ViewItem />}></Route>
+            <Route path="/item_history/:itemId/" element={<ItemHistory />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

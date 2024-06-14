@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
+import Swal from "sweetalert2";
 
 function AddItem() {
   const ID = Cookies.get("Login_id");
+  const navigate = useNavigate();
 
   function ShowHideDiv(track) {
     var inventorytrack = document.getElementById("inventorytrack");
@@ -81,6 +83,7 @@ function AddItem() {
   }
 
   const [units, setUnits] = useState([]);
+  const [accounts, setAccounts] = useState([]);
 
   const fetchItemUnits = () => {
     axios
@@ -107,6 +110,119 @@ function AddItem() {
     fetchItemUnits();
   }, []);
 
+  const fetchPurchaseAccounts = () => {
+    axios
+      .get(`${config.base_url}/get_company_accounts/${ID}/`)
+      .then((res) => {
+        console.log("ACCNTS==", res);
+        if (res.data.status) {
+          let acc = res.data.accounts;
+          setAccounts([]);
+          acc.map((i) => {
+            let obj = {
+              account_name: i.account_name,
+            };
+            setAccounts((prevState) => [...prevState, obj]);
+          });
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  useEffect(() => {
+    fetchPurchaseAccounts();
+  }, []);
+
+  const [name, setName] = useState("");
+  const [type, setType] = useState("");
+  const [unit, setUnit] = useState("");
+  const [hsn, setHsn] = useState("");
+  const [sac, setSac] = useState("");
+  const [taxRef, setTaxRef] = useState("");
+  const [interStateTax, setInterStateTax] = useState("");
+  const [intraStateTax, setIntraStateTax] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState(0);
+  const [purchaseAccount, setPurchaseAccount] = useState("");
+  const [purchaseDescription, setPurchaseDescription] = useState("");
+  const [salesPrice, setSalesPrice] = useState(0);
+  const [salesAccount, setSalesAccount] = useState("");
+  const [salesDescription, setSalesDescription] = useState("");
+  const [inventoryAccount, setInventoryAccount] = useState("");
+  const [stock, setStock] = useState(0);
+  const [stockUnitRate, setStockUnitRate] = useState(0);
+  const [minStock, setMinStock] = useState(0);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    var dt = {
+      Id: ID,
+      name: name,
+      item_type: type,
+      unit: unit,
+      hsn: hsn,
+      sac: sac,
+      tax_reference: taxRef,
+      intra_state_tax: intraStateTax,
+      inter_state_tax: interStateTax,
+      sales_account: salesAccount,
+      selling_price: salesPrice,
+      sales_description: salesDescription,
+      purchase_account: purchaseAccount,
+      purchase_price: purchasePrice,
+      purchase_description: purchaseDescription,
+      min_stock: minStock,
+      inventory_account: inventoryAccount,
+      opening_stock: stock,
+      current_stock: stock,
+      stock_in: 0,
+      stock_out: 0,
+      stock_unit_rate: stockUnitRate,
+      status: "Active",
+    };
+
+    axios
+      .post(`${config.base_url}/create_new_item/`, dt)
+      .then((res) => {
+        console.log("ITM RES=", res);
+        if (res.data.status) {
+          Toast.fire({
+            icon: "success",
+            title: "Item Created",
+          });
+          navigate("/items");
+        }
+        if (!res.data.status && res.data.message != "") {
+          Swal.fire({
+            icon: "error",
+            title: `${res.data.message}`,
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
   return (
     <>
       <FinBase />
@@ -139,9 +255,8 @@ function AddItem() {
               <div className="col-12 col-lg-12 col-xl-12"></div>
             </div>
             <form
-              action="{% url 'Fin_createNewItem' %}"
-              method="post"
               className="needs-validation px-1"
+              onSubmit={handleSubmit}
               validate
             >
               <div className="row w-100">
@@ -155,6 +270,8 @@ function AddItem() {
                         type="text"
                         id="itemName"
                         name="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
                         autocomplete="off"
@@ -169,7 +286,9 @@ function AddItem() {
                         name="type"
                         className="form-control"
                         id="itemType"
-                        onChange={() => {
+                        value={type}
+                        onChange={(e) => {
+                          setType(e.target.value);
                           itemTypeChange();
                         }}
                         style={{ backgroundColor: "#2a4964", color: "white" }}
@@ -193,6 +312,8 @@ function AddItem() {
                           className="custom-select"
                           name="unit"
                           id="itemUnit"
+                          value={unit}
+                          onChange={(e) => setUnit(e.target.value)}
                           required
                           style={{ backgroundColor: "#2a4964", color: "white" }}
                         >
@@ -233,6 +354,8 @@ function AddItem() {
                         style={{ backgroundColor: "#2a4964", color: "white" }}
                         placeholder="Enter a valid HSN code"
                         required
+                        value={hsn}
+                        onChange={(e) => setHsn(e.target.value)}
                         id="hsnField"
                         onInput={validateHSN}
                       />
@@ -253,6 +376,8 @@ function AddItem() {
                         style={{ backgroundColor: "#2a4964", color: "white" }}
                         placeholder="Enter a valid SAC code"
                         required
+                        value={sac}
+                        onChange={(e) => setSac(e.target.value)}
                         id="sacField"
                         onInput={validateSAC}
                       />
@@ -271,6 +396,7 @@ function AddItem() {
                           type="radio"
                           id="inclusive"
                           value="taxable"
+                          onChange={(e) => setTaxRef(e.target.value)}
                           onClick={showdiv}
                           required
                         />
@@ -286,6 +412,7 @@ function AddItem() {
                           name="taxref"
                           type="radio"
                           value="non taxable"
+                          onChange={(e) => setTaxRef(e.target.value)}
                           id="check"
                           onClick={hidediv}
                         />
@@ -309,6 +436,8 @@ function AddItem() {
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
                         id="intraStateTax"
+                        value={intraStateTax}
+                        onChange={(e) => setIntraStateTax(e.target.value)}
                       >
                         <option value="0">GST 0 (0%)</option>
                         <option value="3">GST 3 (3%)</option>
@@ -327,6 +456,8 @@ function AddItem() {
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
                         id="interStateTax"
+                        value={interStateTax}
+                        onChange={(e) => setInterStateTax(e.target.value)}
                       >
                         <option value="0">IGST 0 (0%)</option>
                         <option value="3">IGST 3 (3%)</option>
@@ -361,7 +492,8 @@ function AddItem() {
                               backgroundColor: "#2a4964",
                               color: "white",
                             }}
-                            value="0"
+                            value={purchasePrice}
+                            onChange={(e) => setPurchasePrice(e.target.value)}
                           />
                         </div>
                       </div>
@@ -389,7 +521,8 @@ function AddItem() {
                               backgroundColor: "#2a4964",
                               color: "white",
                             }}
-                            value="0"
+                            value={salesPrice}
+                            onChange={(e) => setSalesPrice(e.target.value)}
                           />
                         </div>
                       </div>
@@ -406,15 +539,21 @@ function AddItem() {
                           className="form-control"
                           style={{ backgroundColor: "#2a4964", color: "white" }}
                           id="purchaseAccount"
+                          value={purchaseAccount}
+                          onChange={(e) => setPurchaseAccount(e.target.value)}
                         >
                           <option value="" selected disabled>
                             --Choose--
                           </option>
-                          {/* {% for a in accounts %} */}
-                          <option value="{{ a.account_name }}">
-                            {"{ a.account_name }"}
-                          </option>
-                          {/* {% endfor %} */}
+                          {accounts &&
+                            accounts.map((i) => (
+                              <option
+                                value={i.account_name}
+                                className="text-uppercase"
+                              >
+                                {i.account_name}
+                              </option>
+                            ))}
                         </select>
                         <a href="#">
                           <button
@@ -441,6 +580,8 @@ function AddItem() {
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
                         id="salesAccount"
+                        value={salesAccount}
+                        onChange={(e) => setSalesAccount(e.target.value)}
                       >
                         <option value="" selected disabled>
                           --Choose--
@@ -469,7 +610,9 @@ function AddItem() {
                         name="pur_desc"
                         id="purchaseDescription"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
-                      ></textarea>
+                        value={purchaseDescription}
+                        onChange={(e) => setPurchaseDescription(e.target.value)}
+                      />
                     </div>
                     <div className="col-md-6 mt-3">
                       <label for="salesDescription" style={{ color: "white" }}>
@@ -480,7 +623,9 @@ function AddItem() {
                         name="sale_desc"
                         id="salesDescription"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
-                      ></textarea>
+                        value={salesDescription}
+                        onChange={(e) => setSalesDescription(e.target.value)}
+                      />
                     </div>
                   </div>
 
@@ -509,6 +654,8 @@ function AddItem() {
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
                         required
+                        value={inventoryAccount}
+                        onChange={(e) => setInventoryAccount(e.target.value)}
                       >
                         <option selected disabled value="">
                           Choose...
@@ -525,7 +672,8 @@ function AddItem() {
                         name="stock"
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
-                        value="0"
+                        value={stock}
+                        onChange={(e) => setStock(e.target.value)}
                         required
                       />
                     </div>
@@ -538,7 +686,8 @@ function AddItem() {
                         name="stock_rate"
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
-                        value="0"
+                        value={stockUnitRate}
+                        onChange={(e) => setStockUnitRate(e.target.value)}
                       />
                     </div>
                   </div>
@@ -553,7 +702,8 @@ function AddItem() {
                         name="min_stock"
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
-                        value="0"
+                        value={minStock}
+                        onChange={(e) => setMinStock(e.target.value)}
                       />
                     </div>
                   </div>
