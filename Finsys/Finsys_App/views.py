@@ -17,11 +17,18 @@ import string
 from datetime import date
 from datetime import timedelta
 from django.db.models import Q
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.core.mail import send_mail, EmailMessage
+from io import BytesIO
+from django.conf import settings
 
 # Create your views here.
 
+
 def home(request):
-    return HttpResponse('Okay')
+    return HttpResponse("Okay")
+
 
 @api_view(("POST",))
 def Fin_companyReg_action(request):
@@ -111,7 +118,9 @@ def Fin_CompanyReg2_action2(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             else:
-                distr_id = Fin_Distributors_Details.objects.get(Distributor_Code=dis_code)
+                distr_id = Fin_Distributors_Details.objects.get(
+                    Distributor_Code=dis_code
+                )
                 # request.data["Distributor_id"] = Fin_Distributors_Details.objects.filter(Distributor_Code=dis_code).first().id
                 # print('distrId==',request.data['Distributor_id'])
         serializer = CompanyDetailsSerializer(com, data=request.data, partial=True)
@@ -2112,40 +2121,47 @@ def Fin_login(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("POST",))
 def Fin_add_payment_terms(request):
     try:
-        num=int(request.data['num'])
-        select=request.data['value']
-        if select == 'Years':
-            days=int(num)*365
-            pt = Fin_Payment_Terms(payment_terms_number = num,payment_terms_value = select,days = days)
-            pt.save()
-            return Response({'status':True}, status=status.HTTP_201_CREATED)
-        else:  
-            days=int(num*30)
-            pt = Fin_Payment_Terms(payment_terms_number = num,payment_terms_value = select,days = days)
-            pt.save()
-            return Response({'status':True}, status=status.HTTP_201_CREATED)
-    except Exception as e:
-            print(e)
-            return Response(
-                {"status": False, "message": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        num = int(request.data["num"])
+        select = request.data["value"]
+        if select == "Years":
+            days = int(num) * 365
+            pt = Fin_Payment_Terms(
+                payment_terms_number=num, payment_terms_value=select, days=days
             )
-    
+            pt.save()
+            return Response({"status": True}, status=status.HTTP_201_CREATED)
+        else:
+            days = int(num * 30)
+            pt = Fin_Payment_Terms(
+                payment_terms_number=num, payment_terms_value=select, days=days
+            )
+            pt.save()
+            return Response({"status": True}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
 @api_view(("DELETE",))
-def Fin_delete_payment_terms(request,id):
+def Fin_delete_payment_terms(request, id):
     try:
         term = Fin_Payment_Terms.objects.get(id=id)
         term.delete()
-        return Response({'status':True}, status=status.HTTP_201_CREATED)
+        return Response({"status": True}, status=status.HTTP_201_CREATED)
     except Exception as e:
-            print(e)
-            return Response(
-                {"status": False, "message": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
 
 @api_view(("GET",))
 def Fin_getDistributorsRequests(request):
@@ -2169,7 +2185,7 @@ def Fin_getDistributorsRequests(request):
                 "endDate": i.End_date,
             }
             requests.append(req)
-        print('DIST DATA==',requests)
+        print("DIST DATA==", requests)
         return Response({"status": True, "data": requests})
     except Exception as e:
         print(e)
@@ -2177,6 +2193,7 @@ def Fin_getDistributorsRequests(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(("GET",))
 def Fin_getDistributors(request):
@@ -2208,6 +2225,7 @@ def Fin_getDistributors(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(("PUT",))
 def Fin_DReq_Accept(request, id):
@@ -2259,10 +2277,10 @@ def Fin_getDistributorsOverviewData(request, id):
             "id": data.id,
             "name": data.Login_Id.First_name + " " + data.Login_Id.Last_name,
             "email": data.Email,
-            'code':data.Distributor_Code,
+            "code": data.Distributor_Code,
             "contact": data.Contact,
-            'username':data.Login_Id.User_name,
-            'image':data.Image.url if data.Image else None,
+            "username": data.Login_Id.User_name,
+            "image": data.Image.url if data.Image else None,
             "endDate": data.End_date,
             "term": (
                 str(data.Payment_Term.payment_terms_number)
@@ -2285,10 +2303,13 @@ def Fin_getDistributorsOverviewData(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def Fin_getClientsRequests(request):
     try:
-        data = Fin_Company_Details.objects.filter(Registration_Type = "self", Admin_approval_status = "NULL")
+        data = Fin_Company_Details.objects.filter(
+            Registration_Type="self", Admin_approval_status="NULL"
+        )
         requests = []
         for i in data:
             req = {
@@ -2314,7 +2335,8 @@ def Fin_getClientsRequests(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("PUT",))
 def Fin_Client_Req_Accept(request, id):
     try:
@@ -2353,7 +2375,8 @@ def Fin_Client_Req_Reject(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("GET",))
 def Fin_getClients(request):
     try:
@@ -2385,20 +2408,21 @@ def Fin_getClients(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def Fin_getClientsOverviewData(request, id):
     try:
         data = Fin_Company_Details.objects.get(id=id)
-        modules = Fin_Modules_List.objects.get(company_id = id, status = "New")
+        modules = Fin_Modules_List.objects.get(company_id=id, status="New")
         serializer = ModulesListSerializer(modules)
         req = {
             "id": data.id,
             "name": data.Login_Id.First_name + " " + data.Login_Id.Last_name,
             "email": data.Email,
-            'code':data.Company_Code,
+            "code": data.Company_Code,
             "contact": data.Contact,
-            'username':data.Login_Id.User_name,
-            'image':data.Image.url if data.Image else "",
+            "username": data.Login_Id.User_name,
+            "image": data.Image.url if data.Image else "",
             "endDate": data.End_date,
             "term": (
                 str(data.Payment_Term.payment_terms_number)
@@ -2408,7 +2432,10 @@ def Fin_getClientsOverviewData(request, id):
                 else "Trial Period"
             ),
         }
-        return Response({"status": True, "data": req, "modules":serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {"status": True, "data": req, "modules": serializer.data},
+            status=status.HTTP_200_OK,
+        )
     except Fin_Company_Details.DoesNotExist:
         return Response(
             {"status": False, "message": "Client details not found"},
@@ -2421,11 +2448,16 @@ def Fin_getClientsOverviewData(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def Fin_DClient_req(request, id):
     try:
-        data = Fin_Distributors_Details.objects.get(Login_Id = id)
-        lst = Fin_Company_Details.objects.filter(Registration_Type = "distributor",Distributor_approval_status = "NULL",Distributor_id = data.id)
+        data = Fin_Distributors_Details.objects.get(Login_Id=id)
+        lst = Fin_Company_Details.objects.filter(
+            Registration_Type="distributor",
+            Distributor_approval_status="NULL",
+            Distributor_id=data.id,
+        )
         requests = []
         for i in lst:
             req = {
@@ -2451,12 +2483,17 @@ def Fin_DClient_req(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("GET",))
 def Fin_DClients(request, id):
     try:
-        data = Fin_Distributors_Details.objects.get(Login_Id = id)
-        lst = Fin_Company_Details.objects.filter(Registration_Type = "distributor",Distributor_approval_status = "Accept",Distributor_id = data.id)
+        data = Fin_Distributors_Details.objects.get(Login_Id=id)
+        lst = Fin_Company_Details.objects.filter(
+            Registration_Type="distributor",
+            Distributor_approval_status="Accept",
+            Distributor_id=data.id,
+        )
         requests = []
         for i in lst:
             req = {
@@ -2482,7 +2519,8 @@ def Fin_DClients(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("PUT",))
 def Fin_DClient_Req_Accept(request, id):
     try:
@@ -2521,32 +2559,30 @@ def Fin_DClient_Req_Reject(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("GET",))
 def getSelfData(request, id):
     try:
-        data = Fin_Login_Details.objects.get(id = id)
+        data = Fin_Login_Details.objects.get(id=id)
         img = None
         name = None
-        if data.User_Type == 'Company':
-            usrData = Fin_Company_Details.objects.get(Login_Id = data)
+        if data.User_Type == "Company":
+            usrData = Fin_Company_Details.objects.get(Login_Id=data)
             img = usrData.Image.url if usrData.Image else None
             name = usrData.Company_name
-        elif data.User_Type == 'Distributor':
-            usrData = Fin_Distributors_Details.objects.get(Login_Id = data)
+        elif data.User_Type == "Distributor":
+            usrData = Fin_Distributors_Details.objects.get(Login_Id=data)
             img = usrData.Image.url if usrData.Image else None
-            name = data.First_name+' '+data.Last_name
-        elif data.User_Type == 'Staff':
-            usrData = Fin_Staff_Details.objects.get(Login_Id = data)
+            name = data.First_name + " " + data.Last_name
+        elif data.User_Type == "Staff":
+            usrData = Fin_Staff_Details.objects.get(Login_Id=data)
             img = usrData.img.url if usrData.img else None
-            name = data.First_name+' '+data.Last_name
+            name = data.First_name + " " + data.Last_name
         else:
             usrData = None
-        
-        details = {
-            "name": name,
-            "image": img
-        }
+
+        details = {"name": name, "image": img}
 
         return Response({"status": True, "data": details})
     except Exception as e:
@@ -2555,13 +2591,16 @@ def getSelfData(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("GET",))
 def Fin_getStaffRequests(request, id):
     try:
         # data = Fin_Login_Details.objects.get(id=id)
-        com = Fin_Company_Details.objects.get(Login_Id = id)
-        data1 = Fin_Staff_Details.objects.filter(company_id = com.id,Company_approval_status = "NULL")
+        com = Fin_Company_Details.objects.get(Login_Id=id)
+        data1 = Fin_Staff_Details.objects.filter(
+            company_id=com.id, Company_approval_status="NULL"
+        )
         requests = []
         for i in data1:
             req = {
@@ -2586,8 +2625,10 @@ def Fin_getStaffRequests(request, id):
 def Fin_getAllStaffs(request, id):
     try:
         # data = Fin_Login_Details.objects.get(id=id)
-        com = Fin_Company_Details.objects.get(Login_Id = id)
-        data1 = Fin_Staff_Details.objects.filter(company_id = com.id,Company_approval_status = "Accept")
+        com = Fin_Company_Details.objects.get(Login_Id=id)
+        data1 = Fin_Staff_Details.objects.filter(
+            company_id=com.id, Company_approval_status="Accept"
+        )
         requests = []
         for i in data1:
             req = {
@@ -2606,7 +2647,7 @@ def Fin_getAllStaffs(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
 
 @api_view(("PUT",))
 def Fin_Staff_Req_Accept(request, id):
@@ -2646,14 +2687,17 @@ def Fin_Staff_Req_Reject(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("GET",))
 def getProfileData(request, id):
     try:
-        data = Fin_Login_Details.objects.get(id = id)
-        if data.User_Type == 'Company':
-            usrData = Fin_Company_Details.objects.get(Login_Id = data)
-            payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=data,status='New').exists()
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            usrData = Fin_Company_Details.objects.get(Login_Id=data)
+            payment_request = Fin_Payment_Terms_updation.objects.filter(
+                Login_Id=data, status="New"
+            ).exists()
             personal = {
                 "companyLogo": usrData.Image.url if usrData.Image else False,
                 "userImage": False,
@@ -2662,7 +2706,7 @@ def getProfileData(request, id):
                 "email": usrData.Email,
                 "username": data.User_name,
                 "companyContact": usrData.Contact,
-                "userContact": ""
+                "userContact": "",
             }
             company = {
                 "businessName": usrData.Business_name,
@@ -2676,21 +2720,23 @@ def getProfileData(request, id):
                 "gstNo": usrData.GST_NO,
                 "paymentTerm": (
                     str(usrData.Payment_Term.payment_terms_number)
-                        + " "
-                        + usrData.Payment_Term.payment_terms_value
-                        if usrData.Payment_Term
-                        else "Trial Period"
-                    ),
+                    + " "
+                    + usrData.Payment_Term.payment_terms_value
+                    if usrData.Payment_Term
+                    else "Trial Period"
+                ),
                 "endDate": usrData.End_date,
                 "address": usrData.Address,
                 "city": usrData.City,
                 "state": usrData.State,
-                "pincode": usrData.Pincode
+                "pincode": usrData.Pincode,
             }
-        
-        if data.User_Type == 'Staff':
-            staffData = Fin_Staff_Details.objects.get(Login_Id = data)
-            payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=staffData.company_id.Login_Id,status='New').exists()
+
+        if data.User_Type == "Staff":
+            staffData = Fin_Staff_Details.objects.get(Login_Id=data)
+            payment_request = Fin_Payment_Terms_updation.objects.filter(
+                Login_Id=staffData.company_id.Login_Id, status="New"
+            ).exists()
 
             personal = {
                 "companyLogo": False,
@@ -2700,7 +2746,7 @@ def getProfileData(request, id):
                 "email": staffData.Email,
                 "username": data.User_name,
                 "companyContact": staffData.company_id.Contact,
-                "userContact": staffData.contact
+                "userContact": staffData.contact,
             }
             company = {
                 "businessName": staffData.company_id.Business_name,
@@ -2714,25 +2760,34 @@ def getProfileData(request, id):
                 "gstNo": staffData.company_id.GST_NO,
                 "paymentTerm": (
                     str(staffData.company_id.Payment_Term.payment_terms_number)
-                        + " "
-                        + staffData.company_id.Payment_Term.payment_terms_value
-                        if staffData.company_id.Payment_Term
-                        else "Trial Period"
-                    ),
+                    + " "
+                    + staffData.company_id.Payment_Term.payment_terms_value
+                    if staffData.company_id.Payment_Term
+                    else "Trial Period"
+                ),
                 "endDate": staffData.company_id.End_date,
                 "address": staffData.company_id.Address,
                 "city": staffData.company_id.City,
                 "state": staffData.company_id.State,
-                "pincode": staffData.company_id.Pincode
+                "pincode": staffData.company_id.Pincode,
             }
 
-        return Response({"status": True, "personalData": personal, 'companyData': company, 'payment_request':payment_request}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "status": True,
+                "personalData": personal,
+                "companyData": company,
+                "payment_request": payment_request,
+            },
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         print(e)
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(("PUT",))
 @parser_classes((MultiPartParser, FormParser))
@@ -2778,6 +2833,7 @@ def Fin_editCompanyProfile(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("PUT",))
 @parser_classes((MultiPartParser, FormParser))
 def Fin_editStaffProfile(request):
@@ -2822,61 +2878,76 @@ def Fin_editStaffProfile(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("POST",))
 def company_gsttype_change(request):
     try:
-        s_id = request.data['ID']
-        data = Fin_Login_Details.objects.get(id = s_id)
-        com = Fin_Company_Details.objects.get(Login_Id = s_id)
+        s_id = request.data["ID"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        com = Fin_Company_Details.objects.get(Login_Id=s_id)
 
         # Get data from the form
-        
+
         # gstno = request.POST.get('gstno')
-        gsttype = request.data['gsttype']
+        gsttype = request.data["gsttype"]
 
         com.GST_Type = gsttype
 
         com.save()
 
         # Check if gsttype is one of the specified values
-        if gsttype in ['unregistered Business', 'Overseas', 'Consumer']:
-            com.GST_NO=''
+        if gsttype in ["unregistered Business", "Overseas", "Consumer"]:
+            com.GST_NO = ""
             com.save()
             return Response(
-                {"status": True, "message": 'GST Type changed'}, status=status.HTTP_200_OK
+                {"status": True, "message": "GST Type changed"},
+                status=status.HTTP_200_OK,
             )
         else:
             return Response(
-                {"status": True, "message": 'GST Type changed, add GST Number'}, status=status.HTTP_200_OK
+                {"status": True, "message": "GST Type changed, add GST Number"},
+                status=status.HTTP_200_OK,
             )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(("POST",))
 def Fin_Change_payment_terms(request):
     try:
-        s_id = request.data['ID']
-        data = Fin_Login_Details.objects.get(id = s_id)
-        com = Fin_Company_Details.objects.get(Login_Id = s_id)
-        pt = request.data['payment_term']
+        s_id = request.data["ID"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        pt = request.data["payment_term"]
 
         pay = Fin_Payment_Terms.objects.get(id=pt)
 
-        data1 = Fin_Payment_Terms_updation(Login_Id = data,Payment_Term = pay)
+        data1 = Fin_Payment_Terms_updation(Login_Id=data, Payment_Term=pay)
         data1.save()
 
-        if com.Registration_Type == 'self':
-            noti = Fin_ANotification(Login_Id = data,PaymentTerms_updation = data1,Title = "Change Payment Terms",Discription = com.Company_name + " wants to subscribe a new plan")
+        if com.Registration_Type == "self":
+            noti = Fin_ANotification(
+                Login_Id=data,
+                PaymentTerms_updation=data1,
+                Title="Change Payment Terms",
+                Discription=com.Company_name + " wants to subscribe a new plan",
+            )
             noti.save()
         else:
-            noti = Fin_DNotification(Distributor_id = com.Distributor_id,Login_Id = data,PaymentTerms_updation = data1,Title = "Change Payment Terms",Discription = com.Company_name + " wants to subscribe a new plan")
+            noti = Fin_DNotification(
+                Distributor_id=com.Distributor_id,
+                Login_Id=data,
+                PaymentTerms_updation=data1,
+                Title="Change Payment Terms",
+                Discription=com.Company_name + " wants to subscribe a new plan",
+            )
             noti.save()
 
         return Response(
-            {"status": True, 'message':'Request Sent.!'}, status=status.HTTP_200_OK
+            {"status": True, "message": "Request Sent.!"}, status=status.HTTP_200_OK
         )
     except Exception as e:
         return Response(
@@ -2884,12 +2955,15 @@ def Fin_Change_payment_terms(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def getDistributorProfileData(request, id):
     try:
-        data = Fin_Login_Details.objects.get(id = id)
-        usrData = Fin_Distributors_Details.objects.get(Login_Id = data)
-        payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=data,status='New').exists()
+        data = Fin_Login_Details.objects.get(id=id)
+        usrData = Fin_Distributors_Details.objects.get(Login_Id=data)
+        payment_request = Fin_Payment_Terms_updation.objects.filter(
+            Login_Id=data, status="New"
+        ).exists()
         personal = {
             "userImage": usrData.Image.url if usrData.Image else False,
             "distributorCode": usrData.Distributor_Code,
@@ -2901,15 +2975,22 @@ def getDistributorProfileData(request, id):
             "joinDate": usrData.Start_Date,
             "paymentTerm": (
                 str(usrData.Payment_Term.payment_terms_number)
-                    + " "
-                    + usrData.Payment_Term.payment_terms_value
-                    if usrData.Payment_Term
-                    else ""
-                ),
+                + " "
+                + usrData.Payment_Term.payment_terms_value
+                if usrData.Payment_Term
+                else ""
+            ),
             "endDate": usrData.End_date,
         }
 
-        return Response({"status": True, "personalData": personal, 'payment_request':payment_request}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "status": True,
+                "personalData": personal,
+                "payment_request": payment_request,
+            },
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         print(e)
         return Response(
@@ -2917,31 +2998,41 @@ def getDistributorProfileData(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("POST",))
 def Fin_Change_distributor_payment_terms(request):
     try:
-        s_id = request.data['ID']
-        data = Fin_Login_Details.objects.get(id = s_id)
-        com = Fin_Distributors_Details.objects.get(Login_Id = s_id)
-        pt = request.data['payment_term']
+        s_id = request.data["ID"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        com = Fin_Distributors_Details.objects.get(Login_Id=s_id)
+        pt = request.data["payment_term"]
 
         pay = Fin_Payment_Terms.objects.get(id=pt)
 
-        data1 = Fin_Payment_Terms_updation(Login_Id = data,Payment_Term = pay)
+        data1 = Fin_Payment_Terms_updation(Login_Id=data, Payment_Term=pay)
         data1.save()
-        
-        noti = Fin_ANotification(Login_Id = data,PaymentTerms_updation = data1,Title = "Change Payment Terms",Discription = com.Login_Id.First_name + ' ' + com.Login_Id.Last_name + " wants to subscribe a new plan")
+
+        noti = Fin_ANotification(
+            Login_Id=data,
+            PaymentTerms_updation=data1,
+            Title="Change Payment Terms",
+            Discription=com.Login_Id.First_name
+            + " "
+            + com.Login_Id.Last_name
+            + " wants to subscribe a new plan",
+        )
         noti.save()
 
         return Response(
-            {"status": True, 'message':'Request Sent.!'}, status=status.HTTP_200_OK
+            {"status": True, "message": "Request Sent.!"}, status=status.HTTP_200_OK
         )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("PUT",))
 @parser_classes((MultiPartParser, FormParser))
 def Fin_editDistributorProfile(request):
@@ -2951,7 +3042,9 @@ def Fin_editDistributorProfile(request):
         distr = Fin_Distributors_Details.objects.get(Login_Id=data.id)
 
         logSerializer = LoginDetailsSerializer(data, data=request.data)
-        serializer = DistributorDetailsSerializer(distr, data=request.data, partial=True)
+        serializer = DistributorDetailsSerializer(
+            distr, data=request.data, partial=True
+        )
         if logSerializer.is_valid():
             logSerializer.save()
             if serializer.is_valid():
@@ -2986,44 +3079,87 @@ def Fin_editDistributorProfile(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def Fin_checkPaymentTerms(request, id):
     try:
         s_id = id
-        data = Fin_Login_Details.objects.get(id = s_id)
+        data = Fin_Login_Details.objects.get(id=s_id)
         if data.User_Type == "Company":
-            com = Fin_Company_Details.objects.get(Login_Id = s_id)
-            payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=com.Login_Id,status='New').exists()
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+            payment_request = Fin_Payment_Terms_updation.objects.filter(
+                Login_Id=com.Login_Id, status="New"
+            ).exists()
 
-            title2=['Modules Updated..!','New Plan Activated..!']
+            title2 = ["Modules Updated..!", "New Plan Activated..!"]
             today_date = date.today()
-            notification=Fin_CNotification.objects.filter(status = 'New',Company_id = com,Title__in=title2,Noti_date__lt=today_date).order_by('-id','-Noti_date')
-            notification.update(status='old')
+            notification = Fin_CNotification.objects.filter(
+                status="New", Company_id=com, Title__in=title2, Noti_date__lt=today_date
+            ).order_by("-id", "-Noti_date")
+            notification.update(status="old")
 
             diff = (com.End_date - today_date).days
-            
+
             # payment term and trial period alert notifications for notification page
-            cmp_name=com.Company_name
+            cmp_name = com.Company_name
             if com.Payment_Term:
-                if not Fin_CNotification.objects.filter(Company_id=com, Title="Payment Terms Alert",status = 'New').exists() and diff <= 20:
-                    
-                    n = Fin_CNotification(Login_Id=data, Company_id=com, Title="Payment Terms Alert", Discription="Your Payment Terms End Soon")
+                if (
+                    not Fin_CNotification.objects.filter(
+                        Company_id=com, Title="Payment Terms Alert", status="New"
+                    ).exists()
+                    and diff <= 20
+                ):
+
+                    n = Fin_CNotification(
+                        Login_Id=data,
+                        Company_id=com,
+                        Title="Payment Terms Alert",
+                        Discription="Your Payment Terms End Soon",
+                    )
                     n.save()
-                    if com.Registration_Type == 'self':
-                        d = Fin_ANotification(Login_Id=data, Title="Payment Terms Alert", Discription=f"Current  payment terms of {cmp_name} is expiring")
+                    if com.Registration_Type == "self":
+                        d = Fin_ANotification(
+                            Login_Id=data,
+                            Title="Payment Terms Alert",
+                            Discription=f"Current  payment terms of {cmp_name} is expiring",
+                        )
                     else:
-                        d = Fin_DNotification(Login_Id=data, Distributor_id=com.Distributor_id, Title="Payment Terms Alert", Discription=f"Current  payment terms of {cmp_name} is expiring")
+                        d = Fin_DNotification(
+                            Login_Id=data,
+                            Distributor_id=com.Distributor_id,
+                            Title="Payment Terms Alert",
+                            Discription=f"Current  payment terms of {cmp_name} is expiring",
+                        )
 
                     d.save()
             else:
-                if not Fin_CNotification.objects.filter(Company_id=com, Title="Trial Period Alert",status = 'New').exists() and diff <= 10:
-                    n = Fin_CNotification(Login_Id=data, Company_id=com, Title="Trial Period Alert", Discription="Your Trial Period End Soon")
+                if (
+                    not Fin_CNotification.objects.filter(
+                        Company_id=com, Title="Trial Period Alert", status="New"
+                    ).exists()
+                    and diff <= 10
+                ):
+                    n = Fin_CNotification(
+                        Login_Id=data,
+                        Company_id=com,
+                        Title="Trial Period Alert",
+                        Discription="Your Trial Period End Soon",
+                    )
                     n.save()
-                    print('NOTIFICATION SAVED>>>')
-                    if com.Registration_Type == 'self':
-                        d = Fin_ANotification(Login_Id=data, Title="Payment Terms Alert", Discription=f"Current  payment terms of {cmp_name} is expiring")
+                    print("NOTIFICATION SAVED>>>")
+                    if com.Registration_Type == "self":
+                        d = Fin_ANotification(
+                            Login_Id=data,
+                            Title="Payment Terms Alert",
+                            Discription=f"Current  payment terms of {cmp_name} is expiring",
+                        )
                     else:
-                        d = Fin_DNotification(Login_Id=data, Distributor_id=com.Distributor_id, Title="Payment Terms Alert", Discription=f"Current  payment terms of {cmp_name} is expiring")
+                        d = Fin_DNotification(
+                            Login_Id=data,
+                            Distributor_id=com.Distributor_id,
+                            Title="Payment Terms Alert",
+                            Discription=f"Current  payment terms of {cmp_name} is expiring",
+                        )
 
                     d.save()
 
@@ -3039,73 +3175,126 @@ def Fin_checkPaymentTerms(request, id):
 
             # Calculate the number of days between the reminder date and end date
             days_left = (com.End_date - current_date).days
-            return Response({'status':True, 'alert_message':alert_message, 'endDate':com.End_date, 'days_left':days_left, 'paymentTerm': term,'payment_request':payment_request, 'companyName':cmp_name},status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "status": True,
+                    "alert_message": alert_message,
+                    "endDate": com.End_date,
+                    "days_left": days_left,
+                    "paymentTerm": term,
+                    "payment_request": payment_request,
+                    "companyName": cmp_name,
+                },
+                status=status.HTTP_200_OK,
+            )
         else:
-            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
-            return Response({'status':True, 'companyName':com.Company_name},status=status.HTTP_200_OK)
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+            return Response(
+                {"status": True, "companyName": com.Company_name},
+                status=status.HTTP_200_OK,
+            )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(("GET",))
 def Fin_fetchNotifications(request, id):
     try:
         s_id = id
-        data = Fin_Login_Details.objects.get(id = s_id)
+        data = Fin_Login_Details.objects.get(id=s_id)
         if data.User_Type == "Company":
-            com = Fin_Company_Details.objects.get(Login_Id = s_id)
-            noti = Fin_CNotification.objects.filter(status = 'New',Company_id = com).order_by('-id','-Noti_date')
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+            noti = Fin_CNotification.objects.filter(
+                status="New", Company_id=com
+            ).order_by("-id", "-Noti_date")
             serializer = CNotificationsSerializer(noti, many=True)
-            return Response({'status':True, 'notifications':serializer.data},status=status.HTTP_200_OK)
+            return Response(
+                {"status": True, "notifications": serializer.data, 'count':len(noti)},
+                status=status.HTTP_200_OK,
+            )
         else:
-            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
-            return Response({'status':True, 'notifications':None},status=status.HTTP_200_OK)
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+            nCount = Fin_CNotification.objects.filter(Company_id = com, status = 'New')
+            return Response(
+                {"status": True, "notifications": None, 'count':len(nCount)}, status=status.HTTP_200_OK
+            )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(("GET",))
 def Fin_fetchDistNotifications(request, id):
     try:
         s_id = id
-        data = Fin_Login_Details.objects.get(id = s_id)
-        com = Fin_Distributors_Details.objects.get(Login_Id = s_id)
-        noti = Fin_DNotification.objects.filter(status = 'New',Distributor_id = com.id).order_by('-id','-Noti_date')
+        data = Fin_Login_Details.objects.get(id=s_id)
+        com = Fin_Distributors_Details.objects.get(Login_Id=s_id)
+        noti = Fin_DNotification.objects.filter(
+            status="New", Distributor_id=com.id
+        ).order_by("-id", "-Noti_date")
         serializer = DNotificationsSerializer(noti, many=True)
-        return Response({'status':True, 'notifications':serializer.data},status=status.HTTP_200_OK)
+        return Response(
+            {"status": True, "notifications": serializer.data},
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def Fin_checkDistributorPaymentTerms(request, id):
     try:
         s_id = id
-        data = Fin_Login_Details.objects.get(id = s_id)
-        com = Fin_Distributors_Details.objects.get(Login_Id = s_id)
-        payment_request=Fin_Payment_Terms_updation.objects.filter(Login_Id=com.Login_Id,status='New').exists()
+        data = Fin_Login_Details.objects.get(id=s_id)
+        com = Fin_Distributors_Details.objects.get(Login_Id=s_id)
+        payment_request = Fin_Payment_Terms_updation.objects.filter(
+            Login_Id=com.Login_Id, status="New"
+        ).exists()
 
-        title2=['Modules Updated..!','New Plan Activated..!','Change Payment Terms']
+        title2 = ["Modules Updated..!", "New Plan Activated..!", "Change Payment Terms"]
         today_date = date.today()
-        notification=Fin_DNotification.objects.filter(status = 'New',Distributor_id = com,Title__in=title2,Noti_date__lt=today_date)
-        notification.update(status='old')
+        notification = Fin_DNotification.objects.filter(
+            status="New", Distributor_id=com, Title__in=title2, Noti_date__lt=today_date
+        )
+        notification.update(status="old")
 
         diff = (com.End_date - today_date).days
-        
+
         # payment term and trial period alert notifications for notification page
-        dis_name=com.Login_Id.First_name +"  "+ com.Login_Id.Last_name
-        if not Fin_DNotification.objects.filter(Login_Id = com.Login_Id,Distributor_id = com,Title="Payment Terms Alert", status = 'New').exists() and diff <= 20:
-            n = Fin_DNotification(Login_Id=com.Login_Id, Distributor_id = com, Title="Payment Terms Alert", Discription="Your Payment Terms End Soon")
+        dis_name = com.Login_Id.First_name + "  " + com.Login_Id.Last_name
+        if (
+            not Fin_DNotification.objects.filter(
+                Login_Id=com.Login_Id,
+                Distributor_id=com,
+                Title="Payment Terms Alert",
+                status="New",
+            ).exists()
+            and diff <= 20
+        ):
+            n = Fin_DNotification(
+                Login_Id=com.Login_Id,
+                Distributor_id=com,
+                Title="Payment Terms Alert",
+                Discription="Your Payment Terms End Soon",
+            )
             n.save()
-            d = Fin_ANotification(Login_Id=data.Login_Id, Title="Payment Terms Alert", Discription=f"Current  payment terms of {dis_name} is expiring")
+            d = Fin_ANotification(
+                Login_Id=data.Login_Id,
+                Title="Payment Terms Alert",
+                Discription=f"Current  payment terms of {dis_name} is expiring",
+            )
             d.save()
-        noti = Fin_DNotification.objects.filter(status = 'New',Distributor_id = com.id).order_by('-id','-Noti_date')
+        noti = Fin_DNotification.objects.filter(
+            status="New", Distributor_id=com.id
+        ).order_by("-id", "-Noti_date")
         n = len(noti)
 
         # Calculate the date 20 days before the end date for payment term renew and 10 days before for trial period renew
@@ -3115,22 +3304,41 @@ def Fin_checkDistributorPaymentTerms(request, id):
 
         # Calculate the number of days between the reminder date and end date
         days_left = (com.End_date - current_date).days
-        return Response({'status':True, 'alert_message':alert_message, 'endDate':com.End_date, 'days_left':days_left,'payment_request':payment_request},status=status.HTTP_200_OK)
+        return Response(
+            {
+                "status": True,
+                "alert_message": alert_message,
+                "endDate": com.End_date,
+                "days_left": days_left,
+                "payment_request": payment_request,
+            },
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def Fin_getModules(request, id):
     try:
         data = Fin_Login_Details.objects.get(id=id)
-        com = Fin_Company_Details.objects.get(Login_Id = data)
-        modules = Fin_Modules_List.objects.get(Login_Id = data,status = 'New')
-        module_request=Fin_Modules_List.objects.filter(company_id=com, status = 'pending').exists()
+        com = Fin_Company_Details.objects.get(Login_Id=data)
+        modules = Fin_Modules_List.objects.get(Login_Id=data, status="New")
+        module_request = Fin_Modules_List.objects.filter(
+            company_id=com, status="pending"
+        ).exists()
         serializer = ModulesListSerializer(modules)
-        return Response({"status": True, "module_request": module_request, "modules":serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "status": True,
+                "module_request": module_request,
+                "modules": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
     except Fin_Company_Details.DoesNotExist:
         return Response(
             {"status": False, "message": "Company not found"},
@@ -3143,6 +3351,7 @@ def Fin_getModules(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("POST",))
 def Fin_EditModules(request):
     try:
@@ -3151,19 +3360,32 @@ def Fin_EditModules(request):
         com = Fin_Company_Details.objects.get(Login_Id=data.id)
 
         request.data["company_id"] = com.id
-        request.data["status"] = 'pending'
+        request.data["status"] = "pending"
 
         serializer = ModulesListSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            data1=Fin_Modules_List.objects.filter(company_id = com).update(update_action=1)
-            modules = Fin_Modules_List.objects.get(id=serializer.data['id'])
-            if com.Registration_Type == 'self':
-                noti = Fin_ANotification(Login_Id = data,Modules_List = modules,Title = "Module Updation",Discription = com.Company_name + " wants to update current Modules")
+            data1 = Fin_Modules_List.objects.filter(company_id=com).update(
+                update_action=1
+            )
+            modules = Fin_Modules_List.objects.get(id=serializer.data["id"])
+            if com.Registration_Type == "self":
+                noti = Fin_ANotification(
+                    Login_Id=data,
+                    Modules_List=modules,
+                    Title="Module Updation",
+                    Discription=com.Company_name + " wants to update current Modules",
+                )
                 noti.save()
             else:
-                noti = Fin_DNotification(Distributor_id = com.Distributor_id,Login_Id = data,Modules_List = modules,Title = "Module Updation",Discription = com.Company_name + " wants to update current Modules")
-                noti.save()   
+                noti = Fin_DNotification(
+                    Distributor_id=com.Distributor_id,
+                    Login_Id=data,
+                    Modules_List=modules,
+                    Title="Module Updation",
+                    Discription=com.Company_name + " wants to update current Modules",
+                )
+                noti.save()
 
             return Response(
                 {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
@@ -3189,48 +3411,61 @@ def Fin_EditModules(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def Fin_fetchAdminNotifications(request):
     try:
-        noti = Fin_ANotification.objects.filter(status = 'New').order_by('-id','-Noti_date')
+        noti = Fin_ANotification.objects.filter(status="New").order_by(
+            "-id", "-Noti_date"
+        )
         serializer = ANotificationsSerializer(noti, many=True)
-        return Response({'status':True, 'notifications':serializer.data},status=status.HTTP_200_OK)
+        return Response(
+            {"status": True, "notifications": serializer.data},
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def Fin_fetchDistributorNotifications(request, id):
     try:
-        dist = Fin_Distributors_Details.objects.get(Login_Id = id)
-        noti = Fin_DNotification.objects.filter(Distributor_id=dist,status = 'New').order_by('-id','-Noti_date')
+        dist = Fin_Distributors_Details.objects.get(Login_Id=id)
+        noti = Fin_DNotification.objects.filter(
+            Distributor_id=dist, status="New"
+        ).order_by("-id", "-Noti_date")
         serializer = DNotificationsSerializer(noti, many=True)
-        return Response({'status':True, 'notifications':serializer.data},status=status.HTTP_200_OK)
+        return Response(
+            {"status": True, "notifications": serializer.data},
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(("GET",))
 def Fin_getAdminNotificationOverview(request, id):
     try:
         data = Fin_ANotification.objects.get(id=id)
         if data.Login_Id.User_Type == "Company":
-            com = Fin_Company_Details.objects.get(Login_Id = data.Login_Id)
-            modules = Fin_Modules_List.objects.get(company_id = com, status = "New")
+            com = Fin_Company_Details.objects.get(Login_Id=data.Login_Id)
+            modules = Fin_Modules_List.objects.get(company_id=com, status="New")
             serializer = ModulesListSerializer(modules)
             req = {
                 "id": data.id,
-                "user": 'Company',
+                "user": "Company",
                 "name": com.Company_name,
                 "email": com.Email,
-                'code':com.Company_Code,
+                "code": com.Company_Code,
                 "contact": com.Contact,
-                'username':com.Login_Id.User_name,
-                'image':com.Image.url if com.Image else "",
+                "username": com.Login_Id.User_name,
+                "image": com.Image.url if com.Image else "",
                 "endDate": com.End_date,
                 "termUpdation": True if data.PaymentTerms_updation else False,
                 "moduleUpdation": True if data.Modules_List else False,
@@ -3249,12 +3484,28 @@ def Fin_getAdminNotificationOverview(request, id):
                     else ""
                 ),
             }
-            if data.Modules_List :
-                modules_pending = Fin_Modules_List.objects.filter(Login_Id = data.Login_Id,status = "pending")
-                current_modules = Fin_Modules_List.objects.filter(Login_Id = data.Login_Id,status = "New")
+            if data.Modules_List:
+                modules_pending = Fin_Modules_List.objects.filter(
+                    Login_Id=data.Login_Id, status="pending"
+                )
+                current_modules = Fin_Modules_List.objects.filter(
+                    Login_Id=data.Login_Id, status="New"
+                )
 
                 # Extract the field names related to modules
-                module_fields = [field.name for field in Fin_Modules_List._meta.fields if field.name not in ['id', 'company', 'status', 'update_action','company_id', 'Login_Id' ]]
+                module_fields = [
+                    field.name
+                    for field in Fin_Modules_List._meta.fields
+                    if field.name
+                    not in [
+                        "id",
+                        "company",
+                        "status",
+                        "update_action",
+                        "company_id",
+                        "Login_Id",
+                    ]
+                ]
 
                 # Get the previous and new values for the selected modules
                 previous_values = current_modules.values(*module_fields).first()
@@ -3276,24 +3527,39 @@ def Fin_getAdminNotificationOverview(request, id):
 
                 for field in module_fields:
                     if new_values[field] > previous_values[field]:
-                        added_modules[field] = new_values[field] - previous_values[field]
+                        added_modules[field] = (
+                            new_values[field] - previous_values[field]
+                        )
                     elif new_values[field] < previous_values[field]:
-                        deducted_modules[field] = previous_values[field] - new_values[field]
-                
-                return Response({"status": True, "data": req, "modules":serializer.data, 'added_modules': added_modules, 'deducted_modules': deducted_modules,}, status=status.HTTP_200_OK)
+                        deducted_modules[field] = (
+                            previous_values[field] - new_values[field]
+                        )
+
+                return Response(
+                    {
+                        "status": True,
+                        "data": req,
+                        "modules": serializer.data,
+                        "added_modules": added_modules,
+                        "deducted_modules": deducted_modules,
+                    },
+                    status=status.HTTP_200_OK,
+                )
             else:
-                return Response({"status": True, "data": req}, status=status.HTTP_200_OK)
+                return Response(
+                    {"status": True, "data": req}, status=status.HTTP_200_OK
+                )
         else:
-            com = Fin_Distributors_Details.objects.get(Login_Id = data.Login_Id)
+            com = Fin_Distributors_Details.objects.get(Login_Id=data.Login_Id)
             req = {
                 "id": data.id,
-                "user": 'Distributor',
-                "name": com.Login_Id.First_name+" "+com.Login_Id.Last_name,
+                "user": "Distributor",
+                "name": com.Login_Id.First_name + " " + com.Login_Id.Last_name,
                 "email": com.Email,
-                'code':com.Distributor_Code,
+                "code": com.Distributor_Code,
                 "contact": com.Contact,
-                'username':com.Login_Id.User_name,
-                'image':com.Image.url if com.Image else "",
+                "username": com.Login_Id.User_name,
+                "image": com.Image.url if com.Image else "",
                 "endDate": com.End_date,
                 "termUpdation": True if data.PaymentTerms_updation else False,
                 "moduleUpdation": False,
@@ -3330,23 +3596,31 @@ def Fin_getAdminNotificationOverview(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("POST",))
-def  Fin_Module_Updation_Accept(request):
+def Fin_Module_Updation_Accept(request):
     try:
-        id = request.data['id']
+        id = request.data["id"]
         data = Fin_ANotification.objects.get(id=id)
-        allmodules = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "New")
+        allmodules = Fin_Modules_List.objects.get(Login_Id=data.Login_Id, status="New")
         allmodules.delete()
 
-        allmodules1 = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "pending")
+        allmodules1 = Fin_Modules_List.objects.get(
+            Login_Id=data.Login_Id, status="pending"
+        )
         allmodules1.status = "New"
         allmodules1.save()
 
-        data.status = 'old'
+        data.status = "old"
         data.save()
 
         # notification
-        Fin_CNotification.objects.create(Login_Id=allmodules1.Login_Id, Company_id=allmodules1.company_id,Title='Modules Updated..!',Discription='Your module update request is approved')
+        Fin_CNotification.objects.create(
+            Login_Id=allmodules1.Login_Id,
+            Company_id=allmodules1.company_id,
+            Title="Modules Updated..!",
+            Discription="Your module update request is approved",
+        )
 
         return Response({"status": True}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -3356,12 +3630,15 @@ def  Fin_Module_Updation_Accept(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("DELETE",))
-def  Fin_Module_Updation_Reject(request):
+def Fin_Module_Updation_Reject(request):
     try:
-        id = request.data['id']
+        id = request.data["id"]
         data = Fin_ANotification.objects.get(id=id)
-        allmodules = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "pending")
+        allmodules = Fin_Modules_List.objects.get(
+            Login_Id=data.Login_Id, status="pending"
+        )
         allmodules.delete()
 
         data.delete()
@@ -3374,22 +3651,23 @@ def  Fin_Module_Updation_Reject(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
 def Fin_getDistributorNotificationOverview(request, id):
     try:
         data = Fin_DNotification.objects.get(id=id)
-        com = Fin_Company_Details.objects.get(Login_Id = data.Login_Id)
-        modules = Fin_Modules_List.objects.get(company_id = com, status = "New")
+        com = Fin_Company_Details.objects.get(Login_Id=data.Login_Id)
+        modules = Fin_Modules_List.objects.get(company_id=com, status="New")
         serializer = ModulesListSerializer(modules)
         req = {
             "id": data.id,
-            "user": 'Company',
+            "user": "Company",
             "name": com.Company_name,
             "email": com.Email,
-            'code':com.Company_Code,
+            "code": com.Company_Code,
             "contact": com.Contact,
-            'username':com.Login_Id.User_name,
-            'image':com.Image.url if com.Image else None,
+            "username": com.Login_Id.User_name,
+            "image": com.Image.url if com.Image else None,
             "endDate": com.End_date,
             "termUpdation": True if data.PaymentTerms_updation else False,
             "moduleUpdation": True if data.Modules_List else False,
@@ -3408,12 +3686,28 @@ def Fin_getDistributorNotificationOverview(request, id):
                 else ""
             ),
         }
-        if data.Modules_List :
-            modules_pending = Fin_Modules_List.objects.filter(Login_Id = data.Login_Id,status = "pending")
-            current_modules = Fin_Modules_List.objects.filter(Login_Id = data.Login_Id,status = "New")
+        if data.Modules_List:
+            modules_pending = Fin_Modules_List.objects.filter(
+                Login_Id=data.Login_Id, status="pending"
+            )
+            current_modules = Fin_Modules_List.objects.filter(
+                Login_Id=data.Login_Id, status="New"
+            )
 
             # Extract the field names related to modules
-            module_fields = [field.name for field in Fin_Modules_List._meta.fields if field.name not in ['id', 'company', 'status', 'update_action','company_id', 'Login_Id' ]]
+            module_fields = [
+                field.name
+                for field in Fin_Modules_List._meta.fields
+                if field.name
+                not in [
+                    "id",
+                    "company",
+                    "status",
+                    "update_action",
+                    "company_id",
+                    "Login_Id",
+                ]
+            ]
 
             # Get the previous and new values for the selected modules
             previous_values = current_modules.values(*module_fields).first()
@@ -3438,8 +3732,17 @@ def Fin_getDistributorNotificationOverview(request, id):
                     added_modules[field] = new_values[field] - previous_values[field]
                 elif new_values[field] < previous_values[field]:
                     deducted_modules[field] = previous_values[field] - new_values[field]
-            
-            return Response({"status": True, "data": req, "modules":serializer.data, 'added_modules': added_modules, 'deducted_modules': deducted_modules,}, status=status.HTTP_200_OK)
+
+            return Response(
+                {
+                    "status": True,
+                    "data": req,
+                    "modules": serializer.data,
+                    "added_modules": added_modules,
+                    "deducted_modules": deducted_modules,
+                },
+                status=status.HTTP_200_OK,
+            )
         else:
             return Response({"status": True, "data": req}, status=status.HTTP_200_OK)
     except Fin_Company_Details.DoesNotExist:
@@ -3459,23 +3762,31 @@ def Fin_getDistributorNotificationOverview(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("POST",))
-def  Fin_DModule_Updation_Accept(request):
+def Fin_DModule_Updation_Accept(request):
     try:
-        id = request.data['id']
+        id = request.data["id"]
         data = Fin_DNotification.objects.get(id=id)
-        allmodules = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "New")
+        allmodules = Fin_Modules_List.objects.get(Login_Id=data.Login_Id, status="New")
         allmodules.delete()
 
-        allmodules1 = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "pending")
+        allmodules1 = Fin_Modules_List.objects.get(
+            Login_Id=data.Login_Id, status="pending"
+        )
         allmodules1.status = "New"
         allmodules1.save()
 
-        data.status = 'old'
+        data.status = "old"
         data.save()
 
         # notification
-        Fin_CNotification.objects.create(Login_Id=allmodules1.Login_Id, Company_id=allmodules1.company_id,Title='Modules Updated..!',Discription='Your module update request is approved')
+        Fin_CNotification.objects.create(
+            Login_Id=allmodules1.Login_Id,
+            Company_id=allmodules1.company_id,
+            Title="Modules Updated..!",
+            Discription="Your module update request is approved",
+        )
 
         return Response({"status": True}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -3485,12 +3796,15 @@ def  Fin_DModule_Updation_Accept(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("DELETE",))
-def  Fin_DModule_Updation_Reject(request):
+def Fin_DModule_Updation_Reject(request):
     try:
-        id = request.data['id']
+        id = request.data["id"]
         data = Fin_DNotification.objects.get(id=id)
-        allmodules = Fin_Modules_List.objects.get(Login_Id = data.Login_Id,status = "pending")
+        allmodules = Fin_Modules_List.objects.get(
+            Login_Id=data.Login_Id, status="pending"
+        )
         allmodules.delete()
 
         data.delete()
@@ -3506,97 +3820,174 @@ def  Fin_DModule_Updation_Reject(request):
 
 # ITEMS
 @api_view(("GET",))
-def  Fin_getCompanyItemUnits(request, id):
+def Fin_getCompanyItemUnits(request, id):
     try:
-        cmp = Fin_Company_Details.objects.get(Login_Id = id)
-        units = Fin_Units.objects.filter(Company = cmp)
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+        units = Fin_Units.objects.filter(Company=cmp)
         serializer = ItemUnitSerializer(units, many=True)
-        return Response({"status": True, 'units':serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {"status": True, "units": serializer.data}, status=status.HTTP_200_OK
+        )
     except Exception as e:
         print(e)
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("GET",))
-def  Fin_getCompanyAccounts(request, id):
+def Fin_getCompanyAccounts(request, id):
     try:
-        cmp = Fin_Company_Details.objects.get(Login_Id = id)
-        acc = Fin_Chart_Of_Account.objects.filter(Q(account_type='Expense') | Q(account_type='Other Expense') | Q(account_type='Cost Of Goods Sold'), Company=cmp).order_by('account_name')
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+        acc = Fin_Chart_Of_Account.objects.filter(
+            Q(account_type="Expense")
+            | Q(account_type="Other Expense")
+            | Q(account_type="Cost Of Goods Sold"),
+            Company=cmp,
+        ).order_by("account_name")
         serializer = AccountsSerializer(acc, many=True)
-        return Response({"status": True, 'accounts':serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {"status": True, "accounts": serializer.data}, status=status.HTTP_200_OK
+        )
     except Exception as e:
         print(e)
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("POST",))
 def Fin_createNewItem(request):
     try:
-        s_id = request.data['Id']
-        data = Fin_Login_Details.objects.get(id = s_id)
-        if data.User_Type == 'Company':
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
             com = Fin_Company_Details.objects.get(Login_Id=s_id)
         else:
-            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
 
         createdDate = date.today()
-        if request.data['item_type'] == 'Goods':
-            request.data['sac'] = None
+        if request.data["item_type"] == "Goods":
+            request.data["sac"] = None
         else:
-            request.data['hsn'] = None
-        request.data['intra_state_tax'] = 0 if request.data['tax_reference'] == 'non taxable' else request.data['intra_state_tax']
-        request.data['inter_state_tax'] = 0 if request.data['tax_reference'] == 'non taxable' else request.data['inter_state_tax']
-        request.data['sales_account'] = None if request.data['sales_account'] == '' else request.data['sales_account']
-        request.data['purchase_account'] = None if request.data['purchase_account'] == '' else request.data['purchase_account']
-        request.data['created_date'] = createdDate
+            request.data["hsn"] = None
+        request.data["intra_state_tax"] = (
+            0
+            if request.data["tax_reference"] == "non taxable"
+            else request.data["intra_state_tax"]
+        )
+        request.data["inter_state_tax"] = (
+            0
+            if request.data["tax_reference"] == "non taxable"
+            else request.data["inter_state_tax"]
+        )
+        request.data["sales_account"] = (
+            None
+            if request.data["sales_account"] == ""
+            else request.data["sales_account"]
+        )
+        request.data["purchase_account"] = (
+            None
+            if request.data["purchase_account"] == ""
+            else request.data["purchase_account"]
+        )
+        request.data["created_date"] = createdDate
 
-        #save item and transaction if item or hsn doesn't exists already
-        if Fin_Items.objects.filter(Company=com, name__iexact=request.data['name']).exists():
-            return Response({'status':False, 'message':'Item Name already exists'})
-        elif Fin_Items.objects.filter(Q(Company=com) & (Q(hsn__iexact=request.data['hsn']) & Q(hsn__isnull=False))).exists():
-            return Response({'status':False, 'message':'HSN already exists'})
-        elif Fin_Items.objects.filter(Q(Company=com) & (Q(sac__iexact=request.data['sac']) & Q(sac__isnull=False))).exists():
-            return Response({'status':False, 'message':'SAC already exists'})
+        # save item and transaction if item or hsn doesn't exists already
+        if Fin_Items.objects.filter(
+            Company=com, name__iexact=request.data["name"]
+        ).exists():
+            return Response({"status": False, "message": "Item Name already exists"})
+        elif Fin_Items.objects.filter(
+            Q(Company=com) & (Q(hsn__iexact=request.data["hsn"]) & Q(hsn__isnull=False))
+        ).exists():
+            return Response({"status": False, "message": "HSN already exists"})
+        elif Fin_Items.objects.filter(
+            Q(Company=com) & (Q(sac__iexact=request.data["sac"]) & Q(sac__isnull=False))
+        ).exists():
+            return Response({"status": False, "message": "SAC already exists"})
         else:
-            request.data['Company'] = com.id
-            request.data['LoginDetails'] = com.Login_Id.id
+            request.data["Company"] = com.id
+            request.data["LoginDetails"] = com.Login_Id.id
             serializer = ItemSerializer(data=request.data)
             if serializer.is_valid():
-                #save transaction
+                # save transaction
                 serializer.save()
 
                 Fin_Items_Transaction_History.objects.create(
-                    Company = com,
-                    LoginDetails = com.Login_Id,
-                    item = Fin_Items.objects.get(id=serializer.data['id']),
-                    action = 'Created'
+                    Company=com,
+                    LoginDetails=data,
+                    item=Fin_Items.objects.get(id=serializer.data["id"]),
+                    action="Created",
                 )
-                
-                return Response({'status':True, 'data':serializer.data}, status=status.HTTP_200_OK)
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
             else:
-                return Response({'status':False, 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-@api_view(("GET",))
-def  Fin_fetchItems(request, id):
+@api_view(("POST",))
+def Fin_createNewUnit(request):
     try:
-        data = Fin_Login_Details.objects.get(id = id)
-        if data.User_Type == 'Company':
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+        request.data["Company"] = com.id
+        serializer = ItemUnitSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data},
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("GET",))
+def Fin_fetchItems(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
             com = Fin_Company_Details.objects.get(Login_Id=id)
         else:
-            com = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
 
-        items = Fin_Items.objects.filter(Company = com)
+        items = Fin_Items.objects.filter(Company=com)
         serializer = ItemSerializer(items, many=True)
-        return Response({"status": True, 'items':serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {"status": True, "items": serializer.data}, status=status.HTTP_200_OK
+        )
     except Exception as e:
         print(e)
         return Response(
@@ -3604,22 +3995,33 @@ def  Fin_fetchItems(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
-def  Fin_fetchItemDetails(request, id):
+def Fin_fetchItemDetails(request, id):
     try:
-        item = Fin_Items.objects.get(id = id)
-        hist = Fin_Items_Transaction_History.objects.filter(item = item).last()
+        item = Fin_Items.objects.get(id=id)
+        hist = Fin_Items_Transaction_History.objects.filter(item=item).last()
         his = None
         if hist:
             his = {
-                'action': hist.action,
-                'date': hist.date,
-                'doneBy': hist.LoginDetails.First_name+" "+hist.LoginDetails.Last_name
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
             }
-        cmt = Fin_Items_Comments.objects.filter(item = item)
+        cmt = Fin_Items_Comments.objects.filter(item=item)
         itemSerializer = ItemSerializer(item)
         commentsSerializer = ItemCommentsSerializer(cmt, many=True)
-        return Response({"status": True, 'item':itemSerializer.data, 'history':his, 'comments':commentsSerializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "status": True,
+                "item": itemSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         print(e)
         return Response(
@@ -3627,22 +4029,26 @@ def  Fin_fetchItemDetails(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("GET",))
-def  Fin_fetchItemHistory(request, id):
+def Fin_fetchItemHistory(request, id):
     try:
-        item = Fin_Items.objects.get(id = id)
-        hist = Fin_Items_Transaction_History.objects.filter(item = item)
+        item = Fin_Items.objects.get(id=id)
+        hist = Fin_Items_Transaction_History.objects.filter(item=item)
         his = []
         if hist:
             for i in hist:
                 h = {
-                    'action': i.action,
-                    'date': i.date,
-                    'name': i.LoginDetails.First_name+" "+i.LoginDetails.Last_name
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
                 }
                 his.append(h)
         itemSerializer = ItemSerializer(item)
-        return Response({"status": True, 'item':itemSerializer.data, 'history':his}, status=status.HTTP_200_OK)
+        return Response(
+            {"status": True, "item": itemSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         print(e)
         return Response(
@@ -3650,10 +4056,11 @@ def  Fin_fetchItemHistory(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("DELETE",))
-def  Fin_deleteItem(request, id):
+def Fin_deleteItem(request, id):
     try:
-        item = Fin_Items.objects.get(id = id)
+        item = Fin_Items.objects.get(id=id)
         item.delete()
         return Response({"status": True}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -3663,10 +4070,11 @@ def  Fin_deleteItem(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("DELETE",))
-def  Fin_deleteItemComment(request, id):
+def Fin_deleteItemComment(request, id):
     try:
-        cmt = Fin_Items_Comments.objects.get(id = id)
+        cmt = Fin_Items_Comments.objects.get(id=id)
         cmt.delete()
         return Response({"status": True}, status=status.HTTP_200_OK)
     except Exception as e:
@@ -3675,38 +4083,377 @@ def  Fin_deleteItemComment(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    
+
+
 @api_view(("POST",))
 def Fin_changeItemStatus(request):
     try:
-        itemId = request.data['id']
-        data = Fin_Items.objects.get(id = itemId)
-        data.status = request.data['status']
+        itemId = request.data["id"]
+        data = Fin_Items.objects.get(id=itemId)
+        data.status = request.data["status"]
         data.save()
-        return Response({'status':True}, status=status.HTTP_200_OK)
+        return Response({"status": True}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 @api_view(("POST",))
 def Fin_addItemComment(request):
     try:
-        id = request.data['Id']
+        id = request.data["Id"]
         data = Fin_Login_Details.objects.get(id=id)
-        if data.User_Type == 'Company':
+        if data.User_Type == "Company":
             com = Fin_Company_Details.objects.get(Login_Id=id)
         else:
-            com = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
 
-        request.data['Company'] = com.id
+        request.data["Company"] = com.id
         serializer = ItemCommentsSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'status':True, 'data':serializer.data}, status=status.HTTP_200_OK)
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
         else:
-            return Response({'status':False, 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("GET",))
+def Fin_itemTransactionPdf(request, itemId, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        item = Fin_Items.objects.get(id=itemId)
+        stock = int(item.current_stock)
+        rate = float(item.stock_unit_rate)
+        stockValue = float(stock * rate)
+
+        transactions = []
+
+        context = {"item": item, "stockValue": stockValue, "transactions": transactions}
+
+        template_path = "company/Fin_Item_Transaction_Pdf.html"
+        fname = "Item_transactions_" + item.name
+        # return render(request, 'company/Fin_Item_Transaction_Pdf.html',context)
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("POST",))
+def Fin_shareItemTransactionsToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        itemId = request.data["itemId"]
+        item = Fin_Items.objects.get(id=itemId)
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        stock = int(item.current_stock)
+        rate = float(item.stock_unit_rate)
+        stockValue = float(stock * rate)
+
+        transactions = []
+
+        context = {"item": item, "stockValue": stockValue, "transactions": transactions}
+        template_path = "company/Fin_Item_Transaction_Pdf.html"
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f"Item_transactions-{item.name}.pdf"
+        subject = f"Item_transactions_{item.name}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached Transaction details - ITEM-{item.name}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("GET",))
+def Fin_checkAccounts(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        if Fin_Chart_Of_Account.objects.filter(
+            Company=com, account_type=request.GET["type"]
+        ).exists():
+            list = []
+            account_objects = Fin_Chart_Of_Account.objects.filter(
+                Company=com, account_type=request.GET["type"]
+            )
+
+            for account in account_objects:
+                accounts = {
+                    "name": account.account_name,
+                }
+                list.append(accounts)
+
+            return Response(
+                {"status": True, "accounts": list}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response({"status": False})
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("POST",))
+def Fin_createNewAccountFromItems(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        createdDate = date.today()
+        request.data["Company"] = com.id
+        request.data["LoginDetails"] = com.Login_Id.id
+        request.data["parent_account"] = (
+            request.data["parent_account"]
+            if request.data["sub_account"] == True
+            else None
+        )
+        request.data["balance"] = 0.0
+        request.data["balance_type"] = None
+        request.data["credit_card_no"] = None
+        request.data["bank_account_no"] = None
+        request.data["date"] = createdDate
+        request.data["create_status"] = "added"
+        request.data["status"] = "active"
+
+        # save account and transaction if account doesn't exists already
+        if Fin_Chart_Of_Account.objects.filter(
+            Company=com, account_name__iexact=request.data["account_name"]
+        ).exists():
+            return Response(
+                {"status": False, "message": "Account Name already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        else:
+            serializer = AccountsSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                # save transaction
+
+                Fin_ChartOfAccount_History.objects.create(
+                    Company=com,
+                    LoginDetails=data,
+                    account=Fin_Chart_Of_Account.objects.get(id=serializer.data["id"]),
+                    action="Created",
+                )
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def minStock(request, id):
+    try:
+        s_id = id
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type != 'Distributor':
+            if data.User_Type == "Company":
+                com = Fin_Company_Details.objects.get(Login_Id = s_id)
+            elif data.User_Type == 'Staff':
+                com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+            
+            itemsAvailable = Fin_Items.objects.filter(Company = com)
+
+            if Fin_CNotification.objects.filter(Company_id=com, Item__isnull=False).exists():
+                alertItems = Fin_CNotification.objects.filter(Company_id=com, Item__isnull=False)
+                for item in alertItems:
+                    stockItem = Fin_Items.objects.get(id = item.Item.id)
+                    if stockItem.current_stock > stockItem.min_stock:
+                        item.status = 'Old'
+                        item.save()
+                    else:
+                        item.status = 'New'
+                        item.save()
+                
+                for itm in itemsAvailable:
+                    if not Fin_CNotification.objects.filter(Item = itm).exists():
+                        if itm.min_stock > 0 and itm.current_stock < itm.min_stock:
+                            Fin_CNotification.objects.create(Company_id = com, Login_Id = data, Item = itm, Title = 'Stock Alert.!!', Discription = f'{itm.name} is below the minimum stock threshold..')
+
+            else:
+                for itm in itemsAvailable:
+                    if itm.min_stock > 0 and itm.current_stock < itm.min_stock:
+                        Fin_CNotification.objects.create(Company_id = com, Login_Id = data, Item = itm, Title = 'Stock Alert.!!', Discription = f'{itm.name} is below the minimum stock threshold..')
+            
+            stockLow = Fin_CNotification.objects.filter(Company_id = com, Item__isnull=False, status = 'New')
+            nCount = Fin_CNotification.objects.filter(Company_id = com, status = 'New')
+            if stockLow:
+                serializer = CNotificationsSerializer(stockLow, many=True)
+                return Response(
+                    {"status": True, "minStockAlerts": serializer.data, 'count':len(nCount)},
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    {"status": True, "minStockAlerts": None, 'count':len(nCount)},
+                    status=status.HTTP_200_OK,
+                )
+        else:
+            return Response({"status": False},status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+def Fin_updateItem(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+        
+        item = Fin_Items.objects.get(id=request.data['itemId'])
+        if request.data["item_type"] == "Goods":
+            request.data["sac"] = None
+        else:
+            request.data["hsn"] = None
+        request.data["intra_state_tax"] = (
+            0
+            if request.data["tax_reference"] == "non taxable"
+            else request.data["intra_state_tax"]
+        )
+        request.data["inter_state_tax"] = (
+            0
+            if request.data["tax_reference"] == "non taxable"
+            else request.data["inter_state_tax"]
+        )
+        request.data["sales_account"] = (
+            None
+            if request.data["sales_account"] == ""
+            else request.data["sales_account"]
+        )
+        request.data["purchase_account"] = (
+            None
+            if request.data["purchase_account"] == ""
+            else request.data["purchase_account"]
+        )
+
+        #save item and transaction if item or hsn doesn't exists already
+        name = request.data['name']
+        hsn = request.data['hsn']
+        sac = request.data['sac']
+        
+        if item.name != name and Fin_Items.objects.filter(Company=com, name__iexact=name).exists():
+            return Response({'status':False, 'message':'Item Name exists'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if item.hsn and hsn != None:
+            if int(item.hsn) != int(hsn) and Fin_Items.objects.filter(Company = com, hsn__iexact=hsn).exists():
+                return Response({'status':False, 'message':'HSN Code Exists'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if item.sac and sac != None:
+            if int(item.sac) != int(sac) and Fin_Items.objects.filter(Company = com, sac__iexact=sac).exists():
+                return Response({'status':False, 'message':'SAC Code Exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = ItemSerializer(item,data=request.data)
+        if serializer.is_valid():
+            stock = item.opening_stock if request.data['opening_stock'] == "" else request.data['opening_stock']
+            oldOpen = int(item.opening_stock)
+            newOpen = int(stock)
+            diff = abs(oldOpen - newOpen)
+            if item.opening_stock != int(stock) and oldOpen > newOpen:
+                request.data['current_stock'] = item.current_stock - diff
+            elif item.opening_stock != int(stock) and oldOpen < newOpen:
+                request.data['current_stock'] = item.current_stock + diff
+
+            # save transaction
+            serializer.save()
+
+            Fin_Items_Transaction_History.objects.create(
+                Company=com,
+                LoginDetails=data,
+                item=Fin_Items.objects.get(id=serializer.data["id"]),
+                action="Edited",
+            )
+
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
     except Exception as e:
         return Response(
             {"status": False, "message": str(e)},

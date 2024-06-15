@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 
-function AddItem() {
+function EditItem() {
+  const { itemId } = useParams();
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
 
@@ -64,7 +65,7 @@ function AddItem() {
     var sacError = document.getElementById("sacError");
     var hsnError = document.getElementById("hsnError");
     if (value === "Goods") {
-      sacField.value = "";
+      // sacField.value = "";
       hsnField.required = true;
       sacField.required = false;
       hsnDiv.style.display = "block";
@@ -72,7 +73,7 @@ function AddItem() {
       sacError.textContent = "";
       sacField.style.borderColor = "white";
     } else {
-      hsnField.value = "";
+      // hsnField.value = "";
       hsnField.required = false;
       sacField.required = true;
       sacDiv.style.display = "block";
@@ -135,6 +136,62 @@ function AddItem() {
     fetchPurchaseAccounts();
   }, []);
 
+
+  const fetchItemDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_item_details/${itemId}/`)
+      .then((res) => {
+        console.log("ITEM DATA=", res);
+        if (res.data.status) {
+          var itm = res.data.item;
+          setName(itm.name)
+          setType(itm.item_type)
+          setUnit(itm.unit)
+          setHsn(itm.hsn)
+          setSac(itm.sac)
+          setTaxRef(itm.tax_reference)
+          setInterStateTax(itm.inter_state_tax)
+          setIntraStateTax(itm.intra_state_tax)
+          setPurchasePrice(itm.purchase_price)
+          setPurchaseAccount(itm.purchase_account)
+          setPurchaseDescription(itm.purchase_description)
+          setSalesPrice(itm.selling_price)
+          setSalesAccount(itm.sales_account)
+          setSalesDescription(itm.sales_description)
+          setInventoryAccount(itm.inventory_account)
+          setStock(itm.opening_stock)
+          setStockUnitRate(itm.stock_unit_rate)
+          setMinStock(itm.min_stock)
+          checkTaxRef(itm.tax_reference)
+          checkItemType(itm.item_type)
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+  function checkItemType(type){
+    if(type == 'Services'){
+      document.getElementById('sacDiv').style.display = 'block';
+      document.getElementById('hsnDiv').style.display = 'none';
+    }
+  }
+  function checkTaxRef(val){
+    if(val == 'taxable'){
+      document.getElementById('taxableDiv').style.display = 'flex';
+    }
+  }  
+
+  useEffect(() => {
+    fetchItemDetails();
+  }, []);
+
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [unit, setUnit] = useState("");
@@ -159,6 +216,7 @@ function AddItem() {
 
     var dt = {
       Id: ID,
+      itemId: itemId,
       name: name,
       item_type: type,
       unit: unit,
@@ -177,22 +235,19 @@ function AddItem() {
       inventory_account: inventoryAccount,
       opening_stock: stock,
       current_stock: stock,
-      stock_in: 0,
-      stock_out: 0,
       stock_unit_rate: stockUnitRate,
-      status: "Active",
     };
 
     axios
-      .post(`${config.base_url}/create_new_item/`, dt)
+      .put(`${config.base_url}/update_item/`, dt)
       .then((res) => {
         console.log("ITM RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Item Created",
+            title: "Item Updated",
           });
-          navigate("/items");
+          navigate(`/view_item/${itemId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -456,7 +511,7 @@ function AddItem() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/items"}>
+          <Link to={`/view_item/${itemId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -467,7 +522,7 @@ function AddItem() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">ADD ITEM</h2>
+                <h2 className="mt-3">EDIT ITEM</h2>
               </center>
               <hr />
             </div>
@@ -578,7 +633,6 @@ function AddItem() {
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
                         placeholder="Enter a valid HSN code"
-                        required
                         value={hsn}
                         onChange={(e) => setHsn(e.target.value)}
                         id="hsnField"
@@ -600,7 +654,6 @@ function AddItem() {
                         className="form-control"
                         style={{ backgroundColor: "#2a4964", color: "white" }}
                         placeholder="Enter a valid SAC code"
-                        required
                         value={sac}
                         onChange={(e) => setSac(e.target.value)}
                         id="sacField"
@@ -622,6 +675,7 @@ function AddItem() {
                           id="inclusive"
                           value="taxable"
                           onChange={(e) => setTaxRef(e.target.value)}
+                          checked={taxRef == 'taxable'? true:false}
                           onClick={showdiv}
                           required
                         />
@@ -637,6 +691,7 @@ function AddItem() {
                           name="taxref"
                           type="radio"
                           value="non taxable"
+                          checked={taxRef == 'non taxable'? true:false}
                           onChange={(e) => setTaxRef(e.target.value)}
                           id="check"
                           onClick={hidediv}
@@ -944,7 +999,7 @@ function AddItem() {
                         SAVE
                       </button>
                       <Link
-                        to="/items"
+                        to={`/view_item/${itemId}/`}
                         className="btn btn-outline-secondary ml-1 text-light"
                         style={{ width: "fit-content", height: "fit-content" }}
                       >
@@ -1204,4 +1259,4 @@ function AddItem() {
   );
 }
 
-export default AddItem;
+export default EditItem;

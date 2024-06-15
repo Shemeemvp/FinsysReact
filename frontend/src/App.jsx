@@ -47,6 +47,7 @@ import Items from './components/company/items/Items';
 import AddItem from './components/company/items/AddItem';
 import ViewItem from './components/company/items/ViewItem';
 import ItemHistory from './components/company/items/ItemHistory';
+import EditItem from './components/company/items/EditItem';
 
 function App() {
   return (
@@ -108,6 +109,7 @@ function App() {
             <Route path="/add_item" element={<AddItem />}></Route>
             <Route path="/view_item/:itemId/" element={<ViewItem />}></Route>
             <Route path="/item_history/:itemId/" element={<ItemHistory />}></Route>
+            <Route path="/edit_item/:itemId/" element={<EditItem />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

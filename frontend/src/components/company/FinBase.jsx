@@ -14,6 +14,8 @@ function FinBase() {
   const ID = Cookies.get("Login_id");
   const [noti, setNoti] = useState(false);
   const [notification, setNotification] = useState([]);
+  const [stockAlerts, setStockAlerts] = useState([]);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   const fetchNotifications = () => {
     axios
@@ -23,6 +25,7 @@ function FinBase() {
         if (res.data.status) {
           var ntfs = res.data.notifications;
           setNoti(res.data.status);
+          setNotificationCount(res.data.count);
           setNotification([]);
           ntfs.map((i) => {
             var obj = {
@@ -42,6 +45,36 @@ function FinBase() {
 
   useEffect(() => {
     fetchNotifications();
+  }, []);
+
+  const fetchMinStockAlerts = () => {
+    axios
+      .get(`${config.base_url}/fetch_min_stock_alerts/${ID}/`)
+      .then((res) => {
+        console.log("STOCK", res);
+        if (res.data.status) {
+          var ntfs = res.data.minStockAlerts;
+          setStockAlerts([]);
+          setNoti(res.data.status);
+          setNotificationCount(res.data.count);
+          ntfs.map((i) => {
+            var obj = {
+              title: i.Title,
+              desc: i.Discription,
+              date: i.date_created,
+              time: i.time,
+            };
+            setStockAlerts((prevState) => [...prevState, obj]);
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR", err);
+      });
+  };
+
+  useEffect(() => {
+    fetchMinStockAlerts();
   }, []);
 
   const navigate = useNavigate();
@@ -724,13 +757,13 @@ function FinBase() {
                         className="bx bx-bell vertical-align-middle"
                         style={{ fontSize: "25px" }}
                       ></i>
-                      <span className="msg-count">{notification.length}</span>
+                      <span className="msg-count">{notificationCount}</span>
                     </a>
                     <div className="dropdown-menu dropdown-menu-right">
                       <a className="p-0" href="javascript:;">
                         <div className="msg-header w-100">
                           <h6 className="msg-header-title">
-                            {notification.length} New
+                            {notificationCount} New
                           </h6>
                           <p className="msg-header-subtitle">
                             Application Notifications
@@ -743,7 +776,28 @@ function FinBase() {
                             {notification.map((item) => (
                               <a
                                 className="dropdown-item w-100"
-                                href="{% url 'Fin_Cnotification' %}"
+                                href="#"
+                              >
+                                <div className="media align-items-center w-100">
+                                  <div className="notify bg-light-primary text-primary">
+                                    <i className="bx bx-file"></i>
+                                  </div>
+                                  <div className="media-body">
+                                    <h6 className="msg-name w-100">
+                                      {item.title}
+                                      <span className="msg-time float-right">
+                                        {item.date} {formatTimeInput(item.time)}
+                                      </span>
+                                    </h6>
+                                    <p className="msg-info">{item.desc}</p>
+                                  </div>
+                                </div>
+                              </a>
+                            ))}
+                            {stockAlerts.map((item) => (
+                              <a
+                                className="dropdown-item w-100"
+                                href="#"
                               >
                                 <div className="media align-items-center w-100">
                                   <div className="notify bg-light-primary text-primary">
@@ -763,7 +817,7 @@ function FinBase() {
                             ))}
                             <a
                               className="w-100 justify-content-center"
-                              href="{% url 'Fin_Cnotification' %}"
+                              href="#"
                             >
                               <p className="msg-info text-center">
                                 View All Notifications
@@ -790,13 +844,13 @@ function FinBase() {
                         className="bx bx-bell vertical-align-middle"
                         style={{ fontSize: "25px" }}
                       ></i>
-                      <span className="msg-count">{notification.length}</span>
+                      <span className="msg-count">{notificationCount}</span>
                     </a>
                     <div className="dropdown-menu dropdown-menu-right">
                       <a className="p-0" href="javascript:;">
                         <div className="msg-header w-100">
                           <h6 className="msg-header-title">
-                            {notification.length} New
+                            {notificationCount} New
                           </h6>
                           <p className="msg-header-subtitle">
                             Application Notifications
@@ -804,6 +858,27 @@ function FinBase() {
                         </div>
                       </a>
                       <div className="header-notifications-list">
+                        {stockAlerts.map((item) => (
+                          <a
+                            className="dropdown-item w-100"
+                            href="#"
+                          >
+                            <div className="media align-items-center w-100">
+                              <div className="notify bg-light-primary text-primary">
+                                <i className="bx bx-file"></i>
+                              </div>
+                              <div className="media-body">
+                                <h6 className="msg-name w-100">
+                                  {item.title}
+                                  <span className="msg-time float-right">
+                                    {item.date} {formatTimeInput(item.time)}
+                                  </span>
+                                </h6>
+                                <p className="msg-info">{item.desc}</p>
+                              </div>
+                            </div>
+                          </a>
+                        ))}
                         <a className="dropdown-item" href="javascript:;">
                           <div className="media align-items-center">
                             <div className="notify bg-light-primary text-primary">

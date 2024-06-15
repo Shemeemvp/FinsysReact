@@ -35,6 +35,7 @@ urlpatterns = [
     path('user/<int:id>/',getSelfData),
     path('check_payment_term/<int:id>/',Fin_checkPaymentTerms),
     path('fetch_notifications/<int:id>/',Fin_fetchNotifications),
+    path('fetch_min_stock_alerts/<int:id>/',minStock),
     path('fetch_dist_notifications/<int:id>/',Fin_fetchDistNotifications),
     path('get_profile_data/<int:id>/',getProfileData),
     path('get_distributor_clients_requests/<int:id>/',Fin_DClient_req,name='Fin_DClient_req'),
@@ -65,13 +66,19 @@ urlpatterns = [
     path('get_company_item_units/<int:id>/',Fin_getCompanyItemUnits),
     path('get_company_accounts/<int:id>/',Fin_getCompanyAccounts),
     path('create_new_item/',Fin_createNewItem),
+    path('update_item/',Fin_updateItem),
+    path('create_new_unit/',Fin_createNewUnit),
     path('change_item_status/',Fin_changeItemStatus),
     path('fetch_items/<int:id>/',Fin_fetchItems),
     path('fetch_item_details/<int:id>/',Fin_fetchItemDetails),
     path('fetch_item_history/<int:id>/',Fin_fetchItemHistory),
     path('delete_item/<int:id>/',Fin_deleteItem),
     path('delete_item_comment/<int:id>/',Fin_deleteItemComment),
+    path('item_transaction_pdf/<int:itemId>/<int:id>/',Fin_itemTransactionPdf),
+    path('share_item_transactions_email/',Fin_shareItemTransactionsToEmail),
     path('add_item_comment/',Fin_addItemComment),
+    path('check_accounts/',Fin_checkAccounts),
+    path('create_new_account_from_items/',Fin_createNewAccountFromItems),
 
 
 

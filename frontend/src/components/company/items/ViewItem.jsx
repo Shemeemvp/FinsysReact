@@ -53,6 +53,11 @@ function ViewItem() {
     fetchItemDetails();
   }, []);
 
+  const currentUrl = window.location.href;
+  const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(
+    currentUrl
+  )}`;
+
   function stockValue(stock, rate) {
     var valueElement = document.getElementById("stockValue");
     if (!isNaN(stock) && !isNaN(rate)) {
@@ -228,7 +233,7 @@ function ViewItem() {
 
   function printSection(sectionId) {
     document.body.style.backgroundColor = "white";
-    document.querySelector('.page-content').style.backgroundColor = 'white';
+    document.querySelector(".page-content").style.backgroundColor = "white";
     var transactionElements = document.querySelectorAll(
       "#transaction, #transaction *"
     );
@@ -253,8 +258,126 @@ function ViewItem() {
     transactionElements.forEach(function (element) {
       element.style.color = "white";
     });
-    document.querySelector('.page-content').style.backgroundColor = '#2f516f';
+    document.querySelector(".page-content").style.backgroundColor = "#2f516f";
   }
+
+  function printSheet() {
+    var divToPrint = document.getElementById("printContent");
+    var printWindow = window.open("", "", "height=700,width=1000");
+
+    printWindow.document.write("<html><head><title></title>");
+    printWindow.document.write(`
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Agbalumo&family=Black+Ops+One&family=Gluten:wght@100..900&family=Playball&display=swap" rel="stylesheet">
+    `);
+    printWindow.document.write("</head>");
+    printWindow.document.write("<body>");
+    printWindow.document.write(divToPrint.outerHTML);
+    printWindow.document.write("</body>");
+    printWindow.document.write("</html>");
+    printWindow.document.close();
+    printWindow.print();
+    printWindow.addEventListener('afterprint', function() {
+      printWindow.close();
+    });
+
+  }
+
+  function itemTransactionPdf() {
+    axios
+      .get(`${config.base_url}/item_transaction_pdf/${itemId}/${ID}/`, {
+        responseType: "blob",
+      })
+      .then((res) => {
+        console.log("PDF RES=", res);
+
+        const file = new Blob([res.data], { type: "application/pdf" });
+        const fileURL = URL.createObjectURL(file);
+        const a = document.createElement("a");
+        a.href = fileURL;
+        a.download = `Item_transactions_${itemId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (err.response && err.response.data && !err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  }
+
+  const [emailIds, setEmailIds] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+
+  function handleShareEmail(e) {
+    e.preventDefault();
+
+    var emailsString = emailIds.trim();
+
+    var emails = emailsString.split(",").map(function (email) {
+      return email.trim();
+    });
+
+    var emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+
+    var invalidEmails = [];
+    if (emailsString === "") {
+      alert("Enter valid email addresses.");
+    } else {
+      for (var i = 0; i < emails.length; i++) {
+        var currentEmail = emails[i];
+
+        if (currentEmail !== "" && !emailRegex.test(currentEmail)) {
+          invalidEmails.push(currentEmail);
+        }
+      }
+
+      if (invalidEmails.length > 0) {
+        alert("Invalid emails. Please check!\n" + invalidEmails.join(", "));
+      } else {
+        // document.getElementById("share_to_email_form").submit();
+        var em = {
+          itemId: itemId,
+          Id: ID,
+          email_ids: emailIds,
+          email_message: emailMessage,
+        };
+        axios
+          .post(`${config.base_url}/share_item_transactions_email/`, em)
+          .then((res) => {
+            if (res.data.status) {
+              Toast.fire({
+                icon: "success",
+                title: "Shared via mail.",
+              });
+              setEmailIds("");
+              setEmailMessage("");
+            }
+          })
+          .catch((err) => {
+            console.log("ERROR=", err);
+            if (
+              err.response &&
+              err.response.data &&
+              !err.response.data.status
+            ) {
+              Swal.fire({
+                icon: "error",
+                title: `${err.response.data.message}`,
+              });
+            }
+          });
+      }
+    }
+  }
+
   return (
     <>
       <FinBase />
@@ -334,7 +457,7 @@ function ViewItem() {
                       </a>
                     )}
                     <a
-                      href="{% url 'Fin_itemTransactionPdf' itemDetails.id %}"
+                      onClick={itemTransactionPdf}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-file"
                       role="button"
                       id="pdfBtn"
@@ -355,7 +478,7 @@ function ViewItem() {
                         height: "fit-content",
                         width: "fit-content",
                       }}
-                      onClick={() => printSection("printContent")}
+                      onClick={() => printSheet()}
                     >
                       &nbsp;Print
                     </a>
@@ -379,7 +502,7 @@ function ViewItem() {
                         style={{ backgroundColor: "black" }}
                         id="listdiv"
                       >
-                        <li
+                        {/* <li
                           style={{
                             textAlign: "center",
                             color: "#e5e9ec",
@@ -387,7 +510,22 @@ function ViewItem() {
                           }}
                         >
                           WhatsApp
-                        </li>
+                        </li> */}
+                        <a
+                          href={shareUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <li
+                            style={{
+                              textAlign: "center",
+                              color: "#e5e9ec",
+                              cursor: "pointer",
+                            }}
+                          >
+                            WhatsApp
+                          </li>
+                        </a>
                         <li
                           style={{
                             textAlign: "center",
@@ -401,15 +539,15 @@ function ViewItem() {
                         </li>
                       </ul>
                     </div>
-                    <a
-                      href="{% url 'Fin_editItem' itemDetails.id %}"
+                    <Link
+                      to={`/edit_item/${itemId}/`}
                       className="ml-2 fa fa-pencil btn btn-outline-secondary text-grey"
                       id="editBtn"
                       role="button"
                       style={{ height: "fit-content", width: "fit-content" }}
                     >
                       &nbsp;Edit
-                    </a>
+                    </Link>
                     <a
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-trash"
                       id="deleteBtn"
@@ -767,28 +905,29 @@ function ViewItem() {
                         </p>
                       </div>
                     </div>
-
-                    <div className="row mb-3">
-                      <div className="col-4 d-flex justify-content-start">
-                        <label style={{ color: "white" }}>
-                          Purchase Account
-                        </label>
+                    {itemDetails.purchase_account && (
+                      <div className="row mb-3">
+                        <div className="col-4 d-flex justify-content-start">
+                          <label style={{ color: "white" }}>
+                            Purchase Account
+                          </label>
+                        </div>
+                        <div className="col-4 d-flex justify-content-center">
+                          <p>:</p>
+                        </div>
+                        <div className="col-4 d-flex justify-content-start">
+                          <p
+                            style={{
+                              color: "white",
+                              fontSize: "15px",
+                              textTransform: "Uppercase",
+                            }}
+                          >
+                            {itemDetails.purchase_account}
+                          </p>
+                        </div>
                       </div>
-                      <div className="col-4 d-flex justify-content-center">
-                        <p>:</p>
-                      </div>
-                      <div className="col-4 d-flex justify-content-start">
-                        <p
-                          style={{
-                            color: "white",
-                            fontSize: "15px",
-                            textTransform: "Uppercase",
-                          }}
-                        >
-                          {itemDetails.purchase_account}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                     {itemDetails.purchase_description && (
                       <div className="row mb-5">
                         <div className="col-4 d-flex justify-content-start">
@@ -832,26 +971,27 @@ function ViewItem() {
                         </p>
                       </div>
                     </div>
-
-                    <div className="row mb-3">
-                      <div className="col-4 d-flex justify-content-start">
-                        <label style={{ color: "white" }}>Sales Account</label>
+                    {itemDetails.sales_account && (
+                      <div className="row mb-3">
+                        <div className="col-4 d-flex justify-content-start">
+                          <label style={{ color: "white" }}>Sales Account</label>
+                        </div>
+                        <div className="col-4 d-flex justify-content-center">
+                          <p>:</p>
+                        </div>
+                        <div className="col-4 d-flex justify-content-start">
+                          <p
+                            style={{
+                              color: "white",
+                              fontSize: "15px",
+                              textTransform: "Uppercase",
+                            }}
+                          >
+                            {itemDetails.sales_account}
+                          </p>
+                        </div>
                       </div>
-                      <div className="col-4 d-flex justify-content-center">
-                        <p>:</p>
-                      </div>
-                      <div className="col-4 d-flex justify-content-start">
-                        <p
-                          style={{
-                            color: "white",
-                            fontSize: "15px",
-                            textTransform: "Uppercase",
-                          }}
-                        >
-                          {itemDetails.sales_account}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                     {itemDetails.sales_description && (
                       <div className="row mb-5">
                         <div className="col-4 d-flex justify-content-start">
@@ -950,13 +1090,12 @@ function ViewItem() {
               </button>
             </div>
             <div className="modal-body">
-              <div className="card p-3">
-                <form
-                  action="{% url 'Fin_shareItemTransactionsToEmail' item.id %}"
-                  method="post"
-                  className="needs-validation"
-                  id="share_to_email_form"
-                >
+              <form
+                onSubmit={handleShareEmail}
+                className="needs-validation px-1"
+                id="share_to_email_form"
+              >
+                <div className="card p-3 w-100">
                   <div className="form-group">
                     <label for="emailIds">Email IDs</label>
                     <textarea
@@ -965,8 +1104,10 @@ function ViewItem() {
                       id="emailIds"
                       rows="3"
                       placeholder="Multiple emails can be added by separating with a comma(,)."
+                      value={emailIds}
+                      onChange={(e) => setEmailIds(e.target.value)}
                       required
-                    ></textarea>
+                    />
                   </div>
                   <div className="form-group mt-2">
                     <label for="item_unitname">Message(optional)</label>
@@ -976,23 +1117,25 @@ function ViewItem() {
                       className="form-control"
                       cols=""
                       rows="4"
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
                       placeholder="This message will be sent along with Bill details."
-                    ></textarea>
+                    />
                   </div>
-                </form>
-              </div>
-              <div
-                className="modal-footer d-flex justify-content-center"
-                style={{ borderTop: "1px solid #ffffff" }}
-              >
-                <button
-                  type="submit"
-                  id="share_with_email"
-                  className="submitShareEmailBtn w-50 text-uppercase"
+                </div>
+                <div
+                  className="modal-footer d-flex justify-content-center w-100"
+                  style={{ borderTop: "1px solid #ffffff" }}
                 >
-                  SEND MAIL
-                </button>
-              </div>
+                  <button
+                    type="submit"
+                    id="share_with_email"
+                    className="submitShareEmailBtn w-50 text-uppercase"
+                  >
+                    SEND MAIL
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -1030,6 +1173,7 @@ function ViewItem() {
                   className="form-control"
                   name="comment"
                   value={comment}
+                  required
                   onChange={(e) => setComment(e.target.value)}
                 />
                 {comments.length > 0 ? (

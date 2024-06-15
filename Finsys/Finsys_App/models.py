@@ -183,6 +183,17 @@ class Fin_Chart_Of_Account(models.Model):
     create_status=models.CharField(max_length=255,null=True,blank=True)
     status = models.CharField(max_length=255,null=True,blank=True)
 
+class Fin_ChartOfAccount_History(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    account = models.ForeignKey(Fin_Chart_Of_Account, on_delete=models.CASCADE, null=True)
+    date = models.DateField(auto_now_add=True, auto_now=False, null=True)
+    action_choices = [
+        ('Created', 'Created'),
+        ('Edited', 'Edited'),
+    ]
+    action = models.CharField(max_length=20, null=True, blank = True, choices=action_choices)
+
 class Fin_Loan_Term(models.Model):
     duration= models.IntegerField(null=True,blank=True)
     term = models.CharField(max_length=255,null=True,blank=True)
