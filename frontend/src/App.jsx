@@ -48,6 +48,10 @@ import AddItem from './components/company/items/AddItem';
 import ViewItem from './components/company/items/ViewItem';
 import ItemHistory from './components/company/items/ItemHistory';
 import EditItem from './components/company/items/EditItem';
+import Customers from './components/company/customers/Customers';
+import AddCustomer from './components/company/customers/AddCustomer';
+import ViewCustomer from './components/company/customers/ViewCustomer';
+import CustomerHistory from './components/company/customers/CustomerHistory';
 
 function App() {
   return (
@@ -105,11 +109,19 @@ function App() {
             <Route path="/company_home" element={<CompanyHome />}></Route>
             <Route path="/company_profile" element={<CompanyProfile />}></Route>
             <Route path="/edit_staff_profile" element={<EditStaffProfile />}></Route>
+
+            {/* Items */}
             <Route path="/items" element={<Items />}></Route>
             <Route path="/add_item" element={<AddItem />}></Route>
             <Route path="/view_item/:itemId/" element={<ViewItem />}></Route>
             <Route path="/item_history/:itemId/" element={<ItemHistory />}></Route>
             <Route path="/edit_item/:itemId/" element={<EditItem />}></Route>
+
+            {/* Customers */}
+            <Route path="/customers" element={<Customers />}></Route>
+            <Route path="/add_customer" element={<AddCustomer />}></Route>
+            <Route path="/view_customer/:customerId/" element={<ViewCustomer />}></Route>
+            <Route path="/customer_history/:customerId/" element={<CustomerHistory />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

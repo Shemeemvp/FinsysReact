@@ -4459,3 +4459,399 @@ def Fin_updateItem(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
+# Customers
+@api_view(("GET",))
+def Fin_fetchCustomers(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        customers = Fin_Customers.objects.filter(Company=com)
+        serializer = CustomerSerializer(customers, many=True)
+        return Response(
+            {"status": True, "customers": serializer.data}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getCompanyPaymentTerms(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+        pTerms = Fin_Company_Payment_Terms.objects.filter(Company=cmp)
+        serializer = CompanyPaymentTermsSerializer(pTerms, many=True)
+        return Response(
+            {"status": True, "terms": serializer.data}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def Fin_getSalesPriceLists(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+        lists = Fin_Price_List.objects.filter(Company=cmp)
+        serializer = PriceListSerializer(lists, many=True)
+        return Response(
+            {"status": True, "salesPriceLists": serializer.data}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_createNewCompanyPaymentTerm(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+        request.data["Company"] = com.id
+        if not Fin_Company_Payment_Terms.objects.filter(Company = com, term_name__iexact = request.data['term_name']).exists():
+            serializer = CompanyPaymentTermsSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"status": True, "data": serializer.data},
+                    status=status.HTTP_201_CREATED,
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {"status": False, "message": 'Term name exists'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkGstIn(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        gstIn = request.GET['gstin']
+        if Fin_Customers.objects.filter(Company = cmp, gstin__iexact = gstIn).exists():
+            return Response({'is_exist':True, 'message':f'{gstIn} already exists, Try another.!'})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkPan(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        pan = request.GET['pan']
+        if Fin_Customers.objects.filter(Company = cmp, pan_no__iexact = pan).exists():
+            return Response({'is_exist':True, 'message':f'{pan} already exists, Try another.!'})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkPhone(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        phn = request.GET['phone']
+        if Fin_Customers.objects.filter(Company = cmp, mobile__iexact = phn).exists():
+            return Response({'is_exist':True, 'message':f'{phn} already exists, Try another.!'})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkEmail(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        eml = request.GET['email']
+        if Fin_Customers.objects.filter(Company = cmp, email__iexact = eml).exists():
+            return Response({'is_exist':True, 'message':f'{eml} already exists, Try another.!'})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkCustomerName(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        fName = request.GET['fName']
+        lName = request.GET['lName']
+
+        if Fin_Customers.objects.filter(Company = cmp, first_name__iexact = fName, last_name__iexact = lName).exists():
+            msg = f'{fName} {lName} already exists, Try another.!'
+            return Response({'is_exist':True, 'message':msg})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("POST",))
+def Fin_createNewCustomer(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        fName = request.data['first_name']
+        lName = request.data['last_name']
+        gstIn = request.data['gstin']
+        pan = request.data['pan_no']
+        email = request.data['email']
+        phn = request.data['mobile']
+
+        if Fin_Customers.objects.filter(Company = com, first_name__iexact = fName, last_name__iexact = lName).exists():
+            return Response({"status": False, "message": f"Customer `{fName} {lName}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        elif Fin_Customers.objects.filter(Company = com, gstin__iexact = gstIn).exists():
+            return Response({"status": False, "message": f"GSTIN `{gstIn}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        elif Fin_Customers.objects.filter(Company = com, pan_no__iexact = pan).exists():
+            return Response({"status": False, "message": f"PAN No `{pan}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        elif Fin_Customers.objects.filter(Company = com, mobile__iexact = phn).exists():
+            return Response({"status": False, "message": f"Phone Number `{phn}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        elif Fin_Customers.objects.filter(Company = com, email__iexact = email).exists():
+            return Response({"status": False, "message": f"Email `{email}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            request.data["Company"] = com.id
+            request.data["LoginDetails"] = com.Login_Id.id
+            request.data['gstin'] = None if request.data['gst_type'] == "Unregistered Business" or request.data['gst_type'] == 'Overseas' or request.data['gst_type'] == 'Consumer' else request.data['gstin']
+            request.data['price_list'] = None if request.data['price_list'] ==  "" else request.data['price_list']
+            request.data['payment_terms'] = None if request.data['payment_terms'] == "" else request.data['payment_terms']
+            request.data['opening_balance'] = 0 if request.data['opening_balance'] == "" else float(request.data['opening_balance'])
+            request.data['current_balance'] = 0 if request.data['opening_balance'] == "" else float(request.data['opening_balance'])
+            request.data['credit_limit'] = 0 if request.data['credit_limit'] == "" else float(request.data['credit_limit'])
+
+            serializer = CustomerSerializer(data=request.data)
+            if serializer.is_valid():
+                # save transaction
+                serializer.save()
+
+                Fin_Customers_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    customer = Fin_Customers.objects.get(id=serializer.data['id']),
+                    action = 'Created'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addCustomerComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = CustomerCommentsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteCustomerComment(request, id):
+    try:
+        cmt = Fin_Customers_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def Fin_fetchCustomerDetails(request, id):
+    try:
+        cust = Fin_Customers.objects.get(id=id)
+        hist = Fin_Customers_History.objects.filter(customer=cust).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_Customers_Comments.objects.filter(customer=cust)
+        customerSerializer = CustomerSerializer(cust)
+        commentsSerializer = CustomerCommentsSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "customer": customerSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeCustomerStatus(request):
+    try:
+        custId = request.data["id"]
+        data = Fin_Customers.objects.get(id=custId)
+        data.status = request.data["status"]
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchCustomerHistory(request, id):
+    try:
+        cust = Fin_Customers.objects.get(id=id)
+        hist = Fin_Customers_History.objects.filter(customer=cust)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        customerSerializer = CustomerSerializer(cust)
+        return Response(
+            {"status": True, "customer": customerSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteCustomer(request, id):
+    try:
+        cust = Fin_Customers.objects.get(id=id)
+        cust.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

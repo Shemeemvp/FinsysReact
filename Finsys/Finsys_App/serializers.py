@@ -72,3 +72,28 @@ class ItemCommentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Items_Comments
         fields = '__all__'
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Customers
+        fields = '__all__'
+
+class CustomerHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Customers_History
+        fields = '__all__'
+
+class CustomerCommentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Customers_Comments
+        fields = '__all__'
+
+class CompanyPaymentTermsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Company_Payment_Terms
+        fields = '__all__'
+
+class PriceListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Price_List
+        fields = '__all__'

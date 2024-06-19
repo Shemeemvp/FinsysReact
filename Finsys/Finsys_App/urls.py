@@ -80,6 +80,23 @@ urlpatterns = [
     path('check_accounts/',Fin_checkAccounts),
     path('create_new_account_from_items/',Fin_createNewAccountFromItems),
 
+    # Customers
 
+    path('fetch_customers/<int:id>/',Fin_fetchCustomers),
+    path('fetch_customer_details/<int:id>/',Fin_fetchCustomerDetails),
+    path('get_company_payment_terms/<int:id>/',Fin_getCompanyPaymentTerms),
+    path('get_sales_price_lists/<int:id>/',Fin_getSalesPriceLists),
+    path('create_new_company_payment_term/',Fin_createNewCompanyPaymentTerm),
+    path('check_gstin/',Fin_checkGstIn),
+    path('check_pan/',Fin_checkPan),
+    path('check_phone/',Fin_checkPhone),
+    path('check_email/',Fin_checkEmail),
+    path('check_customer_name/',Fin_checkCustomerName),
+    path('create_new_customer/',Fin_createNewCustomer),
+    path('delete_customer_comment/<int:id>/',Fin_deleteCustomerComment),
+    path('add_customer_comment/',Fin_addCustomerComment),
+    path('change_customer_status/',Fin_changeCustomerStatus),
+    path('fetch_customer_history/<int:id>/',Fin_fetchCustomerHistory),
+    path('delete_customer/<int:id>/',Fin_deleteCustomer),
 
 ]

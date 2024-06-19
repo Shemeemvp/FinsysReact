@@ -89,7 +89,47 @@ function FinBase() {
       item.style.display = "none";
     });
   }
+  function hideMenus(menuId){
+    try {
+      document.querySelectorAll("ul.submenu").forEach(element => {
+        if(element.id != menuId){
+          element.classList.remove("mm-show");
+          element.classList.add("mm-collapse");
+        }
+      });
+    } catch (error) {
+      console.error("Error adding class to submenu elements:", error);
+    }
+  }
   const showMenu = (menuId) => {
+    hideMenus(menuId)
+    const element = document.getElementById(menuId);
+    if (element) {
+      if (element.classList.contains("mm-show")) {
+        element.classList.remove("mm-show");
+        element.classList.add("mm-collapse");
+      } else {
+        element.classList.add("mm-show");
+        element.classList.remove("mm-collapse");
+      }
+    }
+  };
+
+  function hideRepSubMenus(menuId){
+    try {
+      document.querySelectorAll("ul.reportSub").forEach(element => {
+        if(element.id != menuId){
+          element.classList.remove("mm-show");
+          element.classList.add("mm-collapse");
+        }
+      });
+    } catch (error) {
+      console.error("Error adding class to submenu elements:", error);
+    }
+  }
+
+  const showRepSubMenu = (menuId) => {
+    hideRepSubMenus(menuId)
     const element = document.getElementById(menuId);
     if (element) {
       if (element.classList.contains("mm-show")) {
@@ -1148,7 +1188,7 @@ function FinBase() {
                 </a>
                 <ul className="submenu" id="salesSubmenu">
                   {/* {% if allmodules.Customers == 1 %} */}
-                  <li id="customers"><a href="{% url 'Fin_customers' %}"><i className="bx bx-right-arrow-alt"></i>Customers</a>
+                  <li id="customers"><Link to="/customers"><i className="bx bx-right-arrow-alt"></i>Customers</Link>
                   </li>
                   {/* {% endif %} */}
 
@@ -1248,7 +1288,7 @@ function FinBase() {
                   <div className="menu-title">Reports</div>
                 </a>
                 <ul className="submenu" id="reportsSubmenu">
-                  <li id="transactonreport" onClick={()=>showMenu('transSub')}>
+                  <li id="transactonreport" onClick={()=>showRepSubMenu('transSub')}>
                     <a><i className="bx bx-right-arrow-alt"></i>Transaction Reports</a>
                     <ul className="px-4 reportSub" id="transSub">
                       <li><a href=""><i className="bx bx-right-arrow-alt"></i>Sales</a></li>
@@ -1269,7 +1309,7 @@ function FinBase() {
                       <li><a href=""><i className="bx bx-right-arrow-alt"></i>Balance Sheet</a></li>
                     </ul>
                   </li>
-                  <li id="stock" onClick={()=>showMenu('stockSub')}>
+                  <li id="stock" onClick={()=>showRepSubMenu('stockSub')}>
                     <a><i className="bx bx-right-arrow-alt"></i>Stock Reports </a>
                     <ul className="px-4 reportSub" id="stockSub">
                       <li><a href=""><i className="bx bx-right-arrow-alt"></i>Stock Summary </a></li>
@@ -1280,7 +1320,7 @@ function FinBase() {
                       <li><a href="{% url 'Fin_itemReportByParty' %}"><i className="bx bx-right-arrow-alt"></i>Item Report by Party</a></li>
                     </ul>
                   </li>
-                  <li id="party" onClick={()=>showMenu('partySub')}>
+                  <li id="party" onClick={()=>showRepSubMenu('partySub')}>
                     <a><i className="bx bx-right-arrow-alt"></i>Party Reports</a>
                     <ul className="px-4 reportSub" id="partySub">
                       <li><a href="{% url 'Fin_partyStatementReport' %}"><i className="bx bx-right-arrow-alt"></i>Party Statements</a></li>
@@ -1289,7 +1329,7 @@ function FinBase() {
                       <li><a href="{% url 'Fin_salespurchasebypartyReport' %}"><i className="bx bx-right-arrow-alt"></i>Sale purchase By Party </a></li>
                     </ul>
                   </li>
-                  <li id="gstreports" onClick={()=>showMenu('gstrSub')}>
+                  <li id="gstreports" onClick={()=>showRepSubMenu('gstrSub')}>
                     <a><i className="bx bx-right-arrow-alt"></i>GST Reports</a>
                     <ul className="px-4 reportSub" id="gstrSub">
                       <li><a href="{% url 'gstr1' %}">GSTR-1</a></li>
@@ -1299,7 +1339,7 @@ function FinBase() {
                       <li><a href="{% url 'sale_summary_byHSN' %}">Sale Summary by HSN</a></li>
                     </ul>
                   </li>
-                  <li id="accountsreceivables" onClick={()=>showMenu('receivableSub')}>
+                  <li id="accountsreceivables" onClick={()=>showRepSubMenu('receivableSub')}>
                     <a><i className="bx bx-right-arrow-alt"></i>Accounts Receivable</a>
                     <ul className="px-4 reportSub" id="receivableSub">
                       <li><a href="{% url 'Fin_customerbalence' %}"><i className="bx bx-right-arrow-alt"></i>Customer Balances</a></li>
@@ -1315,7 +1355,7 @@ function FinBase() {
                     </ul>
                   </li>
 
-                  <li id="crd" onClick={()=>showMenu('paymentSub')}>
+                  <li id="crd" onClick={()=>showRepSubMenu('paymentSub')}>
                     <a><i className="bx bx-right-arrow-alt"></i>Payments Received </a>
                     <ul className="px-4 reportSub" id="paymentSub">
                       <li><a href="{%url 'Fin_paymentRecivedReport' %}"><i className="bx bx-right-arrow-alt"></i> Payments Received Summary</a></li>
@@ -1324,7 +1364,7 @@ function FinBase() {
                     </ul>
                   </li>
 
-                  <li id="accountspayables" onClick={()=>showMenu('payableSub')}>
+                  <li id="accountspayables" onClick={()=>showRepSubMenu('payableSub')}>
                     <a><i className="bx bx-right-arrow-alt"></i>Accounts Payable</a>
                     <ul className="px-4 reportSub" id="payableSub">
                       <li><a href="{% url 'Fin_venderbalance' %}"><i className="bx bx-right-arrow-alt"></i>Vendor Balances</a></li>
@@ -1355,7 +1395,7 @@ function FinBase() {
 
                     <li><a href="{% url 'Fin_employee_loan_statement_report' %}"><i className="bx bx-right-arrow-alt"></i>Employee Loan Statement</a></li>
                     
-                    <li id="business" onClick={()=>showMenu('businessSub')}>
+                    <li id="business" onClick={()=>showRepSubMenu('businessSub')}>
                       <a><i className="bx bx-right-arrow-alt"></i>Business Status</a>
                       <ul className="px-4 reportSub" id="businessSub">
                         <li><a href="{% url 'Fin_BankReport' %}"><i className="bx bx-right-arrow-alt"></i> Bank Statement</a></li>
