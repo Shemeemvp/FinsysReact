@@ -52,6 +52,7 @@ import Customers from './components/company/customers/Customers';
 import AddCustomer from './components/company/customers/AddCustomer';
 import ViewCustomer from './components/company/customers/ViewCustomer';
 import CustomerHistory from './components/company/customers/CustomerHistory';
+import EditCustomer from './components/company/customers/EditCustomer';
 
 function App() {
   return (
@@ -122,6 +123,7 @@ function App() {
             <Route path="/add_customer" element={<AddCustomer />}></Route>
             <Route path="/view_customer/:customerId/" element={<ViewCustomer />}></Route>
             <Route path="/customer_history/:customerId/" element={<CustomerHistory />}></Route>
+            <Route path="/edit_customer/:customerId/" element={<EditCustomer />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

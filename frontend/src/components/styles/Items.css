@@ -50,3 +50,7 @@
 #commentSaveBtn:hover {
   background: #3a4b5a;
 }
+
+.vl {
+  border-left: 6px solid gray;
+}

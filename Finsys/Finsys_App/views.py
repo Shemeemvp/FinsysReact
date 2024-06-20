@@ -4787,12 +4787,17 @@ def Fin_fetchCustomerDetails(request, id):
         cmt = Fin_Customers_Comments.objects.filter(customer=cust)
         customerSerializer = CustomerSerializer(cust)
         commentsSerializer = CustomerCommentsSerializer(cmt, many=True)
+        extObj = {
+            'paymentTerms': cust.payment_terms.term_name if cust.payment_terms else 'Nill',
+            'priceList': cust.price_list.name if cust.price_list else 'Nill'
+        }
         return Response(
             {
                 "status": True,
                 "customer": customerSerializer.data,
                 "history": his,
                 "comments": commentsSerializer.data,
+                "extraDetails": extObj
             },
             status=status.HTTP_200_OK,
         )
@@ -4851,6 +4856,204 @@ def Fin_deleteCustomer(request, id):
         return Response({"status": True}, status=status.HTTP_200_OK)
     except Exception as e:
         print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_customerTransactionPdf(request):
+    try:
+        id = request.GET['Id']
+        custId = request.GET['c_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        cust = Fin_Customers.objects.get(id=custId)
+        context = {"customer": cust}
+
+        template_path = "company/Fin_Customer_Transaction_Pdf.html"
+        fname = "Customer_transaction_" + cust.first_name
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_shareCustomerTransactionsToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        custId = request.data["c_id"]
+        cust = Fin_Customers.objects.get(id=custId)
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        context = {"customer": cust}
+        template_path = "company/Fin_Customer_Transaction_Pdf.html"
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f"Customer_transactions-{cust.first_name}.pdf"
+        subject = f"Customer_transactions_{cust.first_name}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached Transaction details - Customer-{cust.first_name}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("PUT",))
+def Fin_updateCustomer(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        cust = Fin_Customers.objects.get(id=request.data['c_id'])
+        fName = request.data['first_name']
+        lName = request.data['last_name']
+        gstIn = request.data['gstin']
+        pan = request.data['pan_no']
+        email = request.data['email']
+        phn = request.data['mobile']
+
+        if cust.first_name != fName and cust.last_name != lName and Fin_Customers.objects.filter(Company = com, first_name__iexact = fName, last_name__iexact = lName).exists():
+            return Response({"status": False, "message": f"Customer `{fName} {lName}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        elif cust.gstin != gstIn and Fin_Customers.objects.filter(Company = com, gstin__iexact = gstIn).exists():
+            return Response({"status": False, "message": f"GSTIN `{gstIn}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        elif cust.pan_no != pan and Fin_Customers.objects.filter(Company = com, pan_no__iexact = pan).exists():
+            return Response({"status": False, "message": f"PAN No `{pan}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        elif cust.mobile != phn and Fin_Customers.objects.filter(Company = com, mobile__iexact = phn).exists():
+            return Response({"status": False, "message": f"Phone Number `{phn}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        elif cust.email != email and Fin_Customers.objects.filter(Company = com, email__iexact = email).exists():
+            return Response({"status": False, "message": f"Email `{email}` already exists, try another!"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            request.data['gstin'] = None if request.data['gst_type'] == "Unregistered Business" or request.data['gst_type'] == 'Overseas' or request.data['gst_type'] == 'Consumer' else request.data['gstin']
+            request.data['price_list'] = None if request.data['price_list'] ==  "" else request.data['price_list']
+            request.data['payment_terms'] = None if request.data['payment_terms'] == "" else request.data['payment_terms']
+            request.data['opening_balance'] = 0 if request.data['opening_balance'] == "" else float(request.data['opening_balance'])
+            request.data['current_balance'] = 0 if request.data['opening_balance'] == "" else float(request.data['opening_balance'])
+            request.data['credit_limit'] = 0 if request.data['credit_limit'] == "" else float(request.data['credit_limit'])
+
+            serializer = CustomerSerializer(cust,data=request.data)
+            if serializer.is_valid():
+                # save transaction
+                serializer.save()
+
+                Fin_Customers_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    customer = Fin_Customers.objects.get(id=serializer.data['id']),
+                    action = 'Edited'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def custCreditLimitAlerts(request, id):
+    try:
+        s_id = id
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type != 'Distributor':
+            if data.User_Type == "Company":
+                com = Fin_Company_Details.objects.get(Login_Id = s_id)
+            elif data.User_Type == 'Staff':
+                com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+            
+            customers = Fin_Customers.objects.filter(Company = com)
+
+            if Fin_CNotification.objects.filter(Company_id=com, Customers__isnull=False).exists():
+                alertItems = Fin_CNotification.objects.filter(Company_id=com, Customers__isnull=False)
+                for c in alertItems:
+                    cust = Fin_Customers.objects.get(id = c.Customers.id)
+                    if cust.credit_limit > 0 and cust.credit_limit > cust.current_balance:
+                        c.status = 'Old'
+                        c.save()
+                    else:
+                        c.status = 'New'
+                        c.save()
+                
+                for itm in customers:
+                    if not Fin_CNotification.objects.filter(Customers = itm).exists():
+                        if itm.credit_limit > 0 and itm.current_balance > itm.credit_limit:
+                            Fin_CNotification.objects.create(Company_id = com, Login_Id = data, Customers = itm, Title = 'Customer Credit Limit Alert.!!', Discription = f'{itm.first_name} {itm.last_name} has been exceeded the credit limit..')
+
+            else:
+                for itm in customers:
+                    if itm.credit_limit > 0 and itm.current_balance > itm.credit_limit:
+                        Fin_CNotification.objects.create(Company_id = com, Login_Id = data, Customers = itm, Title = 'Customer Credit Limit Alert.!!', Discription = f'{itm.first_name} {itm.last_name} has been exceeded the credit limit..')
+            
+            custCreditLimit = Fin_CNotification.objects.filter(Company_id = com, Customers__isnull=False, status = 'New')
+            nCount = Fin_CNotification.objects.filter(Company_id = com, status = 'New')
+            if custCreditLimit:
+                serializer = CNotificationsSerializer(custCreditLimit, many=True)
+                return Response(
+                    {"status": True, "custCreditLimit": serializer.data, 'count':len(nCount)},
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    {"status": True, "custCreditLimit": None, 'count':len(nCount)},
+                    status=status.HTTP_200_OK,
+                )
+        else:
+            return Response({"status": False},status=status.HTTP_200_OK)
+    except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

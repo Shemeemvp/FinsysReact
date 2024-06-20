@@ -12,6 +12,10 @@ function ViewCustomer() {
   const ID = Cookies.get("Login_id");
   const { customerId } = useParams();
   const [customerDetails, setCustomerDetails] = useState({});
+  const [extraDetails, setExtraDetails] = useState({
+    paymentTerms: 'Nill',
+    priceList: 'Nill'
+  })
   const [comments, setComments] = useState([]);
   const [history, setHistory] = useState({
     action: "",
@@ -26,17 +30,18 @@ function ViewCustomer() {
         console.log("CUST DATA=", res);
         if (res.data.status) {
           var itm = res.data.customer;
+          var ext = res.data.extraDetails;
           var hist = res.data.history;
           var cmt = res.data.comments;
           setComments([]);
           cmt.map((c) => {
             setComments((prevState) => [...prevState, c]);
           });
+          setExtraDetails(ext);
           setCustomerDetails(itm);
           if (hist) {
             setHistory(hist);
           }
-          // stockValue(itm.current_stock, itm.purchase_price);
         }
       })
       .catch((err) => {
@@ -59,14 +64,6 @@ function ViewCustomer() {
     currentUrl
   )}`;
 
-  function stockValue(stock, rate) {
-    var valueElement = document.getElementById("stockValue");
-    if (!isNaN(stock) && !isNaN(rate)) {
-      valueElement.innerText = parseFloat(stock * rate);
-    } else {
-      valueElement.innerText = 0;
-    }
-  }
   const navigate = useNavigate();
 
   const changeStatus = (status) => {
@@ -233,36 +230,6 @@ function ViewCustomer() {
     document.getElementById("commentsBtn").style.display = "none";
   }
 
-  function printSection(sectionId) {
-    document.body.style.backgroundColor = "white";
-    document.querySelector(".page-content").style.backgroundColor = "white";
-    var transactionElements = document.querySelectorAll(
-      "#transaction, #transaction *"
-    );
-    transactionElements.forEach(function (element) {
-      element.style.color = "black";
-    });
-
-    var printContents = document.getElementById(sectionId).innerHTML;
-
-    var printerDiv = document.createElement("div");
-    printerDiv.className = "printContainer";
-    printerDiv.innerHTML = printContents;
-
-    document.body.appendChild(printerDiv);
-    document.body.classList.add("printingContent");
-
-    window.print();
-
-    document.body.removeChild(printerDiv);
-    document.body.classList.remove("printingContent");
-
-    transactionElements.forEach(function (element) {
-      element.style.color = "white";
-    });
-    document.querySelector(".page-content").style.backgroundColor = "#2f516f";
-  }
-
   function ExportToExcel(type, fn, dl) {
     var elt = document.getElementById("transactionTable");
     var wb = XLSX.utils.table_to_book(elt, { sheet: "sheet1" });
@@ -297,10 +264,15 @@ function ViewCustomer() {
     });
   }
 
-  function itemTransactionPdf() {
+  function customerTransactionPdf() {
+    var cust = {
+      Id: ID,
+      c_id: customerId
+    }
     axios
-      .get(`${config.base_url}/item_transaction_pdf/${customerId}/${ID}/`, {
+      .get(`${config.base_url}/customer_transaction_pdf/`, {
         responseType: "blob",
+        params: cust
       })
       .then((res) => {
         console.log("PDF RES=", res);
@@ -309,7 +281,7 @@ function ViewCustomer() {
         const fileURL = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = fileURL;
-        a.download = `Item_transactions_${customerId}.pdf`;
+        a.download = `Customer_transactions_${customerDetails.first_name}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -356,13 +328,13 @@ function ViewCustomer() {
       } else {
         // document.getElementById("share_to_email_form").submit();
         var em = {
-          customerId: customerId,
+          c_id: customerId,
           Id: ID,
           email_ids: emailIds,
           email_message: emailMessage,
         };
         axios
-          .post(`${config.base_url}/share_item_transactions_email/`, em)
+          .post(`${config.base_url}/share_customer_transactions_email/`, em)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
@@ -476,7 +448,7 @@ function ViewCustomer() {
                       &nbsp;Export
                     </a>
                     <a
-                      href="{% url 'Fin_customerTransactionsPdf' customerDetails.id %}"
+                      onClick={customerTransactionPdf}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-file"
                       role="button"
                       id="pdfBtn"
@@ -493,6 +465,7 @@ function ViewCustomer() {
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-print"
                       role="button"
                       id="printBtn"
+                      onClick={() => printSheet()}
                       style={{
                         display: "none",
                         height: "fit-content",
@@ -549,15 +522,15 @@ function ViewCustomer() {
                         </li>
                       </ul>
                     </div>
-                    <a
-                      href="{% url 'Fin_editCustomer' customerDetails.id %}"
+                    <Link
+                      to={`/edit_customer/${customerId}/`}
                       className="ml-2 fa fa-pencil btn btn-outline-secondary text-grey"
                       id="editBtn"
                       role="button"
                       style={{ height: "fit-content", width: "fit-content" }}
                     >
                       &nbsp;Edit
-                    </a>
+                    </Link>
                     <a
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-trash"
                       id="deleteBtn"
@@ -672,13 +645,26 @@ function ViewCustomer() {
                         <div className="col-md-3 mt-3">
                           <p className="mb-0">{customerDetails.mobile}</p>
                         </div>
-                        <div className="col-md-2 mt-3 vl">
-                          <h6 className="mb-0">Website</h6>
-                        </div>
-                        <div className="col-md-1 mt-3">:</div>
-                        <div className="col-md-3 mt-3">
-                          <p className="mb-0">{customerDetails.website}</p>
-                        </div>
+                        {customerDetails.website ? (
+                          <>
+                            <div className="col-md-2 mt-3 vl">
+                              <h6 className="mb-0">Website</h6>
+                            </div>
+                            <div className="col-md-1 mt-3">:</div>
+                            <div className="col-md-3 mt-3">
+                              <p className="mb-0">{customerDetails.website? customerDetails.website : 'Nill'}</p>
+                            </div>
+                          </>
+                        ): (
+                          <>
+                            <div className="col-md-2 mt-3 vl">
+                              <h6 className="mb-0"></h6>
+                            </div>
+                            <div className="col-md-1 mt-3"></div>
+                            <div className="col-md-3 mt-3">
+                            </div>
+                          </>
+                        ) }
                       </div>
 
                       <div className="row mb-4 d-flex justify-content-between align-items-center">
@@ -707,7 +693,7 @@ function ViewCustomer() {
                         <div className="col-md-1 mt-3">:</div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0">
-                            {"{ customerDetails.payment_terms.term_name }"}
+                            {extraDetails.paymentTerms}
                           </p>
                         </div>
                         <div className="col-md-2 mt-3 vl">
@@ -716,7 +702,7 @@ function ViewCustomer() {
                         <div className="col-md-1 mt-3">:</div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0">
-                            {"{ customerDetails.price_list.name }"}
+                            {extraDetails.priceList}
                           </p>
                         </div>
                       </div>
@@ -924,10 +910,12 @@ function ViewCustomer() {
                       <h6 className="">GST Type</h6>
                       {customerDetails.gst_type}
                     </div>
-                    <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">GSTIN</h6>
-                      {customerDetails.gstin}
-                    </div>
+                    {customerDetails.gstin ? (
+                      <div className="d-flex justify-content-between mb-4">
+                        <h6 className="">GSTIN</h6>
+                        {customerDetails.gstin ? customerDetails.gstin : 'Nill'}
+                      </div>
+                    ):null}
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">PAN</h6>
                       {customerDetails.pan_no}
@@ -975,7 +963,7 @@ function ViewCustomer() {
                     <div className="customer_data">
                       <p>Mobile: {customerDetails.mobile}</p>
                       <p>Credit Limit: {customerDetails.credit_limit}</p>
-                      <p>Balance: {"{BALANCE|floatformat:2 }"}</p>
+                      <p>Balance: {"0"}</p>
                     </div>
                   </div>
                 </div>
@@ -995,7 +983,7 @@ function ViewCustomer() {
                     </thead>
                     <tbody>
                       {/* {% for t in transactions %} */}
-                      <tr>
+                      {/* <tr>
                         <td style={{ textAlign: "center" }}>
                           {"{forloop.counter}"}
                         </td>
@@ -1007,7 +995,7 @@ function ViewCustomer() {
                           {" "}
                           {"{t.balance}"}{" "}
                         </td>
-                      </tr>
+                      </tr> */}
                       {/* {% endfor %} */}
                     </tbody>
                   </table>

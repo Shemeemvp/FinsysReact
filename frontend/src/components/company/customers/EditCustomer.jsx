@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 
-function AddCustomer() {
+function EditCustomer() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
+  const { customerId } = useParams();
 
   const [terms, setTerms] = useState([]);
   const [lists, setLists] = useState([]);
@@ -57,6 +58,62 @@ function AddCustomer() {
     fetchSalesPriceLists();
   }, []);
 
+  const [customerDetails, setCustomerDetails] = useState({});
+
+  const fetchCustomerDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_customer_details/${customerId}/`)
+      .then((res) => {
+        console.log("CUST DATA=", res);
+        if (res.data.status) {
+          var cust = res.data.customer;
+          setCustomerDetails(cust)
+          setTitle(cust.title)
+          setFirstName(cust.first_name)
+          setLastName(cust.last_name)
+          setCompany(cust.company)
+          setLocation(cust.location)
+          setPlaceOfSupply(cust.place_of_supply)
+          setGstType(cust.gst_type)
+          setGstIn(cust.gstin)
+          setPanNo(cust.pan_no)
+          setOBalType(cust.open_balance_type)
+          setOBal(cust.opening_balance)
+          setCreditLimit(cust.credit_limit)
+          setPaymentTerm(cust.payment_terms)
+          setPriceList(cust.price_list)
+          setEmail(cust.email)
+          setWebsite(cust.website)
+          setMobile(cust.mobile)
+          setBStreet(cust.billing_street)
+          setBCity(cust.billing_city)
+          setBState(cust.billing_state)
+          setBPincode(cust.billing_pincode)
+          setBCountry(cust.billing_country)
+          setSStreet(cust.ship_street)
+          setSCity(cust.ship_city)
+          setSState(cust.ship_state)
+          setSPincode(cust.ship_pincode)
+          setSCountry(cust.ship_country)
+
+          checkGstType(cust.gst_type)
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchCustomerDetails();
+  }, []);
+
   const [title, setTitle] = useState("Mr");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -92,6 +149,7 @@ function AddCustomer() {
 
     var dt = {
       Id: ID,
+      c_id: customerId,
       title: title,
       first_name: firstName,
       last_name: lastName,
@@ -119,20 +177,19 @@ function AddCustomer() {
       ship_city: sCity,
       ship_state: sState,
       ship_pincode: sPincode,
-      ship_country: sCountry,
-      status: "Active",
+      ship_country: sCountry
     };
 
     axios
-      .post(`${config.base_url}/create_new_customer/`, dt)
+      .put(`${config.base_url}/update_customer/`, dt)
       .then((res) => {
         console.log("CUST RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Customer Created",
+            title: "Customer Updated",
           });
-          navigate("/customers");
+          navigate(`/view_customer/${customerId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -371,7 +428,7 @@ function AddCustomer() {
   }
 
   function checkCustomerName(fname, lname) {
-    if (fname != "" && lname != "") {
+    if (fname != "" && lname != "" && fname != customerDetails.first_name && lname != customerDetails.last_name) {
       var u = {
         Id: ID,
         fName: fname,
@@ -402,7 +459,7 @@ function AddCustomer() {
 
   function checkCustomerGSTIN(gstin) {
     var gstNo = gstin;
-    if (gstNo != "") {
+    if (gstNo != "" && gstNo != customerDetails.gstin) {
       var u = {
         Id: ID,
         gstin: gstNo,
@@ -432,7 +489,7 @@ function AddCustomer() {
 
   function checkCustomerPAN(pan) {
     var panNo = pan;
-    if (panNo != "") {
+    if (panNo != "" && panNo != customerDetails.pan_no) {
       var u = {
         Id: ID,
         pan: panNo,
@@ -462,7 +519,7 @@ function AddCustomer() {
 
   function checkCustomerPhone(phone) {
     var phoneNo = phone;
-    if (phoneNo != "") {
+    if (phoneNo != "" && phoneNo != customerDetails.mobile) {
       var u = {
         Id: ID,
         phone: phoneNo,
@@ -492,7 +549,7 @@ function AddCustomer() {
 
   function checkCustomerEmail(email) {
     var custEmail = email;
-    if (custEmail != "") {
+    if (custEmail != "" && custEmail != customerDetails.email) {
       var u = {
         Id: ID,
         email: custEmail,
@@ -576,7 +633,7 @@ function AddCustomer() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">ADD CUSTOMER</h2>
+                <h2 className="mt-3">EDIT CUSTOMER</h2>
               </center>
               <hr />
             </div>
@@ -1336,7 +1393,7 @@ function AddCustomer() {
                     SAVE
                   </button>
                   <Link
-                    to="/customers"
+                    to={`/view_customer/${customerId}/`}
                     className="btn btn-outline-secondary ml-1 text-light"
                     style={{ width: "fit-content", height: "fit-content" }}
                   >
@@ -1427,4 +1484,4 @@ function AddCustomer() {
   );
 }
 
-export default AddCustomer;
+export default EditCustomer;

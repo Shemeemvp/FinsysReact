@@ -98,5 +98,10 @@ urlpatterns = [
     path('change_customer_status/',Fin_changeCustomerStatus),
     path('fetch_customer_history/<int:id>/',Fin_fetchCustomerHistory),
     path('delete_customer/<int:id>/',Fin_deleteCustomer),
+    path('customer_transaction_pdf/',Fin_customerTransactionPdf),
+    path('share_customer_transactions_email/',Fin_shareCustomerTransactionsToEmail),
+    path('update_customer/',Fin_updateCustomer),
+    path('fetch_cust_credit_limit_alerts/<int:id>/',custCreditLimitAlerts),
+
 
 ]

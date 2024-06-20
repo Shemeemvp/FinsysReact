@@ -15,6 +15,7 @@ function FinBase() {
   const [noti, setNoti] = useState(false);
   const [notification, setNotification] = useState([]);
   const [stockAlerts, setStockAlerts] = useState([]);
+  const [custCreditLimitAlerts, setCustCreditLimitAlerts] = useState([]);
   const [notificationCount, setNotificationCount] = useState(0);
 
   const fetchNotifications = () => {
@@ -75,6 +76,36 @@ function FinBase() {
 
   useEffect(() => {
     fetchMinStockAlerts();
+  }, []);
+
+  const fetchCustCreditLimitAlerts = () => {
+    axios
+      .get(`${config.base_url}/fetch_cust_credit_limit_alerts/${ID}/`)
+      .then((res) => {
+        console.log("CUST CRED", res);
+        if (res.data.status) {
+          var ntfs = res.data.custCreditLimit;
+          setCustCreditLimitAlerts([]);
+          setNoti(res.data.status);
+          setNotificationCount(res.data.count);
+          ntfs.map((i) => {
+            var obj = {
+              title: i.Title,
+              desc: i.Discription,
+              date: i.date_created,
+              time: i.time,
+            };
+            setCustCreditLimitAlerts((prevState) => [...prevState, obj]);
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR", err);
+      });
+  };
+
+  useEffect(() => {
+    fetchCustCreditLimitAlerts();
   }, []);
 
   const navigate = useNavigate();
@@ -855,6 +886,27 @@ function FinBase() {
                                 </div>
                               </a>
                             ))}
+                            {custCreditLimitAlerts.map((item) => (
+                              <a
+                                className="dropdown-item w-100"
+                                href="#"
+                              >
+                                <div className="media align-items-center w-100">
+                                  <div className="notify bg-light-primary text-primary">
+                                    <i className="bx bx-file"></i>
+                                  </div>
+                                  <div className="media-body">
+                                    <h6 className="msg-name w-100">
+                                      {item.title}
+                                      <span className="msg-time float-right">
+                                        {item.date} {formatTimeInput(item.time)}
+                                      </span>
+                                    </h6>
+                                    <p className="msg-info">{item.desc}</p>
+                                  </div>
+                                </div>
+                              </a>
+                            ))}
                             <a
                               className="w-100 justify-content-center"
                               href="#"
@@ -899,6 +951,27 @@ function FinBase() {
                       </a>
                       <div className="header-notifications-list">
                         {stockAlerts.map((item) => (
+                          <a
+                            className="dropdown-item w-100"
+                            href="#"
+                          >
+                            <div className="media align-items-center w-100">
+                              <div className="notify bg-light-primary text-primary">
+                                <i className="bx bx-file"></i>
+                              </div>
+                              <div className="media-body">
+                                <h6 className="msg-name w-100">
+                                  {item.title}
+                                  <span className="msg-time float-right">
+                                    {item.date} {formatTimeInput(item.time)}
+                                  </span>
+                                </h6>
+                                <p className="msg-info">{item.desc}</p>
+                              </div>
+                            </div>
+                          </a>
+                        ))}
+                        {custCreditLimitAlerts.map((item) => (
                           <a
                             className="dropdown-item w-100"
                             href="#"

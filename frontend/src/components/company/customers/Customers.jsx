@@ -323,7 +323,7 @@ function Customers() {
                     <td>{index+1}</td>
                     <td>{i.name}</td>
                     <td>{i.gstType}</td>
-                    <td>{i.gstIn}</td>
+                    <td>{i.gstIn ? i.gstIn : 'Nill'}</td>
                     <td>{i.mailId}</td>
                     <td>{i.openingBalance}</td>
                     <td>{i.status}</td>
