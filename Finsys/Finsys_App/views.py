@@ -5058,3 +5058,372 @@ def custCreditLimitAlerts(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
+# Price Lists
+@api_view(("GET",))
+def Fin_getNewPriceListItems(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+        
+        items = Fin_Items.objects.filter(Company = cmp, status = 'Active').order_by('name')
+        serializer = ItemSerializer(items, many=True)
+        return Response(
+            {"status": True, "items": serializer.data}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_createNewPriceList(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        name = request.data['name']
+        if Fin_Price_List.objects.filter(Company = com, name__iexact = name).exists():
+            return Response({'status':False,'message':f'{name} already exists, try another'})
+        else:
+            request.data['LoginDetails'] = data.id
+            request.data['Company'] = com.id
+
+            itmRt = request.data['item_rate']
+
+            serializer = PriceListSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                priceList = Fin_Price_List.objects.get(id=serializer.data['id'])
+
+                if itmRt == 'Customized individual rate':
+                    items = request.data['list_items']
+                    for i in items:
+
+                        itemId = i.get('id')
+                        stdRate = i.get('salesRate') if request.data['type'] == 'Sales' else i.get('purchaseRate')
+                        customRate = 0 if i.get('customRate') == "" else i.get('customRate')
+                        Fin_PriceList_Items.objects.create(Company = com, LoginDetails = data, list = priceList, item = Fin_Items.objects.get(id = itemId), standard_rate = float(stdRate), custom_rate = float(customRate))
+                    
+                Fin_PriceList_Transaction_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    list = priceList,
+                    action = 'Created'
+                )
+
+                return Response({'status':True, 'data':serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({'status':False, 'data':serializer.errors}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("GET",))
+def Fin_fetchPriceLists(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        priceLists = Fin_Price_List.objects.filter(Company=com)
+        serializer = PriceListSerializer(priceLists, many=True)
+        return Response(
+            {"status": True, "priceLists": serializer.data}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchPLDetails(request, id):
+    try:
+        pl = Fin_Price_List.objects.get(id=id)
+        plItems = Fin_PriceList_Items.objects.filter(list = pl)
+        hist = Fin_PriceList_Transaction_History.objects.filter(list=pl).last()
+        his = None
+        plItms = []
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        
+        if plItems:
+            for i in plItems:
+                p = {
+                    'id':i.item.id,
+                    'name': i.item.name,
+                    'salesRate': i.item.selling_price,
+                    'purchaseRate': i.item.purchase_price,
+                    'stdRate': i.standard_rate,
+                    'customRate': i.custom_rate
+                }
+                plItms.append(p)
+                
+        cmt = Fin_PriceList_Comments.objects.filter(list=pl)
+        plSerializer = PriceListSerializer(pl)
+        commentsSerializer = PriceListCommentsSerializer(cmt, many=True)
+     
+        return Response(
+            {
+                "status": True,
+                "priceList": plSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": plItms
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changePLStatus(request):
+    try:
+        plId = request.data["id"]
+        data = Fin_Price_List.objects.get(id=plId)
+        data.status = request.data["status"]
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addPLComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = PriceListCommentsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deletePLComment(request, id):
+    try:
+        cmt = Fin_PriceList_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deletePriceList(request, id):
+    try:
+        pl = Fin_Price_List.objects.get(id=id)
+        pl.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchPLHistory(request, id):
+    try:
+        pl = Fin_Price_List.objects.get(id=id)
+        hist = Fin_PriceList_Transaction_History.objects.filter(list=pl)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        plSerializer = PriceListSerializer(pl)
+        return Response(
+            {"status": True, "priceList": plSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_priceListPdf(request):
+    try:
+        id = request.GET['Id']
+        plId = request.GET['pl_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        lst = Fin_Price_List.objects.get(id=plId)
+        plItems = Fin_PriceList_Items.objects.filter(list = lst)
+        context = {'list': lst, 'plItems':plItems}
+        
+        template_path = 'company/Fin_PriceListView_Pdf.html'
+        fname = 'Price_List_'+lst.name
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_sharePLDetailsToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        plId = request.data["pl_id"]
+        lst = Fin_Price_List.objects.get(id=plId)
+        plItems = Fin_PriceList_Items.objects.filter(list = lst)
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        context = {'list': lst, 'plItems':plItems}
+        template_path = 'company/Fin_PriceListView_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'Price_list_{lst.name}.pdf'
+        subject = f"Price_list_{lst.name}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - Price List-{lst.name}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+def Fin_updatePriceList(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        list = Fin_Price_List.objects.get(id=request.data['pl_id'])
+        name = request.data['name']
+        if name != list.name and Fin_Price_List.objects.filter(Company = com, name__iexact = name).exists():
+            return Response({'status':False,'message':f'{name} already exists, try another'})
+        else:
+            itmRt = request.data['item_rate']
+
+            serializer = PriceListSerializer(list,data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                priceList = Fin_Price_List.objects.get(id=serializer.data['id'])
+
+                Fin_PriceList_Items.objects.filter(list=list).delete()
+                if itmRt == 'Customized individual rate':
+                    items = request.data['list_items']
+                    for i in items:
+
+                        itemId = i.get('id')
+                        stdRate = i.get('salesRate') if request.data['type'] == 'Sales' else i.get('purchaseRate')
+                        customRate = 0 if i.get('customRate') == "" else i.get('customRate')
+                        Fin_PriceList_Items.objects.create(Company = com, LoginDetails = data, list = priceList, item = Fin_Items.objects.get(id = itemId), standard_rate = float(stdRate), custom_rate = float(customRate))
+                    
+                Fin_PriceList_Transaction_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    list = priceList,
+                    action = 'Edited'
+                )
+
+                return Response({'status':True, 'data':serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({'status':False, 'data':serializer.errors}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

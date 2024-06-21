@@ -97,3 +97,8 @@ class PriceListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Price_List
         fields = '__all__'
+
+class PriceListCommentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_PriceList_Comments
+        fields = '__all__'

@@ -281,19 +281,8 @@ class Fin_Price_List(models.Model):
     LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE,null=True,blank=True)
     Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE,null=True,blank=True)
     name = models.CharField(max_length=255,null=True,blank=True)
-
-    TYPE_CHOICES=(
-        ('Sales','Sales'),
-        ('Purchase','Purchase'),
-    )
-
-    ITEM_RATE_CHOICES=(
-        ('percentage','Markup or Markdown the item rates by a percentage'),
-        ('individual_rate','Enter the rate individually for each item'),
-    )
-
-    type = models.CharField(max_length=15,choices=TYPE_CHOICES,null=True,blank=True,default='Sales')
-    item_rate = models.CharField(max_length=100,choices=ITEM_RATE_CHOICES,null=True,blank=True,default='percentage')
+    type = models.CharField(max_length=15,null=True,blank=True,default='Sales')
+    item_rate = models.CharField(max_length=100,null=True,blank=True,default='percentage')
     description = models.TextField(blank=True, null=True)
     currency = models.CharField(max_length=255,null=True,blank=True,default='Indian Rupee')
     up_or_down = models.CharField(max_length=100,default='None')
@@ -301,6 +290,33 @@ class Fin_Price_List(models.Model):
     round_off = models.CharField(max_length=100,default='None', null=True, blank=True)
     created_date = models.DateField(auto_now_add = True, auto_now = False, blank = True, null = True)
     status = models.CharField(max_length=15,default='Active',null=True,blank=True)
+
+
+class Fin_PriceList_Items(models.Model):
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE,null=True,blank=True)
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE,null=True,blank=True)
+    list = models.ForeignKey(Fin_Price_List,on_delete=models.CASCADE,null=True,blank=True)
+    item = models.ForeignKey(Fin_Items,on_delete=models.CASCADE,null=True,blank=True)
+    standard_rate = models.FloatField(null=True,blank=True,default=0.0)
+    custom_rate=models.FloatField(null=True,blank=True,default=0.0)
+
+
+class Fin_PriceList_Transaction_History(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    list = models.ForeignKey(Fin_Price_List,on_delete=models.CASCADE,null=True,blank=True)
+    date = models.DateField(auto_now_add=True, auto_now=False, null=True)
+    action_choices = [
+        ('Created', 'Created'),
+        ('Edited', 'Edited'),
+    ]
+    action = models.CharField(max_length=20, null=True, blank = True, choices=action_choices)
+
+
+class Fin_PriceList_Comments(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    list = models.ForeignKey(Fin_Price_List,on_delete=models.CASCADE,null=True,blank=True)
+    comments = models.CharField(max_length=500,null=True,blank=True)
 
 # Customers
 

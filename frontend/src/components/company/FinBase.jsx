@@ -1201,7 +1201,7 @@ function FinBase() {
 
                   {/* {% if allmodules.Price_List == 1 %} */}
                   <li id="pricelist">
-                    <a href="{% url 'Fin_priceList' %}"><i className="bx bx-right-arrow-alt"></i>Price Lists</a>
+                    <Link to="/price_list"><i className="bx bx-right-arrow-alt"></i>Price Lists</Link>
                   </li>
                   {/* {% endif %} */}
 

@@ -53,6 +53,11 @@ import AddCustomer from './components/company/customers/AddCustomer';
 import ViewCustomer from './components/company/customers/ViewCustomer';
 import CustomerHistory from './components/company/customers/CustomerHistory';
 import EditCustomer from './components/company/customers/EditCustomer';
+import PriceList from './components/company/pricelist/PriceList';
+import AddPriceList from './components/company/pricelist/AddPriceList';
+import ViewPriceList from './components/company/pricelist/ViewPriceList';
+import PriceListHistory from './components/company/pricelist/PriceListHistory';
+import EditPriceList from './components/company/pricelist/EditPriceList';
 
 function App() {
   return (
@@ -124,6 +129,13 @@ function App() {
             <Route path="/view_customer/:customerId/" element={<ViewCustomer />}></Route>
             <Route path="/customer_history/:customerId/" element={<CustomerHistory />}></Route>
             <Route path="/edit_customer/:customerId/" element={<EditCustomer />}></Route>
+
+            {/* Price List */}
+            <Route path="/price_list" element={<PriceList />}></Route>
+            <Route path="/add_price_list" element={<AddPriceList />}></Route>
+            <Route path="/view_price_list/:priceListId/" element={<ViewPriceList />}></Route>
+            <Route path="/price_list_history/:priceListId/" element={<PriceListHistory />}></Route>
+            <Route path="/edit_price_list/:priceListId/" element={<EditPriceList />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

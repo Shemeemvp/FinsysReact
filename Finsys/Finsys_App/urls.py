@@ -103,5 +103,17 @@ urlpatterns = [
     path('update_customer/',Fin_updateCustomer),
     path('fetch_cust_credit_limit_alerts/<int:id>/',custCreditLimitAlerts),
 
-
+    # Price Lists
+    path('fetch_price_lists/<int:id>/',Fin_fetchPriceLists),
+    path('get_new_price_list_items/<int:id>/',Fin_getNewPriceListItems),
+    path('create_new_price_list/',Fin_createNewPriceList),
+    path('update_price_list/',Fin_updatePriceList),
+    path('fetch_pl_details/<int:id>/',Fin_fetchPLDetails),
+    path('change_pl_status/',Fin_changePLStatus),
+    path('add_pl_comment/',Fin_addPLComment),
+    path('delete_pl_comment/<int:id>/',Fin_deletePLComment),
+    path('delete_price_list/<int:id>/',Fin_deletePriceList),
+    path('fetch_pl_history/<int:id>/',Fin_fetchPLHistory),
+    path('price_list_pdf/',Fin_priceListPdf),
+    path('share_pl_details_email/',Fin_sharePLDetailsToEmail),
 ]
