@@ -1501,8 +1501,8 @@ function FinBase() {
                   
 
                   {/* {% if allmodules.Chart_of_Accounts == 1 %} */}
-                  <li id="chartofaccounts"><a href="{% url 'Fin_chartOfAccounts' %}"><i className="bx bx-right-arrow-alt"></i>Chart of
-                      Accounts</a>
+                  <li id="chartofaccounts"><Link to="/chart_of_accounts"><i className="bx bx-right-arrow-alt"></i>Chart of
+                      Accounts</Link>
                   </li>
                   {/* {% endif %} */}
 

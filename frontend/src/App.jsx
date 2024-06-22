@@ -58,6 +58,11 @@ import AddPriceList from './components/company/pricelist/AddPriceList';
 import ViewPriceList from './components/company/pricelist/ViewPriceList';
 import PriceListHistory from './components/company/pricelist/PriceListHistory';
 import EditPriceList from './components/company/pricelist/EditPriceList';
+import ChartOfAccounts from './components/company/chartofaccounts/ChartOfAccounts';
+import AddAccount from './components/company/chartofaccounts/AddAccount';
+import ViewAccount from './components/company/chartofaccounts/ViewAccount';
+import AccountHistory from './components/company/chartofaccounts/AccountHistory';
+import EditAccount from './components/company/chartofaccounts/EditAccount';
 
 function App() {
   return (
@@ -136,6 +141,13 @@ function App() {
             <Route path="/view_price_list/:priceListId/" element={<ViewPriceList />}></Route>
             <Route path="/price_list_history/:priceListId/" element={<PriceListHistory />}></Route>
             <Route path="/edit_price_list/:priceListId/" element={<EditPriceList />}></Route>
+
+            {/* Chart of Accounts */}
+            <Route path="/chart_of_accounts" element={<ChartOfAccounts />}></Route>
+            <Route path="/add_account" element={<AddAccount />}></Route>
+            <Route path="/view_account/:accountId/" element={<ViewAccount />}></Route>
+            <Route path="/account_history/:accountId/" element={<AccountHistory />}></Route>
+            <Route path="/edit_account/:accountId/" element={<EditAccount />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

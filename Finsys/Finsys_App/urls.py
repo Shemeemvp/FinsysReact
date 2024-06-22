@@ -116,4 +116,15 @@ urlpatterns = [
     path('fetch_pl_history/<int:id>/',Fin_fetchPLHistory),
     path('price_list_pdf/',Fin_priceListPdf),
     path('share_pl_details_email/',Fin_sharePLDetailsToEmail),
+
+    # Chart of Accounts
+    path('fetch_chart_of_accounts/<int:id>/',Fin_fetchChartOfAccounts),
+    path('create_new_account/',Fin_createNewAccount),
+    path('fetch_account_details/<int:id>/',Fin_fetchAccountDetails),
+    path('change_account_status/',Fin_changeAccountStatus),
+    path('delete_account/<int:id>/',Fin_deleteAccount),
+    path('account_transaction_pdf/',Fin_accountsPdf),
+    path('share_account_transactions_email/',Fin_shareAccountTransactionsToEmail),
+    path('fetch_account_history/<int:id>/',Fin_fetchAccountHistory),
+    path('update_account/',Fin_updateAccount),
 ]
