@@ -5724,3 +5724,416 @@ def Fin_updateAccount(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
+# Banking
+
+@api_view(("GET",))
+def Fin_fetchBanks(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        banks = Fin_Banking.objects.filter(company = com)
+        serializer = BankSerializer(banks, many=True)
+        return Response(
+            {"status": True, "banks": serializer.data}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkBankAccountNumber(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        bank = request.GET['bank']
+        num = request.GET['number']
+        if Fin_Banking.objects.filter(company = cmp, bank_name__iexact = bank, account_number__iexact = num).exists():
+            return Response({'is_exist':True, 'message':f'{num} already exists, Try another.!'})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_createNewBank(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        request.data["company"] = com.id
+        request.data["login_details"] = com.Login_Id.id
+        request.data["opening_balance"] = -1 * float(request.data['opening_balance']) if request.data['opening_balance_type'] == 'CREDIT' else float(request.data['opening_balance'])
+        
+        if Fin_Banking.objects.filter(company = com, bank_name__iexact = request.data['bank_name'], account_number__iexact = request.data['account_number']).exists():
+            return Response({"status": False, "message": "Account Number already exists"})
+        else:
+            serializer = BankSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                bank = Fin_Banking.objects.get(id=serializer.data['id'])
+                
+                # save transactions
+                banking_history = Fin_BankingHistory(
+                    login_details = data,
+                    company = com,
+                    banking = bank,
+                    action = 'Created'
+                )
+                banking_history.save()
+                
+                transaction=Fin_BankTransactions(
+                    login_details = data,
+                    company = com,
+                    banking = bank,
+                    amount = request.data['opening_balance'],
+                    adjustment_date = request.data['date'],
+                    transaction_type = "Opening Balance",
+                    from_type = '',
+                    to_type = '',
+                    current_balance = request.data['opening_balance']
+                    
+                )
+                transaction.save()
+
+                transaction_history = Fin_BankTransactionHistory(
+                    login_details = data,
+                    company = com,
+                    bank_transaction = transaction,
+                    action = 'Created'
+                )
+                transaction_history.save()
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchBankDetails(request, id):
+    try:
+        bank = Fin_Banking.objects.get(id=id)
+        hist = Fin_BankingHistory.objects.filter(banking=bank).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.login_details.First_name
+                + " "
+                + hist.login_details.Last_name,
+            }
+
+        cmt = Fin_BankingComments.objects.filter(banking=bank)
+        trans = Fin_BankTransactions.objects.filter(banking=bank) 
+
+        bnkSerializer = BankSerializer(bank)
+        commentsSerializer = BankCommentsSerializer(cmt, many=True)
+        transSerializer = BankTransactionsSerializer(trans, many=True)
+        updt = bank.login_details.First_name+" "+bank.login_details.Last_name if bank.login_details else ""
+        return Response(
+            {
+                "status": True,
+                "bank": bnkSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "transactions": transSerializer.data,
+                "lastUpdated": updt,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchBankTransactionHistory(request, id):
+    try:
+        trns = Fin_BankTransactions.objects.get(id=id)
+        hist = Fin_BankTransactionHistory.objects.filter(bank_transaction=trns)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.login_details.First_name + " " + i.login_details.Last_name,
+                }
+                his.append(h)
+        bnkSerializer = BankSerializer(trns.banking)
+        return Response(
+            {"status": True, "bank": bnkSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteBankTransaction(request, id):
+    try:
+        transaction = Fin_BankTransactions.objects.get(id=id)
+        bank = Fin_Banking.objects.get(id=transaction.banking_id)
+        #   transfer_to = Fin_BankTransactions.objects.get(id=transaction.bank_to_bank)
+        try:
+                transfer_to = Fin_BankTransactions.objects.get(id=transaction.bank_to_bank)
+        except:
+                transfer_to = None
+
+        try:
+                bank_to = Fin_Banking.objects.get(id=transfer_to.banking.id)
+        except:
+                transfer_to = None
+
+
+        if transaction.transaction_type=='Cash Withdraw':
+            bank.current_balance = bank.current_balance + transaction.amount
+        elif transaction.transaction_type=='Cash Deposit':
+            bank.current_balance = bank.current_balance - transaction.amount
+        elif transaction.adjustment_type=='Reduce Balance':
+            bank.current_balance = bank.current_balance + transaction.amount
+        elif transaction.adjustment_type=='Increase Balance':
+            bank.current_balance = bank.current_balance - transaction.amount
+        elif transaction.transaction_type=='From Bank Transfer':
+            bank.current_balance = bank.current_balance + transaction.amount
+            bank_to.current_balance = bank_to.current_balance - transfer_to.amount
+        elif transaction.transaction_type=='To Bank Transfer':
+            bank.current_balance = bank.current_balance - transaction.amount
+            bank_to.current_balance = bank_to.current_balance + transfer_to.amount
+        else:
+            bank.current_balance = bank.current_balance - transaction.amount
+        
+        bank.save()
+        try:
+            bank_to.save()
+        except:
+            bank_to = None
+        transaction.delete()
+        try:
+            transfer_to.delete()
+        except:
+            transfer_to = None
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+def Fin_updateBank(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        bank = Fin_Banking.objects.get(id=request.data['b_id'])
+        old_op_blnc = float(bank.opening_balance)
+        try:
+            trans = Fin_BankTransactions.objects.get(banking = bank, transaction_type = "Opening Balance")
+        except:
+            trans = None
+
+        request.data["company"] = com.id
+        request.data["login_details"] = com.Login_Id.id
+        request.data["opening_balance"] = -1 * float(request.data['opening_balance']) if request.data['opening_balance_type'] == 'CREDIT' else float(request.data['opening_balance'])
+        opening_balance = request.data["opening_balance"]
+
+        if bank.account_number != request.data['account_number'] and bank.bank_name != request.data['bank_name'] and Fin_Banking.objects.filter(company = com, bank_name__iexact = request.data['bank_name'], account_number__iexact = request.data['account_number']).exists():
+            return Response({"status": False, "message": "Account Number already exists"})
+        else:
+            if old_op_blnc == float(opening_balance):
+                request.data['current_balance'] = bank.current_balance
+                serializer = BankSerializer(bank,data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    banking_history = Fin_BankingHistory(
+                        login_details = data,
+                        company = com,
+                        banking = bank,
+                        action = 'Updated'
+                    )
+                    banking_history.save()
+                    return Response(
+                        {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                    )
+                else:
+                    return Response(
+                        {"status": False, "data": serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            elif old_op_blnc < int(opening_balance): 
+                increased_amount =  float(opening_balance) - old_op_blnc 
+                request.data['current_balance'] = bank.current_balance + increased_amount
+                serializer = BankSerializer(bank,data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    banking_history = Fin_BankingHistory(
+                        login_details = data,
+                        company = com,
+                        banking = bank,
+                        action = 'Updated'
+                    )
+                    banking_history.save()
+
+                    if trans:
+                        trans.amount += float(increased_amount)
+                        trans.current_balance +=float(increased_amount)
+                        trans.save()
+
+                        transaction_history = Fin_BankTransactionHistory(
+                            login_details = data,
+                            company = com,
+                            bank_transaction = trans,
+                            action = 'Updated'
+                        )
+                        transaction_history.save()
+                    return Response(
+                        {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                    )
+                else:
+                    return Response(
+                        {"status": False, "data": serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            elif old_op_blnc > int(opening_balance): 
+                decreased_amount =  old_op_blnc - float(opening_balance)
+                request.data['current_balance'] = bank.current_balance - decreased_amount
+                serializer = BankSerializer(bank,data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    banking_history = Fin_BankingHistory(
+                        login_details = data,
+                        company = com,
+                        banking = bank,
+                        action = 'Updated'
+                    )
+                    banking_history.save()
+
+                    if trans:
+                        trans.amount -= float(decreased_amount)
+                        trans.current_balance -=float(decreased_amount)
+                        trans.save()
+
+                        transaction_history = Fin_BankTransactionHistory(
+                            login_details = data,
+                            company = com,
+                            bank_transaction = trans,
+                            action = 'Updated'
+                        )
+                        transaction_history.save()
+                    return Response(
+                        {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                    )
+                else:
+                    return Response(
+                        {"status": False, "data": serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeBankStatus(request):
+    try:
+        bnkId = request.data["id"]
+        data = Fin_Banking.objects.get(id=bnkId)
+        data.bank_status = request.data["status"]
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addBankingAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        request.data["company"] = com.id
+        request.data["login_details"] = com.Login_Id.id
+        serializer = BankAttachmentSerializer(data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteBank(request, id):
+    try:
+        bank = Fin_Banking.objects.get(id=id)
+        trans = Fin_BankTransactions.objects.filter(banking=bank).exclude(transaction_type = 'Opening Balance')
+        if trans:
+            bank.bank_status = 'Inactive'
+            bank.save()
+            return Response({"status": False, 'message': 'Bank already have some transactions so the status has been changed to Inactive'}, status=status.HTTP_200_OK)
+        else:
+            bank.delete()
+            return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

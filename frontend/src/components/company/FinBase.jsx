@@ -1219,8 +1219,8 @@ function FinBase() {
                 <ul className="submenu" id="cashBankSubmenu">
                   {/* {% if allmodules.Offline_Banking == 1 %} */}
                   
-                  <li id="Offlinebanking"><a href="{% url 'Fin_banking_listout' %}"><i className="bx bx-right-arrow-alt"></i>Offline
-                      Banking</a>
+                  <li id="Offlinebanking"><Link to="/banking"><i className="bx bx-right-arrow-alt"></i>Offline
+                      Banking</Link>
                   </li>
                   {/* {% endif %} */}
 

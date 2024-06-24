@@ -102,3 +102,23 @@ class PriceListCommentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_PriceList_Comments
         fields = '__all__'
+
+class BankSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Banking
+        fields = '__all__'
+
+class BankCommentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_BankingComments
+        fields = '__all__'
+
+class BankTransactionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_BankTransactions
+        fields = '__all__'
+
+class BankAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_BankingAttachments
+        fields = '__all__'

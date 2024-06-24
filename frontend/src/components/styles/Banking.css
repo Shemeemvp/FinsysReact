@@ -1,0 +1,441 @@
+.card-registration .select-input.form-control[readonly]:not([disabled]) {
+  font-size: 2rem;
+  line-height: 2.15;
+  padding-left: 0.75em;
+  padding-right: 0.75em;
+}
+
+.card-registration .select-arrow {
+  top: 13px;
+}
+
+.bg-grey {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+@media (min-width: 992px) {
+  .card-registration-2 .bg-grey {
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+}
+
+@media (max-width: 991px) {
+  .card-registration-2 .bg-grey {
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+}
+
+.vl {
+  border-left: 6px solid gray;
+}
+
+.table-row {
+  cursor: pointer;
+}
+
+/* hr {
+    border: 0;
+    clear:both;
+    display:block;
+    width: 96%;               
+    background-color:#000000;
+    height: 1px;
+  } */
+.spaced > li {
+  color: black;
+  font-size: 20px;
+}
+
+.table1 {
+  font-size: 20px;
+  width: 100%;
+  color: black;
+}
+
+.label-lg {
+  padding: 0.3em 0.6em 0.4em;
+  font-size: 22px;
+  color: black;
+  line-height: 1.1;
+  height: 24px;
+}
+
+.widget-header {
+  background-color: #444;
+  color: white;
+  font-size: 24px;
+}
+
+.widget-header:after,
+.widget-header:before {
+  content: "";
+  display: table;
+  line-height: 0;
+}
+
+.widget-header:after {
+  clear: right;
+}
+
+.widget-box.collapsed > .widget-header {
+  border-bottom-width: 0;
+}
+
+.collapsed.fullscreen > .widget-header {
+  border-bottom-width: 1px;
+}
+
+.collapsed > .widget-body {
+  display: none;
+}
+
+.widget-header-flat {
+  background: #f7f7f7;
+}
+
+.widget-header-large {
+  min-height: 49px;
+  padding-left: 18px;
+}
+
+.widget-header-small {
+  min-height: 31px;
+  padding-left: 10px;
+}
+
+.widget-header > .widget-title {
+  line-height: 36px;
+  padding: 0;
+  margin: 0;
+  display: inline;
+  font-size: 23px;
+}
+
+.widget-toolbar {
+  display: inline-block;
+  padding: 0 10px;
+  line-height: 37px;
+  /* float: right; */
+  position: relative;
+}
+
+.widget-body {
+  background-color: #fff;
+}
+
+.widget-main {
+  padding: 12px;
+}
+
+@media screen and (max-width: 768px) {
+  h1 {
+    font-size: 60px !important;
+  }
+}
+
+#div1 {
+  /* background-color: rgb(0, 255, 21); */
+  width: 33.33%;
+  float: left;
+  height: 100px;
+  text-align: left;
+}
+
+#div2 {
+  /* background-color: rgb(204, 0, 255); */
+  width: 33.33%;
+  margin: auto;
+  height: 100px;
+  text-align: left;
+}
+
+#div3 {
+  /* background-color: rgb(255, 162, 0); */
+  width: 33.33%;
+
+  float: right;
+  margin-top: -100px;
+  height: 100px;
+}
+
+.ribbon .ribbon-inner {
+  text-align: center;
+  color: #fff;
+  top: -20px;
+  left: -90px;
+  width: 120px;
+  padding: 3px;
+  /* position: relative;
+transform: rotate(-45deg); */
+}
+
+.ribbon .ribbon-open {
+  background-color: #268ddd;
+  border-color: #1c72b4;
+}
+
+:root {
+  --body-bg: rgb(204, 204, 204);
+  --white: #ffffff;
+  --darkWhite: #ccc;
+  --black: #000000;
+  --dark: #615c60;
+  --themeColor: #22b8d1;
+  --pageShadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+}
+
+/* Font Include */
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@600&display=swap");
+
+body {
+  background-color: var(--body-bg);
+}
+
+.page {
+  background: var(--white);
+  display: block;
+  margin: 0 auto;
+  position: relative;
+  box-shadow: var(--pageShadow);
+}
+
+.page[size="A4"] {
+  width: 21cm;
+  height: 29.7cm;
+  overflow: hidden;
+}
+
+.pagea4 {
+  width: 21cm;
+  height: 29.7cm;
+  overflow: hidden;
+}
+
+.bb {
+  border-bottom: 3px solid var(--darkWhite);
+}
+
+/* Top Section */
+.top-content {
+  padding-bottom: 15px;
+}
+
+.logo img {
+  height: 60px;
+}
+
+.top-left p {
+  margin: 0;
+  color: #000000;
+}
+
+.top-left .graphic-path {
+  height: 40px;
+  position: relative;
+}
+
+.top-left .graphic-path::before {
+  content: "";
+  height: 20px;
+  background-color: var(--dark);
+  position: absolute;
+  left: 15px;
+  right: 0;
+  top: -15px;
+  z-index: 2;
+}
+
+.top-left .graphic-path::after {
+  content: "";
+  height: 22px;
+  width: 17px;
+  background: var(--black);
+  position: absolute;
+  top: -13px;
+  left: 6px;
+  transform: rotate(45deg);
+}
+
+.top-left .graphic-path p {
+  /* color: var(--white); */
+  height: 40px;
+  left: 0;
+  right: -100px;
+  text-transform: uppercase;
+  background-color: var(--themeColor);
+  font: 26px;
+  z-index: 3;
+  position: absolute;
+  padding-left: 10px;
+}
+
+/* User Store Section */
+.store-user {
+  padding-bottom: 25px;
+}
+
+.store-user p {
+  margin: 0;
+  font-weight: 600;
+  color: #000000;
+}
+
+.store-user .address {
+  font-weight: 400;
+}
+
+.store-user h5 {
+  color: var(--themeColor);
+  font-family: "Rajdhani", sans-serif;
+}
+
+.extra-info p span {
+  font-weight: 400;
+}
+
+/* Product Section */
+#statementTable thead {
+  color: var(--white);
+  background: var(--themeColor);
+}
+
+.table td,
+.table th {
+  text-align: center;
+  vertical-align: middle;
+}
+
+tr th:first-child,
+tr td:first-child {
+  text-align: left;
+}
+
+.media img {
+  height: 60px;
+  width: 60px;
+}
+
+.media p {
+  font-weight: 400;
+  margin: 0;
+}
+
+.media p.title {
+  font-weight: 600;
+}
+
+/* Balance Info Section */
+.balance-info .table td,
+.balance-info .table th {
+  padding: 0;
+  border: 0;
+}
+
+.balance-info tr td:first-child {
+  font-weight: 600;
+}
+
+tfoot {
+  border-top: 2px solid var(--darkWhite);
+}
+
+tfoot td {
+  font-weight: 600;
+}
+
+/* Cart BG */
+.cart-bg {
+  height: 250px;
+  bottom: 32px;
+  left: -40px;
+  opacity: 0.3;
+  position: absolute;
+}
+
+/* Footer Section */
+footer {
+  text-align: center;
+  position: absolute;
+  bottom: 30px;
+  left: 75px;
+}
+
+footer hr {
+  margin-bottom: -22px;
+  border-top: 3px solid var(--darkWhite);
+}
+
+footer a {
+  color: var(--themeColor);
+}
+
+footer p {
+  padding: 6px;
+  border: 3px solid var(--darkWhite);
+  background-color: var(--white);
+  display: inline-block;
+  color: #000000;
+}
+
+.print-only {
+  /* display: none; */
+  height: auto;
+  width: auto;
+  overflow-y: auto;
+  border: none;
+  /* box-shadow: 5px 2px 5px 2px  grey; */
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  header {
+    display: none;
+  }
+
+  .print-only * {
+    visibility: visible;
+  }
+
+  .print-only {
+    /* position: absolute; */
+
+    /* position: fixed; */
+    left: 0;
+    top: 0;
+    right: 0;
+    height: auto;
+    /* page-break-before: always;
+        page-break-inside: avoid; */
+  }
+
+  @page {
+    size: 100%;
+    margin: 0;
+    height: auto;
+  }
+
+  .print-only table {
+    border-collapse: collapse;
+    border: none;
+    /* You can adjust the border color and width */
+    width: 100%;
+    /* Set the width to 100% of the printed page */
+    margin: 0;
+    /* Remove margins to maximize the width */
+  }
+
+  .print-only th,
+  .print-only td {
+    border: none;
+    /* Apply border to table cells */
+    padding: 8px;
+    /* Add padding for better readability */
+    text-align: center;
+    /* Center-align text in cells */
+  }
+}

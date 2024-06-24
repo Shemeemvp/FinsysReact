@@ -127,4 +127,16 @@ urlpatterns = [
     path('share_account_transactions_email/',Fin_shareAccountTransactionsToEmail),
     path('fetch_account_history/<int:id>/',Fin_fetchAccountHistory),
     path('update_account/',Fin_updateAccount),
+
+    # Banking
+    path('fetch_banks/<int:id>/',Fin_fetchBanks),
+    path('check_bank_account_number/',Fin_checkBankAccountNumber),
+    path('create_new_bank/',Fin_createNewBank),
+    path('fetch_bank_details/<int:id>/',Fin_fetchBankDetails),
+    path('fetch_bank_transaction_history/<int:id>/',Fin_fetchBankTransactionHistory),
+    path('delete_bank_transaction/<int:id>/',Fin_deleteBankTransaction),
+    path('update_bank/',Fin_updateBank),
+    path('change_bank_status/',Fin_changeBankStatus),
+    path('add_banking_attachment/',Fin_addBankingAttachment),
+    path('delete_bank/<int:id>/',Fin_deleteBank),
 ]

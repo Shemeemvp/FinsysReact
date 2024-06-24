@@ -63,6 +63,11 @@ import AddAccount from './components/company/chartofaccounts/AddAccount';
 import ViewAccount from './components/company/chartofaccounts/ViewAccount';
 import AccountHistory from './components/company/chartofaccounts/AccountHistory';
 import EditAccount from './components/company/chartofaccounts/EditAccount';
+import Banking from './components/company/banking/Banking';
+import AddBank from './components/company/banking/AddBank';
+import ViewBank from './components/company/banking/ViewBank';
+import BankTransactionHistory from './components/company/banking/BankTransactionHistory';
+import EditBank from './components/company/banking/EditBank';
 
 function App() {
   return (
@@ -148,6 +153,13 @@ function App() {
             <Route path="/view_account/:accountId/" element={<ViewAccount />}></Route>
             <Route path="/account_history/:accountId/" element={<AccountHistory />}></Route>
             <Route path="/edit_account/:accountId/" element={<EditAccount />}></Route>
+
+            {/* Banking */}
+            <Route path="/banking" element={<Banking />}></Route>
+            <Route path="/add_bank" element={<AddBank />}></Route>
+            <Route path="/view_bank/:bankId/" element={<ViewBank />}></Route>
+            <Route path="/bank_transaction_history/:transactionId/" element={<BankTransactionHistory />}></Route>
+            <Route path="/edit_bank/:bankId/" element={<EditBank />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>
