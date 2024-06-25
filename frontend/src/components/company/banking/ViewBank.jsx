@@ -369,15 +369,15 @@ function ViewBank() {
     });
   }
 
-  function accTransactionPdf() {
-    var acData = {
+  function bankStatementPdf() {
+    var bData = {
       Id: ID,
       b_id: bankId,
     };
     axios
-      .get(`${config.base_url}/account_transaction_pdf/`, {
+      .get(`${config.base_url}/bank_statement_pdf/`, {
         responseType: "blob",
-        params: acData,
+        params: bData,
       })
       .then((res) => {
         console.log("PDF RES=", res);
@@ -386,7 +386,7 @@ function ViewBank() {
         const fileURL = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = fileURL;
-        a.download = `Bank_Transactions_${bankDetails.bank_name}.pdf`;
+        a.download = `Bank_Statement_${bankDetails.bank_name}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -439,7 +439,7 @@ function ViewBank() {
           email_message: emailMessage,
         };
         axios
-          .post(`${config.base_url}/share_account_transactions_email/`, em)
+          .post(`${config.base_url}/share_bank_statement_email/`, em)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
@@ -582,9 +582,9 @@ function ViewBank() {
                       className="dropdown-menu"
                       style={{ backgroundColor: "black" }}
                     >
-                      <a
+                      <Link
                         className="dropdown-item"
-                        href="{% url 'Fin_bank_to_cash' bankDetails.id %}"
+                        to={`/bank_to_cash/${bankId}/`}
                         style={{
                           height: "40px",
                           fontSize: "15px",
@@ -593,10 +593,10 @@ function ViewBank() {
                         }}
                       >
                         Bank to Cash Transfer
-                      </a>
-                      <a
+                      </Link>
+                      <Link
                         className="dropdown-item"
-                        href="{% url 'Fin_cash_to_bank' bankDetails.id %}"
+                        to={`/cash_to_bank/${bankId}/`}
                         style={{
                           height: "40px",
                           fontSize: "15px",
@@ -605,10 +605,10 @@ function ViewBank() {
                         }}
                       >
                         Cash to Bank Transfer
-                      </a>
-                      <a
+                      </Link>
+                      <Link
                         className="dropdown-item"
-                        href="{% url 'Fin_bank_to_bank' bankDetails.id %}"
+                        to={`/bank_to_bank/${bankId}/`}
                         style={{
                           height: "40px",
                           fontSize: "15px",
@@ -617,10 +617,10 @@ function ViewBank() {
                         }}
                       >
                         Bank to Bank Transfer
-                      </a>
-                      <a
+                      </Link>
+                      <Link
                         className="dropdown-item"
-                        href="{% url 'Fin_bank_adjust' bankDetails.id %}"
+                        to={`/bank_adjust/${bankId}/`}
                         style={{
                           height: "40px",
                           fontSize: "15px",
@@ -629,7 +629,7 @@ function ViewBank() {
                         }}
                       >
                         Adjust Bank Balance
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -736,7 +736,7 @@ function ViewBank() {
                               </td>
                               {i.transaction_type == "From Bank Transfer" ||
                               i.transaction_type == "Cash Withdraw" ||
-                              i.transaction_type == "Reduce Balance" ? (
+                              i.adjustment_type == "Reduce Balance" ? (
                                 <>
                                   <td style={{ textAlign: "center" }}>
                                     {i.to_type}
@@ -772,7 +772,7 @@ function ViewBank() {
                                     ) : (
                                       <Link
                                         className="dropdown-item edit-item"
-                                        href="{% url 'Fin_edit_bank_trans' i.id %}"
+                                        to={`/edit_transaction/${i.id}/`}
                                       >
                                         Edit
                                       </Link>
@@ -1122,6 +1122,7 @@ function ViewBank() {
                 </div>
                 <div className="d-flex" style={{ float: "right" }}>
                   <a
+                    onClick={() => bankStatementPdf()}
                     className="ml-2 btn btn-outline-secondary text-grey fa fa-file"
                     role="button"
                     id="pdfBtn"
@@ -1142,7 +1143,7 @@ function ViewBank() {
                       height: "fit-content",
                       width: "fit-content",
                     }}
-                      onClick={() => printSheet()}
+                    onClick={() => printSheet()}
                   >
                     &nbsp;Print
                   </a>
@@ -1330,7 +1331,7 @@ function ViewBank() {
                             </td>
                             {i.transaction_type == "From Bank Transfer" ||
                             i.transaction_type == "Cash Withdraw" ||
-                            i.transaction_type == "Reduce Balance" ? (
+                            i.adjustment_type == "Reduce Balance" ? (
                               <>
                                 <td
                                   style={{
@@ -1433,6 +1434,73 @@ function ViewBank() {
                   </div>
                 </form>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* <!-- Share To Email Modal --> */}
+      <div className="modal fade" id="shareToEmail">
+        <div className="modal-dialog modal-lg">
+          <div className="modal-content" style={{ backgroundColor: "#213b52" }}>
+            <div className="modal-header">
+              <h5 className="m-3">Share Bank Statement</h5>
+              <button
+                type="button"
+                className="close"
+                data-dismiss="modal"
+                aria-label="Close"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <form
+                onSubmit={handleShareEmail}
+                className="needs-validation px-1"
+                id="share_to_email_form"
+              >
+                <div className="card p-3 w-100">
+                  <div className="form-group">
+                    <label for="emailIds">Email IDs</label>
+                    <textarea
+                      className="form-control"
+                      name="email_ids"
+                      id="emailIds"
+                      rows="3"
+                      placeholder="Multiple emails can be added by separating with a comma(,)."
+                      value={emailIds}
+                      onChange={(e) => setEmailIds(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-group mt-2">
+                    <label for="item_unitname">Message(optional)</label>
+                    <textarea
+                      name="email_message"
+                      id="email_message"
+                      className="form-control"
+                      cols=""
+                      rows="4"
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                      placeholder="This message will be sent along with Statement."
+                    />
+                  </div>
+                </div>
+                <div
+                  className="modal-footer d-flex justify-content-center w-100"
+                  style={{ borderTop: "1px solid #ffffff" }}
+                >
+                  <button
+                    type="submit"
+                    id="share_with_email"
+                    className="submitShareEmailBtn w-50 text-uppercase"
+                  >
+                    SEND MAIL
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

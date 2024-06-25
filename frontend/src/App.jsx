@@ -68,6 +68,11 @@ import AddBank from './components/company/banking/AddBank';
 import ViewBank from './components/company/banking/ViewBank';
 import BankTransactionHistory from './components/company/banking/BankTransactionHistory';
 import EditBank from './components/company/banking/EditBank';
+import BankToCash from './components/company/banking/BankToCash';
+import CashToBank from './components/company/banking/CashToBank';
+import BankToBank from './components/company/banking/BankToBank';
+import BankAdjust from './components/company/banking/BankAdjust';
+import EditTransactions from './components/company/banking/EditTransactions';
 
 function App() {
   return (
@@ -160,6 +165,11 @@ function App() {
             <Route path="/view_bank/:bankId/" element={<ViewBank />}></Route>
             <Route path="/bank_transaction_history/:transactionId/" element={<BankTransactionHistory />}></Route>
             <Route path="/edit_bank/:bankId/" element={<EditBank />}></Route>
+            <Route path="/edit_transaction/:transId/" element={<EditTransactions />}></Route>
+            <Route path="/bank_to_cash/:bankId/" element={<BankToCash />}></Route>
+            <Route path="/cash_to_bank/:bankId/" element={<CashToBank />}></Route>
+            <Route path="/bank_to_bank/:bankId/" element={<BankToBank />}></Route>
+            <Route path="/bank_adjust/:bankId/" element={<BankAdjust />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

@@ -22,6 +22,7 @@ from xhtml2pdf import pisa
 from django.core.mail import send_mail, EmailMessage
 from io import BytesIO
 from django.conf import settings
+from datetime import datetime
 
 # Create your views here.
 
@@ -5784,7 +5785,15 @@ def Fin_createNewBank(request):
         request.data["company"] = com.id
         request.data["login_details"] = com.Login_Id.id
         request.data["opening_balance"] = -1 * float(request.data['opening_balance']) if request.data['opening_balance_type'] == 'CREDIT' else float(request.data['opening_balance'])
-        
+        date_str = request.data['date']
+
+        # Appending the default time '00:00:00' to the date string
+        datetime_str = f"{date_str} 00:00:00"
+
+        # Converting the combined string to a datetime object
+        dt = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+        request.data['date'] = dt
+
         if Fin_Banking.objects.filter(company = com, bank_name__iexact = request.data['bank_name'], account_number__iexact = request.data['account_number']).exists():
             return Response({"status": False, "message": "Account Number already exists"})
         else:
@@ -5978,6 +5987,15 @@ def Fin_updateBank(request):
         request.data["opening_balance"] = -1 * float(request.data['opening_balance']) if request.data['opening_balance_type'] == 'CREDIT' else float(request.data['opening_balance'])
         opening_balance = request.data["opening_balance"]
 
+        date_str = request.data['date']
+
+        # Appending the default time '00:00:00' to the date string
+        datetime_str = f"{date_str} 00:00:00"
+
+        # Converting the combined string to a datetime object
+        dt = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+        request.data['date'] = dt
+
         if bank.account_number != request.data['account_number'] and bank.bank_name != request.data['bank_name'] and Fin_Banking.objects.filter(company = com, bank_name__iexact = request.data['bank_name'], account_number__iexact = request.data['account_number']).exists():
             return Response({"status": False, "message": "Account Number already exists"})
         else:
@@ -6133,6 +6151,631 @@ def Fin_deleteBank(request, id):
             return Response({"status": True}, status=status.HTTP_200_OK)
     except Exception as e:
         print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_saveBankToCash(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        f_bank = request.data['bank']
+        amount = int(request.data['amount'])
+        adj_date = request.data['date']
+        desc = request.data['description']
+
+        
+
+        bank = Fin_Banking.objects.get(id=f_bank)
+        bank.current_balance -= amount
+        bank.save()
+        
+        transaction = Fin_BankTransactions(
+            login_details = data,
+            company = com,
+            banking = bank,
+            from_type = '',
+            to_type='',
+            amount=amount,
+            description=desc,
+            adjustment_date=adj_date,
+            transaction_type='Cash Withdraw',
+            current_balance= bank.current_balance               
+        )
+        transaction.save()
+        transaction_history = Fin_BankTransactionHistory(
+            login_details = data,
+            company = com,
+            bank_transaction = transaction,
+            action = 'Created'
+        )
+        transaction_history.save()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_saveCashToBank(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        t_bank = request.data['bank']
+        amount = int(request.data['amount'])
+        adj_date = request.data['date']
+        desc = request.data['description']
+
+        
+
+        bank = Fin_Banking.objects.get(id=t_bank)
+        bank.current_balance += amount
+        bank.save()
+        
+        transaction = Fin_BankTransactions(
+            login_details = data,
+            company = com,
+            banking = bank,
+            from_type = '',
+            to_type='',
+            amount=amount,
+            description=desc,
+            adjustment_date=adj_date,
+            transaction_type='Cash Deposit',
+            current_balance= bank.current_balance               
+        )
+        transaction.save()
+        transaction_history = Fin_BankTransactionHistory(
+            login_details = data,
+            company = com,
+            bank_transaction = transaction,
+            action = 'Created'
+        )
+        transaction_history.save()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_saveBankToBank(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        f_bank = request.data['f_bank']
+        t_bank = request.data['t_bank']
+        amount = int(request.data['amount'])
+        adj_date = request.data['date']
+        desc = request.data['description']
+
+        from_bank = Fin_Banking.objects.get(id=f_bank)
+        to_bank = Fin_Banking.objects.get(id=t_bank)
+        to_bank.current_balance += amount
+        from_bank.current_balance -= amount
+        to_bank.save()
+        from_bank.save()
+
+        transaction_withdraw = Fin_BankTransactions(
+            login_details = data,
+            company = com,
+            banking = from_bank,
+            from_type = 'From :' + from_bank.bank_name,
+            to_type='To :' + to_bank.bank_name,
+            amount=amount,
+            description=desc,
+            adjustment_date=adj_date,
+            transaction_type='From Bank Transfer', 
+            current_balance= from_bank.current_balance,
+                            
+        )
+        transaction_withdraw.save()
+        transaction_history = Fin_BankTransactionHistory(
+            login_details = data,
+            company = com,
+            bank_transaction = transaction_withdraw,
+            action = 'Created'
+        )
+        transaction_history.save()
+
+        transaction_deposit = Fin_BankTransactions(
+            login_details = data,
+            company = com,
+            banking = to_bank,
+            from_type = 'From :' + from_bank.bank_name,
+            to_type='To :' + to_bank.bank_name,
+            amount=amount,
+            description=desc,
+            adjustment_date=adj_date,
+            transaction_type='To Bank Transfer', 
+            current_balance= to_bank.current_balance,
+        )
+        transaction_deposit.save()
+        transaction_history = Fin_BankTransactionHistory(
+            login_details = data,
+            company = com,
+            bank_transaction = transaction_deposit,
+            action = 'Created'
+        )
+        transaction_history.save()
+
+        transaction_withdraw.bank_to_bank = transaction_deposit.id
+        transaction_deposit.bank_to_bank = transaction_withdraw.id
+        transaction_withdraw.save()
+        transaction_deposit.save()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_saveBankAdjust(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        t_bank = request.data['bank']
+        amount = int(request.data['amount'])
+        adj_date = request.data['date']
+        adj_type = request.data['type']
+        desc = request.data['description']
+
+        bank = Fin_Banking.objects.get(id=t_bank)
+
+        if adj_type == 'Increase Balance':
+            bank.current_balance += amount
+            bank.save()
+        else:
+            bank.current_balance -= amount
+            bank.save()
+            
+        transaction = Fin_BankTransactions(
+            login_details = data,
+            company = com,
+            banking = bank,
+            from_type = '',
+            to_type='',
+            amount=amount,
+            description=desc,
+            adjustment_date=adj_date,
+            transaction_type='Adjust bank Balance', 
+            current_balance= bank.current_balance,     
+        )
+        transaction.save()
+
+        if adj_type == 'Increase Balance':
+            transaction.adjustment_type = 'Increase Balance'
+            transaction.save()
+        else:
+            transaction.adjustment_type = 'Reduce Balance'
+            transaction.save()
+        
+        transaction_history = Fin_BankTransactionHistory(
+            login_details = data,
+            company = com,
+            bank_transaction = transaction,
+            action = 'Created'
+        )
+        transaction_history.save()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_bankStatementPdf(request):
+    try:
+        id = request.GET['Id']
+        bnkId = request.GET['b_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        bnk = Fin_Banking.objects.get(id=bnkId)
+        trns = Fin_BankTransactions.objects.filter(banking=bnk)
+        context = {'bank': bnk, 'trans':trns}
+        
+        template_path = 'company/Fin_Bank_Statement_Pdf.html'
+        fname = 'Bank_Statement_'+bnk.bank_name
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_shareBankStatementToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        bnkId = request.data["b_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        bnk = Fin_Banking.objects.get(id=bnkId)
+        trns = Fin_BankTransactions.objects.filter(banking=bnk)
+        context = {'bank': bnk, 'trans':trns}
+        
+        template_path = 'company/Fin_Bank_Statement_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'Bank_Statement_{bnk.bank_name}.pdf'
+        subject = f"Bank_Statement_{bnk.bank_name}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached Transaction details - STATEMENT-{bnk.bank_name}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getTransactionDetails(request, id):
+    try:
+        trans = Fin_BankTransactions.objects.get(id=id)
+        bank = trans.banking
+        try:
+            otherBank = Fin_BankTransactions.objects.get(id=trans.bank_to_bank).banking.id
+        except:
+            otherBank = None
+
+        bnkSerializer = BankSerializer(bank)
+        transSerializer = BankTransactionsSerializer(trans)
+        return Response(
+            {
+                "status": True,
+                "bank": bnkSerializer.data,
+                "transaction": transSerializer.data,
+                "otherBank": otherBank
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_updateBankToCash(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        f_bank = request.data['bank']
+        amount = int(request.data['amount'])
+        adj_date = request.data['date']
+        desc = request.data['description']
+
+        transaction = Fin_BankTransactions.objects.get(id=request.data['t_id'])
+
+        bank = Fin_Banking.objects.get(id=f_bank)
+        bank.current_balance = bank.current_balance -(int(amount) - transaction.amount)
+        bank.save()
+        
+        transaction.amount=amount
+        transaction.description=desc
+        transaction.adjustment_date=adj_date
+        transaction.current_balance= bank.current_balance               
+        
+        transaction.save()
+        transaction_history = Fin_BankTransactionHistory(
+            login_details = data,
+            company = com,
+            bank_transaction = transaction,
+            action = 'Updated'
+        )
+        transaction_history.save()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_updateCashToBank(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        f_bank = request.data['bank']
+        amount = int(request.data['amount'])
+        adj_date = request.data['date']
+        desc = request.data['description']
+
+        transaction = Fin_BankTransactions.objects.get(id=request.data['t_id'])
+
+        bank = Fin_Banking.objects.get(id=f_bank)
+        bank.current_balance = bank.current_balance + (int(amount) - transaction.amount)
+        bank.save()
+        
+        transaction.amount=amount
+        transaction.description=desc
+        transaction.adjustment_date=adj_date
+        transaction.current_balance= bank.current_balance               
+        
+        transaction.save()
+        transaction_history = Fin_BankTransactionHistory(
+            login_details = data,
+            company = com,
+            bank_transaction = transaction,
+            action = 'Updated'
+        )
+        transaction_history.save()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_updateBankAdjust(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        transaction = Fin_BankTransactions.objects.get(id=request.data['t_id'])
+
+        f_bank = request.data['bank']
+        type = request.data['type']
+        amount = int(request.data['amount'])
+        adj_date = request.data['date']
+        desc = request.data['description']
+
+
+        bank = Fin_Banking.objects.get(id=f_bank)
+        if type == 'Increase Balance':
+            bank.current_balance = bank.current_balance + (int(amount) - transaction.amount)
+            bank.save()
+        else:
+            bank.current_balance = bank.current_balance - (int(amount) - transaction.amount)
+            bank.save()
+        
+        transaction.amount=amount
+        transaction.adjustment_type=type
+        transaction.description=desc
+        transaction.adjustment_date=adj_date
+        transaction.current_balance= bank.current_balance
+        
+        transaction.save()
+
+        transaction_history = Fin_BankTransactionHistory(
+            login_details = data,
+            company = com,
+            bank_transaction = transaction,
+            action = 'Updated'
+        )
+        transaction_history.save()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_updateBankToBank(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        fbank_id = request.data['f_bank']
+        tbank_id = request.data['t_bank']
+
+        transfer = Fin_BankTransactions.objects.get(id=request.data['t_id'])
+        transfer_to = Fin_BankTransactions.objects.get(id=transfer.bank_to_bank)
+        old_amt = transfer_to.amount
+        old_bank = Fin_Banking.objects.get(id = transfer.banking.id) if transfer.transaction_type == 'To Bank Transfer' else Fin_Banking.objects.get(id = transfer_to.banking.id)
+        fbank = Fin_Banking.objects.get(id=fbank_id)
+        tbank = Fin_Banking.objects.get(id=tbank_id)
+
+        if tbank_id != old_bank:
+            old_bank.current_balance -= old_amt
+            old_bank.save()
+
+        amount = request.data['amount']
+        adj_date = request.data['date']
+        desc = request.data['description']
+
+        # Update the balances of the banking accounts
+        current_balance = transfer.current_balance
+        current_balance_trans_to = transfer_to.current_balance
+        current_balance_fm = fbank.current_balance
+        current_balance_to = tbank.current_balance
+
+
+        if transfer.transaction_type == 'To Bank Transfer':
+            if int(amount) > int(transfer.amount):
+                fbank.current_balance -= (int(amount) - int(transfer.amount))
+                tbank.current_balance += (int(amount) - int(transfer.amount))
+                transfer.current_balance += (int(amount) - int(transfer.amount))
+                transfer_to.current_balance -= (int(amount) - int(transfer.amount))
+
+            elif int(amount) < int(transfer.amount):
+                fbank.current_balance += (int(transfer.amount) - int(amount))
+                tbank.current_balance -= (int(transfer.amount)  - int(amount))
+                transfer.current_balance -= (int(transfer.amount)  - int(amount))
+                transfer_to.current_balance += (int(transfer.amount)  - int(amount))
+
+            else:
+                fbank.current_balance = current_balance_fm
+                tbank.current_balance = current_balance_to
+                transfer.current_balance = current_balance
+                transfer_to.current_balance = current_balance_trans_to
+            
+            fbank.save()
+            tbank.save()
+            transfer.save()
+            transfer_to.save()
+
+        elif transfer.transaction_type == 'From Bank Transfer':
+            if int(amount) > int(transfer.amount):
+                fbank.current_balance -= (int(amount) - int(transfer.amount))
+                tbank.current_balance += (int(amount) - int(transfer.amount))
+                transfer.current_balance -= (int(amount) - int(transfer.amount))
+                transfer_to.current_balance += (int(amount) - int(transfer.amount))
+
+            elif int(amount) < int(transfer.amount):
+                fbank.current_balance += (int(transfer.amount) - int(amount))
+                tbank.current_balance -= (int(transfer.amount) - int(amount))
+                transfer.current_balance += (int(transfer.amount) - int(amount))
+                transfer_to.current_balance -= (int(transfer.amount) - int(amount))
+
+            else:
+                fbank.current_balance = current_balance_fm
+                tbank.current_balance = current_balance_to
+                transfer.current_balance = current_balance
+                transfer_to.current_balance = current_balance_trans_to
+
+            fbank.save()
+            tbank.save()
+            transfer.save()
+            transfer_to.save()
+
+        if transfer.transaction_type == 'To Bank Transfer':
+            transfer.from_type = 'From : ' + fbank.bank_name
+            transfer.to_type = ' To : ' + tbank.bank_name
+            transfer.banking=tbank
+            transfer_to.from_type = 'From : ' + fbank.bank_name
+            transfer_to.to_type = ' To : ' + tbank.bank_name
+            transfer_to.banking=fbank
+            # if tbank_id != transfer_to.banking:  # Check if the destination bank has changed
+            # # Adjust balances for the old and new banks
+            #     transfer.banking.current_balance += int(amount)
+            #     transfer.save()
+            #     tbank.save()
+            #     tbank.current_balance == transfer_to.current_balance
+        elif transfer.transaction_type == 'From Bank Transfer':
+            transfer.from_type = 'From : ' + fbank.bank_name
+            transfer.to_type = ' To : ' + tbank.bank_name
+            transfer.banking=fbank
+            transfer_to.from_type = 'From : ' + fbank.bank_name
+            transfer_to.to_type = ' To : ' + tbank.bank_name
+            transfer_to.banking=tbank
+            # Before saving the changes to transfer and transfer_to
+            # if tbank_id != transfer_to.banking:  # Check if the destination bank has changed
+            # # Adjust balances for the old and new banks
+            #     transfer_to.banking.current_balance += int(amount)
+            #     transfer_to.save()
+            #     tbank.save()
+            #     tbank.current_balance == transfer_to.current_balance
+
+
+        transfer.amount = amount
+        transfer.adjustment_date = adj_date
+        transfer.description = desc
+        transfer_to.amount = amount
+        transfer_to.adjustment_date = adj_date
+        transfer_to.description = desc
+        
+        fbank.save()
+        tbank.save()
+        transfer.save()
+        transfer_to.save()
+
+        
+
+        transaction_history = Fin_BankTransactionHistory(
+                login_details = data,
+                company = com,
+                bank_transaction = transfer,
+                action = 'Updated'
+            )
+        transaction_history.save()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
