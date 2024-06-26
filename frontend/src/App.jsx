@@ -73,6 +73,10 @@ import CashToBank from './components/company/banking/CashToBank';
 import BankToBank from './components/company/banking/BankToBank';
 import BankAdjust from './components/company/banking/BankAdjust';
 import EditTransactions from './components/company/banking/EditTransactions';
+import StockAdjustment from './components/company/stockadjust/StockAdjustment';
+import AddStockAdjust from './components/company/stockadjust/AddStockAdjust';
+import ViewStockAdjust from './components/company/stockadjust/ViewStockAdjust';
+import StockAdjustHistory from './components/company/stockadjust/StockAdjustHistory';
 
 function App() {
   return (
@@ -170,6 +174,12 @@ function App() {
             <Route path="/cash_to_bank/:bankId/" element={<CashToBank />}></Route>
             <Route path="/bank_to_bank/:bankId/" element={<BankToBank />}></Route>
             <Route path="/bank_adjust/:bankId/" element={<BankAdjust />}></Route>
+
+            {/* Stock Adjustment */}
+            <Route path="/stock_adjust" element={<StockAdjustment />}></Route>
+            <Route path="/add_stock_adjust" element={<AddStockAdjust />}></Route>
+            <Route path="/view_stock_adjust/:stockId/" element={<ViewStockAdjust />}></Route>
+            <Route path="/stock_adjust_history/:stockId/" element={<StockAdjustHistory />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

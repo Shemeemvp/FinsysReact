@@ -6780,3 +6780,421 @@ def Fin_updateBankToBank(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
+# Stock Adjustment
+
+@api_view(("GET",))
+def Fin_fetchStockAdjust(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        stock = Stock_Adjustment.objects.filter(company = com)
+        serializer = StockAdjustSerializer(stock, many=True)
+        return Response(
+            {"status": True, "stock": serializer.data}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getStockReasons(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+        rsn = Stock_Reason.objects.filter(company=cmp)
+        serializer = StockReasonSerializer(rsn, many=True)
+        return Response(
+            {"status": True, "reason": serializer.data}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_createNewReason(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+        request.data["company"] = com.id
+        request.data['login_details'] = data.id
+
+        serializer = StockReasonSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data},
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getStockAdjustAccounts(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+        bnk = Fin_Chart_Of_Account.objects.filter(account_type="Bank", Company=cmp).order_by("account_name")
+        csh = Fin_Chart_Of_Account.objects.filter(account_type="Cash", Company=cmp).order_by("account_name")
+        cc = Fin_Chart_Of_Account.objects.filter(account_type="Credit Card", Company=cmp).order_by("account_name")
+        pc = Fin_Chart_Of_Account.objects.filter(account_type="Payment Clearing Account", Company=cmp).order_by("account_name")
+        bnkSerializer = AccountsSerializer(bnk, many=True)
+        cshSerializer = AccountsSerializer(csh, many=True)
+        ccSerializer = AccountsSerializer(cc, many=True)
+        pcSerializer = AccountsSerializer(pc, many=True)
+        return Response(
+            {"status": True, "bank": bnkSerializer.data, "cash": cshSerializer.data, "credit": ccSerializer.data, 'payment': pcSerializer.data}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getStockAdjustRefNo(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = id).company_id
+        
+        latest_sa = Stock_Adjustment.objects.filter(company = cmp).order_by('-id').first()
+        new_number = int(latest_sa.reference_no) + 1 if latest_sa else 1
+
+        if Stock_Adjustment_RefNo.objects.filter(company = cmp).exists():
+            deleted = Stock_Adjustment_RefNo.objects.get(company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+        return Response(
+            {"status": True, "refNo": new_number}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getItemQuantityData(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+        item = Fin_Items.objects.get(Company = cmp, name = request.GET['name'])
+        try:
+            stock = item.current_stock
+        except:
+            stock = 0
+        return Response(
+            {"status": True, "stock": stock}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getItemValueData(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+        item = Fin_Items.objects.get(Company = cmp, name = request.GET['name'])
+        try:
+            stock = item.current_stock
+            p = item.purchase_price
+            value = stock * p
+        except:
+            value = 0
+        return Response(
+            {"status": True, "value": value}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+from copy import deepcopy
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_createNewStockAdjust(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["company"] = com.id
+        mutable_data["login_details"] = com.Login_Id.id
+
+        # Parse stock_items from JSON
+        stockItems = json.loads(request.data['stock_items'])
+
+        serializer = StockAdjustSerializer(data=mutable_data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            stock = Stock_Adjustment.objects.get(id=serializer.data['id'])
+
+            if request.data['mode_of_adjustment'] == 'Quantity':
+                for i in stockItems:
+                    item_instance = Fin_Items.objects.get(name=i.get('item'), Company=com)
+
+                    if float(i.get('quantityInHand')) > float(i.get('quantity')):
+                        diff = float(i.get('quantity')) + float(i.get('difference'))
+                        item_instance.current_stock = diff
+                    else:
+                        diff = float(i.get('quantity')) + float(i.get('difference'))
+                        item_instance.current_stock = diff
+                    item_instance.save()
+
+                    Stock_Adjustment_Items.objects.create(
+                        item=item_instance,
+                        quantity_avail=i.get('quantity'),
+                        quantity_inhand=i.get('quantityInHand'),
+                        quantity_adj=i.get('difference'),
+                        stock_adjustment=stock,
+                        company=com,
+                        type="Quantity",
+                        login_details=data   
+                    )
+                    
+                    Stock_Adjustment_History.objects.create(
+                        company=com,
+                        login_details=data,
+                        item=item_instance,
+                        date=request.data.get('adjusting_date'),
+                        action='Created',
+                        stock_adjustment=stock
+                    )
+            elif request.data['mode_of_adjustment'] == 'Value':
+                for i in stockItems:
+                    item_instance = Fin_Items.objects.get(name=i.get('item'), Company=com)
+
+                    Stock_Adjustment_Items.objects.create(
+                        item=item_instance,
+                        current_val = i.get('value'),
+                        changed_val = i.get('changedValue'),
+                        adjusted_val = i.get('difference'),
+                        company=com,
+                        login_details=data,
+                        stock_adjustment=stock,
+                        type='Value'
+                    )
+
+                    Stock_Adjustment_History.objects.create(
+                        company=com,
+                        login_details=data,
+                        item=item_instance,
+                        date=request.data.get('adjusting_date'),
+                        action='Created',
+                        stock_adjustment=stock
+                    )
+            else:
+                pass
+            
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchStockAdjustDetails(request, id):
+    try:
+        stk = Stock_Adjustment.objects.get(id=id)
+        hist = Stock_Adjustment_History.objects.filter(stock_adjustment=stk).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.login_details.First_name
+                + " "
+                + hist.login_details.Last_name,
+            }
+        cmt = Stock_Adjustment_Comment.objects.filter(stock_adjustment=stk)
+        itms = Stock_Adjustment_Items.objects.filter(stock_adjustment=stk)
+        items = []
+        for i in itms:
+            obj = {
+                'name': i.item.name,
+                "quantity_avail": i.quantity_avail,
+                "quantity_inhand": i.quantity_inhand,
+                "quantity_adj": i.quantity_adj,
+                "current_val": i.current_val,
+                "changed_val": i.changed_val,
+                "adjusted_val": i.adjusted_val
+            }
+            items.append(obj)
+        stockSerializer = StockAdjustSerializer(stk)
+        commentsSerializer = StockAdjustCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "stock": stockSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": items
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeStockAdjustStatus(request):
+    try:
+        stkId = request.data["id"]
+        data = Stock_Adjustment.objects.get(id=stkId)
+        data.status = "Save"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addStockAdjustComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["company"] = com.id
+        request.data["login_details"] = data.id
+        serializer = StockAdjustCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteStockAdjustComment(request, id):
+    try:
+        cmt = Stock_Adjustment_Comment.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchStockAdjustHistory(request, id):
+    try:
+        stk = Stock_Adjustment.objects.get(id=id)
+        hist = Stock_Adjustment_History.objects.filter(stock_adjustment=stk)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.login_details.First_name + " " + i.login_details.Last_name,
+                }
+                his.append(h)
+        stkSerializer = StockAdjustSerializer(stk)
+        return Response(
+            {"status": True, "stock": stkSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteStockAdjust(request, id):
+    try:
+        stock = Stock_Adjustment.objects.get(id=id)
+        stock.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

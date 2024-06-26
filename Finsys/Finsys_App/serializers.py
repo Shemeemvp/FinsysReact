@@ -122,3 +122,24 @@ class BankAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_BankingAttachments
         fields = '__all__'
+
+# Stock Adjustment
+class StockAdjustSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stock_Adjustment
+        fields = '__all__'
+
+class StockAdjustCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stock_Adjustment_Comment
+        fields = '__all__'
+
+class StockAdjustItemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stock_Adjustment_Items
+        fields = '__all__'
+
+class StockReasonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stock_Reason
+        fields = '__all__'

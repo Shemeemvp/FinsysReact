@@ -150,4 +150,20 @@ urlpatterns = [
     path('update_cash_to_bank/',Fin_updateCashToBank),
     path('update_bank_adjust/',Fin_updateBankAdjust),
     path('update_bank_to_bank/',Fin_updateBankToBank),
+
+    # Stock Adjustment
+    path('fetch_stock_adjust/<int:id>/',Fin_fetchStockAdjust),
+    path('fetch_stock_adjust_details/<int:id>/',Fin_fetchStockAdjustDetails),
+    path('get_stock_reason/<int:id>/',Fin_getStockReasons),
+    path('create_new_reason/',Fin_createNewReason),
+    path('get_stock_adjust_accounts/<int:id>/',Fin_getStockAdjustAccounts),
+    path('get_stock_adjust_ref_no/<int:id>/',Fin_getStockAdjustRefNo),
+    path('get_item_quantity_data/',Fin_getItemQuantityData),
+    path('get_item_value_data/',Fin_getItemValueData),
+    path('create_new_stock_adjust/',Fin_createNewStockAdjust),
+    path('change_stock_adjust_status/',Fin_changeStockAdjustStatus),
+    path('add_stock_adjust_comment/',Fin_addStockAdjustComment),
+    path('delete_stock_adjust_comment/<int:id>/',Fin_deleteStockAdjustComment),
+    path('fetch_stock_adjust_history/<int:id>/',Fin_fetchStockAdjustHistory),
+    path('delete_stock_adjust/<int:id>/',Fin_deleteStockAdjust),
 ]

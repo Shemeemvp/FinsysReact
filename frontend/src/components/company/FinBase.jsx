@@ -1206,7 +1206,7 @@ function FinBase() {
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Stock_Adjustment == 1 %} */}
-                  <li id="stockadjustment"><a href="{% url 'StockAdjustment' %}"><i className="bx bx-right-arrow-alt"></i>Stock Adjustments</a></li>
+                  <li id="stockadjustment"><Link to="/stock_adjust"><i className="bx bx-right-arrow-alt"></i>Stock Adjustments</Link></li>
                   {/* {% endif %} */}
                 </ul>
               </li>
