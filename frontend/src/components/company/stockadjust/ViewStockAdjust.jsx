@@ -11,6 +11,7 @@ function ViewStockAdjust() {
   const ID = Cookies.get("Login_id");
   const { stockId } = useParams();
   const [stockDetails, setStockDetails] = useState({});
+  const [statementDetails, setStatementDetails] = useState({});
   const [stockItems, setStockItems] = useState([]);
   const [comments, setComments] = useState([]);
   const [history, setHistory] = useState({
@@ -18,6 +19,8 @@ function ViewStockAdjust() {
     date: "",
     doneBy: "",
   });
+
+  const [fileUrl, setFileUrl] = useState(null);
 
   const fetchStockAdjustDetails = () => {
     axios
@@ -29,6 +32,13 @@ function ViewStockAdjust() {
           var hist = res.data.history;
           var cmt = res.data.comments;
           var itms = res.data.items;
+          var statm = res.data.statement;
+          if (stck.attach_file) {
+            var url = `${config.base_url}/${stck.attach_file}`;
+            setFileUrl(url);
+          }
+
+          setStatementDetails(statm);
           setStockItems([]);
           setComments([]);
           itms.map((i) => {
@@ -260,7 +270,7 @@ function ViewStockAdjust() {
     });
   }
 
-  function itemTransactionPdf() {
+  function stockAdjustStatementPdf() {
     var data = {
       Id: ID,
       stock_id: stockId,
@@ -358,6 +368,42 @@ function ViewStockAdjust() {
     }
   }
 
+  const [file, setFile] = useState(null);
+
+  function handleFileModalSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append("Id", ID);
+    formData.append("stock_id", stockId);
+    if (file) {
+      formData.append("attach_file", file);
+    }
+
+    axios
+      .post(`${config.base_url}/add_stock_adjust_attachment/`, formData)
+      .then((res) => {
+        console.log("FILE RES==", res);
+        if (res.data.status) {
+          Toast.fire({
+            icon: "success",
+            title: "File Added.",
+          });
+          setFile(null)
+          document.getElementById('fileModalDismiss').click();
+          fetchStockAdjustDetails();
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR==", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  }
+
   return (
     <>
       <FinBase />
@@ -423,7 +469,7 @@ function ViewStockAdjust() {
                       </a>
                     ) : null}
                     <a
-                      onClick={itemTransactionPdf}
+                      onClick={stockAdjustStatementPdf}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-file"
                       role="button"
                       id="pdfBtn"
@@ -497,7 +543,7 @@ function ViewStockAdjust() {
                       </ul>
                     </div>
                     <Link
-                      to={`/edit_item/${stockId}/`}
+                      to={`/edit_stock_adjust/${stockId}/`}
                       className="ml-2 fa fa-pencil btn btn-outline-secondary text-grey"
                       id="editBtn"
                       role="button"
@@ -531,6 +577,46 @@ function ViewStockAdjust() {
                     >
                       &nbsp;Comment
                     </a>
+                    <div
+                      className="dropdown p-0 nav-item"
+                      id="attachBtn"
+                      style={{ display: "block" }}
+                    >
+                      <li
+                        className="ml-2 dropdown-toggle btn btn-outline-secondary text-grey fa fa-paperclip"
+                        data-toggle="dropdown"
+                        style={{
+                          height: "fit-content",
+                          width: "fit-content",
+                        }}
+                      >
+                        &nbsp;Attach
+                      </li>
+                      <ul
+                        className="dropdown-menu"
+                        style={{ backgroundColor: "black" }}
+                      >
+                        <a
+                          className="dropdown-item fa fa-paperclip"
+                          style={{ cursor: "pointer" }}
+                          data-toggle="modal"
+                          data-target="#attachFileModal"
+                        >
+                          &nbsp; Attach file
+                        </a>
+                        {fileUrl ? (
+                          <a
+                            className="dropdown-item fa fa-download"
+                            style={{ cursor: "pointer" }}
+                            download
+                            target="_blank"
+                            href={fileUrl}
+                          >
+                            &nbsp; Download file
+                          </a>
+                        ) : null}
+                      </ul>
+                    </div>
                     <Link
                       to={`/stock_adjust_history/${stockId}/`}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-history"
@@ -791,24 +877,38 @@ function ViewStockAdjust() {
               <div
                 className="rectangle"
                 id="pdfs"
-                style={{color:"black", backgroundColor: "white",width: "850px",height:"900px",border: "3px white", margin: "2rem auto"}}
+                style={{
+                  color: "black",
+                  backgroundColor: "white",
+                  width: "850px",
+                  height: "900px",
+                  border: "3px white",
+                  margin: "2rem auto",
+                }}
               >
-                <div className="pcs-template-body" style={{textAlign:"left"}}>
+                <div
+                  className="pcs-template-body"
+                  style={{ textAlign: "left" }}
+                >
                   <div
                     className="col-sm-12"
-                    style={{margin: "0 !important",padding: "0!important",backgroundImage: "linear-gradient(#1b83e8, black)", color: "white"}}
+                    style={{
+                      margin: "0 !important",
+                      padding: "0!important",
+                      backgroundImage: "linear-gradient(#1b83e8, black)",
+                      color: "white",
+                    }}
                     id="colorgradient"
                   >
                     <br />
-                    <p style={{fontSize: "4vh", textAlign: "center"}}>
+                    <p style={{ fontSize: "4vh", textAlign: "center" }}>
                       STOCK ADJUSTMENT
                     </p>
-                    <p style={{textAlign: "center"}}>
-                      {"{stockDetails.company.Company_name}"} <br />
-                      {"{ stockDetails.company.City }"}, <br />
-                      {"{ stockDetails.company.Pincode }"},
-                      {"{ stockDetails.company.State }"},<br />
-                      {"{ stockDetails.company.Email }"}
+                    <p style={{ textAlign: "center" }}>
+                      {statementDetails.company} <br />
+                      {statementDetails.city}, <br />
+                      {statementDetails.pincode},{statementDetails.state},<br />
+                      {statementDetails.email}
                       <br />
                       <br />
                     </p>
@@ -823,7 +923,7 @@ function ViewStockAdjust() {
                     </div>
                   </div> */}
 
-                  <div className="d-flex mb-4 " style={{marginLeft: "-95px"}}>
+                  <div className="d-flex mb-4 " style={{ marginLeft: "-95px" }}>
                     <div className="col-6 text-right ">
                       <h5 className="mr-auto text-dark ">Reference Number</h5>
                     </div>
@@ -835,7 +935,7 @@ function ViewStockAdjust() {
                     </div>
                   </div>
 
-                  <div className="d-flex mb-4 " style={{marginLeft: "-95px"}}>
+                  <div className="d-flex mb-4 " style={{ marginLeft: "-95px" }}>
                     <div className="col-6 text-right text-dark">
                       <h5 className="mr-auto text-dark">Reason</h5>
                     </div>
@@ -847,7 +947,7 @@ function ViewStockAdjust() {
                     </div>
                   </div>
 
-                  <div className="d-flex mb-4 " style={{marginLeft: "-95px"}}>
+                  <div className="d-flex mb-4 " style={{ marginLeft: "-95px" }}>
                     <div className="col-6 text-right">
                       <h5 className="mr-auto text-dark">Date</h5>
                     </div>
@@ -859,7 +959,10 @@ function ViewStockAdjust() {
                     </div>
                   </div>
 
-                  <div className="d-flex mb-4   " style={{marginLeft: "-95px"}}>
+                  <div
+                    className="d-flex mb-4   "
+                    style={{ marginLeft: "-95px" }}
+                  >
                     <div className="col-6 text-right ">
                       <h5 className="mr-auto text-dark">Mode of Adjustment</h5>
                     </div>
@@ -871,7 +974,7 @@ function ViewStockAdjust() {
                     </div>
                   </div>
 
-                  <div className="d-flex mb-4 " style={{marginLeft: "-95px"}}>
+                  <div className="d-flex mb-4 " style={{ marginLeft: "-95px" }}>
                     <div className="col-6 text-right">
                       <h5 className="mr-auto text-dark">Status</h5>
                     </div>
@@ -883,33 +986,41 @@ function ViewStockAdjust() {
                     </div>
                   </div>
 
-                  <div className="d-flex mb-4 " style={{marginLeft: "-95px"}}>
+                  <div className="d-flex mb-4 " style={{ marginLeft: "-95px" }}>
                     <div className="col-6 text-right">
                       <h5 className="mr-auto text-dark">Created By</h5>
                     </div>
                     <div className="col-2 text-center text-dark">:</div>
                     <div className="col-6">
                       <h6 className="ml-auto mt-1 text-dark">
-                        {"{ stockDetails.login_details.First_name }"}
+                        {statementDetails.name}
                       </h6>
                     </div>
                   </div>
                   <div className="row">
                     <div className="col-md-11 mx-auto">
                       <table
-                        style={{width:"100%",marginTop:"20px",tableLayout:"fixed"}}
+                        style={{
+                          width: "100%",
+                          marginTop: "20px",
+                          tableLayout: "fixed",
+                        }}
                         cellspacing="0"
                         cellpadding="0"
                         className="pcs-itemtable border border-dark "
                         id="print-Table"
                       >
-                        <thead style={{backgroundColor:"#22b8d1"}}>
+                        <thead style={{ backgroundColor: "#22b8d1" }}>
                           <tr
-                            style={{height:"40px"}}
+                            style={{ height: "40px" }}
                             className="border border-dark"
                           >
                             <td
-                              style={{padding:"5px 10px 5px 10px",wordWrap: "break-word", textAlign: "center"}}
+                              style={{
+                                padding: "5px 10px 5px 10px",
+                                wordWrap: "break-word",
+                                textAlign: "center",
+                              }}
                               className="table-head"
                             >
                               Item Details
@@ -918,19 +1029,31 @@ function ViewStockAdjust() {
                             {stockDetails.mode_of_adjustment == "Quantity" ? (
                               <>
                                 <td
-                                  style={{padding:"5px 10px 5px 5px",wordWrap: "break-word", textAlign: "center"}}
+                                  style={{
+                                    padding: "5px 10px 5px 5px",
+                                    wordWrap: "break-word",
+                                    textAlign: "center",
+                                  }}
                                   className="table-head"
                                 >
                                   Quantity Available
                                 </td>
                                 <td
-                                  style={{padding:"5px 10px 5px 5px",wordWrap: "break-word", textAlign: "center"}}
+                                  style={{
+                                    padding: "5px 10px 5px 5px",
+                                    wordWrap: "break-word",
+                                    textAlign: "center",
+                                  }}
                                   className="table-head"
                                 >
                                   New Quantity on hand
                                 </td>
                                 <td
-                                  style={{padding:"5px 10px 5px 5px",wordWrap: "break-word", textAlign: "center"}}
+                                  style={{
+                                    padding: "5px 10px 5px 5px",
+                                    wordWrap: "break-word",
+                                    textAlign: "center",
+                                  }}
                                   className="table-head"
                                 >
                                   Quantity Adjusted
@@ -939,19 +1062,31 @@ function ViewStockAdjust() {
                             ) : (
                               <>
                                 <td
-                                  style={{padding:"5px 10px 5px 5px",wordWrap: "break-word", textAlign: "center"}}
+                                  style={{
+                                    padding: "5px 10px 5px 5px",
+                                    wordWrap: "break-word",
+                                    textAlign: "center",
+                                  }}
                                   className="table-head"
                                 >
                                   Value Available
                                 </td>
                                 <td
-                                  style={{padding:"5px 10px 5px 5px",wordWrap: "break-word", textAlign: "center"}}
+                                  style={{
+                                    padding: "5px 10px 5px 5px",
+                                    wordWrap: "break-word",
+                                    textAlign: "center",
+                                  }}
                                   className="table-head"
                                 >
                                   New Stock in Value
                                 </td>
                                 <td
-                                  style={{padding:"5px 10px 5px 5px",wordWrap: "break-word", textAlign: "center"}}
+                                  style={{
+                                    padding: "5px 10px 5px 5px",
+                                    wordWrap: "break-word",
+                                    textAlign: "center",
+                                  }}
                                   className="table-head"
                                 >
                                   Adjusted Stock in Value
@@ -970,18 +1105,43 @@ function ViewStockAdjust() {
                                   id="row1"
                                 >
                                   <td
-                                    style={{padding: "10px 0px 10px 10px", fontSize:"16px", textAlign: "center"}}
+                                    style={{
+                                      padding: "10px 0px 10px 10px",
+                                      fontSize: "16px",
+                                      textAlign: "center",
+                                    }}
                                     className="pcs-item-row"
                                   >
                                     {j.name}{" "}
                                   </td>
-                                  <td style={{padding: "10px 10px 10px 5px",wordWrap: "break-word",fontSize:"18px", textAlign: "center"}}>
+                                  <td
+                                    style={{
+                                      padding: "10px 10px 10px 5px",
+                                      wordWrap: "break-word",
+                                      fontSize: "18px",
+                                      textAlign: "center",
+                                    }}
+                                  >
                                     {j.quantity_avail}
                                   </td>
-                                  <td style={{padding: "10px 10px 10px 5px",wordWrap: "break-word",fontSize:"18px", textAlign: "center"}}>
+                                  <td
+                                    style={{
+                                      padding: "10px 10px 10px 5px",
+                                      wordWrap: "break-word",
+                                      fontSize: "18px",
+                                      textAlign: "center",
+                                    }}
+                                  >
                                     {j.quantity_inhand}
                                   </td>
-                                  <td style={{padding: "10px 10px 10px 5px",wordWrap: "break-word",fontSize:"18px", textAlign: "center"}}>
+                                  <td
+                                    style={{
+                                      padding: "10px 10px 10px 5px",
+                                      wordWrap: "break-word",
+                                      fontSize: "18px",
+                                      textAlign: "center",
+                                    }}
+                                  >
                                     {j.quantity_adj}
                                   </td>
                                 </tr>
@@ -995,18 +1155,43 @@ function ViewStockAdjust() {
                                   id="row2"
                                 >
                                   <td
-                                    style={{padding: "10px 0px 10px 10px", fontSize:"16px", textAlign: "center"}}
+                                    style={{
+                                      padding: "10px 0px 10px 10px",
+                                      fontSize: "16px",
+                                      textAlign: "center",
+                                    }}
                                     className="pcs-item-row"
                                   >
                                     {j.name}
                                   </td>
-                                  <td style={{padding: "10px 10px 10px 5px",wordWrap: "break-word",fontSize:"18px", textAlign: "center"}}>
+                                  <td
+                                    style={{
+                                      padding: "10px 10px 10px 5px",
+                                      wordWrap: "break-word",
+                                      fontSize: "18px",
+                                      textAlign: "center",
+                                    }}
+                                  >
                                     {j.current_val}
                                   </td>
-                                  <td style={{padding: "10px 10px 10px 5px",wordWrap: "break-word",fontSize:"18px", textAlign: "center"}}>
+                                  <td
+                                    style={{
+                                      padding: "10px 10px 10px 5px",
+                                      wordWrap: "break-word",
+                                      fontSize: "18px",
+                                      textAlign: "center",
+                                    }}
+                                  >
                                     {j.changed_val}
                                   </td>
-                                  <td style={{padding: "10px 10px 10px 5px",wordWrap: "break-word",fontSize:"18px", textAlign: "center"}}>
+                                  <td
+                                    style={{
+                                      padding: "10px 10px 10px 5px",
+                                      wordWrap: "break-word",
+                                      fontSize: "18px",
+                                      textAlign: "center",
+                                    }}
+                                  >
                                     {j.adjusted_val}
                                   </td>
                                 </tr>
@@ -1187,6 +1372,34 @@ function ViewStockAdjust() {
             </form>
           </div>
         </div>
+      </div>
+
+      {/* <!-- Attach File Modal --> */}
+      <div className="modal fade" id="attachFileModal">
+          <div className="modal-dialog">
+              <div className="modal-content" style={{backgroundColor: "#213b52"}}>
+                  <div className="modal-header">
+                      <h5 className="m-3">Attach File</h5>
+                      <button type="button" className="close" data-dismiss="modal" id="fileModalDismiss" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                      </button>
+                  </div>
+                  <form onSubmit={handleFileModalSubmit} method="post" encType="multipart/form-data" className="needs-validation px-1">
+                      <div className="modal-body w-100">
+                          <div className="card p-3">
+                            <div className="form-group">
+                                <label for="emailIds">Input File</label>
+                                <input type="file" className="form-control" name="file" onChange={(e) => setFile(e.target.files[0])} id="fileAttachInput" required />
+                            </div>
+                              
+                          </div>
+                      </div>
+                      <div className="modal-footer d-flex justify-content-center w-100" style={{borderTop: "1px solid #ffffff"}}>
+                          <button type="submit" className="submitShareEmailBtn w-50 text-uppercase">SAVE</button>
+                      </div>
+                  </form>
+              </div>   
+          </div>
       </div>
     </>
   );

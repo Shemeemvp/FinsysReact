@@ -1272,7 +1272,7 @@ function FinBase() {
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Sales_Order == 1 %} */}
-                  <li id="salesorder"><a href="{% url 'Fin_salesOrder' %}"><i className="bx bx-right-arrow-alt"></i>Sales Order</a>
+                  <li id="salesorder"><Link to="/sales_order"><i className="bx bx-right-arrow-alt"></i>Sales Order</Link>
                   </li>
                   {/* {% endif %} */}
 

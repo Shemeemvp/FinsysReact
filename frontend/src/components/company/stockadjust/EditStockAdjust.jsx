@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function AddStockAdjust() {
+function EditStockAdjust() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
+  const { stockId } = useParams();
 
   const [items, setItems] = useState([]);
   const fetchCompanyItems = () => {
@@ -58,31 +59,6 @@ function AddStockAdjust() {
   useEffect(() => {
     fetchStockReason();
   }, []);
-
-  const fetchStockAdjustRefNo = () => {
-    axios
-      .get(`${config.base_url}/get_stock_adjust_ref_no/${ID}/`)
-      .then((res) => {
-        console.log("REF==", res);
-        if (res.data.status) {
-          let ref = res.data.refNo;
-          setRefNo(ref);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-
-  useEffect(() => {
-    fetchStockAdjustRefNo();
-  }, []);
-
-  //   const [options, setOptions] = useState([]);
-  //   useEffect(() => {
-  //     const newOptions = items.map(item => ({ label: item.name, value: item.name }));
-  //     setOptions(newOptions);
-  // }, []);
 
   const customStyles = {
     control: (provided) => ({
@@ -176,13 +152,12 @@ function AddStockAdjust() {
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
-  const [mode, setMode] = useState("Quantity");
+  const [mode, setMode] = useState("");
   const [refNo, setRefNo] = useState("");
   const [date, setDate] = useState(formattedDate);
   const [account, setAccount] = useState("");
   const [reason, setReason] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("");
   const [file, setFile] = useState(null);
 
   const [itemsQuantity, setItemsQuantity] = useState([
@@ -207,39 +182,110 @@ function AddStockAdjust() {
   ]);
   const [isRequiredV, setIsRequiredV] = useState(false);
 
+  const fetchStockAdjustDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_stock_adjust_details/${stockId}/`)
+      .then((res) => {
+        console.log("Stk DATA=", res);
+        if (res.data.status) {
+          var stock = res.data.stock;
+          var items = res.data.items;
+          if (stock.mode_of_adjustment == "Quantity") {
+            setItemsQuantity([]);
+            items.map((i, index) => {
+              var newItem = {
+                id: index + 1,
+                item: i.name,
+                quantity: i.quantity_avail,
+                quantityInHand: i.quantity_inhand,
+                difference: i.quantity_adj,
+              };
+              setItemsQuantity((prevItems) => {
+                const updatedItems = [...prevItems, newItem];
+
+                return updatedItems.map((item, index) => ({
+                  ...item,
+                  id: index + 1,
+                }));
+              });
+            });
+          } else {
+            setItemsValue([]);
+            items.map((i, index) => {
+              var newItem = {
+                id: index + 1,
+                item: i.name,
+                value: i.current_val,
+                changedValue: i.changed_val,
+                difference: i.adjusted_val,
+              };
+              setItemsValue((prevItems) => {
+                const updatedItems = [...prevItems, newItem];
+
+                return updatedItems.map((item, index) => ({
+                  ...item,
+                  id: index + 1,
+                }));
+              });
+            });
+          }
+          setMode(stock.mode_of_adjustment);
+          setRefNo(stock.reference_no);
+          setDate(stock.adjusting_date);
+          setAccount(stock.account);
+          setReason(stock.reason);
+          setDescription(stock.description);
+          toggleTable(stock.mode_of_adjustment);
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchStockAdjustDetails();
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append('Id', ID);
-    formData.append('mode_of_adjustment', mode);
-    formData.append('reference_no', refNo);
-    formData.append('adjusting_date', date);
-    formData.append('account', account);
-    formData.append('reason', reason);
-    formData.append('description', description);
-    formData.append('status', status);
-    if (mode === 'Quantity') {
-      formData.append('stock_items', JSON.stringify(itemsQuantity));
-    } else if (mode === 'Value') {
-      formData.append('stock_items', JSON.stringify(itemsValue));
+    formData.append("Id", ID);
+    formData.append("stock_id", stockId);
+    formData.append("mode_of_adjustment", mode);
+    formData.append("reference_no", refNo);
+    formData.append("adjusting_date", date);
+    formData.append("account", account);
+    formData.append("reason", reason);
+    formData.append("description", description);
+    if (mode === "Quantity") {
+      formData.append("stock_items", JSON.stringify(itemsQuantity));
+    } else if (mode === "Value") {
+      formData.append("stock_items", JSON.stringify(itemsValue));
     } else {
-      formData.append('stock_items', null);
+      formData.append("stock_items", null);
     }
     if (file) {
-      formData.append('attach_file', file);
+      formData.append("attach_file", file);
     }
 
     axios
-      .post(`${config.base_url}/create_new_stock_adjust/`, formData)
+      .put(`${config.base_url}/update_stock_adjust/`, formData)
       .then((res) => {
         console.log("Stk RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Stock Adjustment Created",
+            title: "Stock Adjustment Updated",
           });
-          navigate("/stock_adjust");
+          navigate(`/view_stock_adjust/${stockId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -508,7 +554,7 @@ function AddStockAdjust() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/stock_adjust"}>
+          <Link to={`/view_stock_adjust/${stockId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -519,7 +565,7 @@ function AddStockAdjust() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">NEW ADJUSTMENT</h2>
+                <h2 className="mt-3">EDIT ADJUSTMENT</h2>
               </center>
               <hr />
             </div>
@@ -1061,101 +1107,106 @@ function AddStockAdjust() {
                           </tr>
                         </thead>
                         <tbody>
-                          {itemsQuantity.map((row) => (
-                            <tr key={row.id} id={`row${row.id}`}>
-                              <td className="bg-transparent text-white rownum">
-                                {row.id}
-                              </td>
-                              <td>
-                                <div className="form-group mt-3">
-                                  <Select
-                                    options={items}
-                                    styles={customStyles}
-                                    name="item"
-                                    className="itemsQuantity"
-                                    id={`item${row.id}`}
-                                    required={isRequiredQ}
-                                    onChange={(selectedOption) =>
-                                      handleQuantityItemChange(
-                                        selectedOption
-                                          ? selectedOption.value
-                                          : "",
-                                        row.id
+                          {itemsQuantity.map((row) => {
+                            const selectedOptionQ = items.find(
+                              (option) => option.value === row.item
+                            );
+                            return (
+                              <tr key={row.id} id={`row${row.id}`}>
+                                <td className="bg-transparent text-white rownum">
+                                  {row.id}
+                                </td>
+                                <td>
+                                  <div className="form-group mt-3">
+                                    <Select
+                                      options={items}
+                                      styles={customStyles}
+                                      name="item"
+                                      className="itemsQuantity"
+                                      id={`item${row.id}`}
+                                      value={selectedOptionQ || null}
+                                      onChange={(selectedOption) =>
+                                        handleQuantityItemChange(
+                                          selectedOption
+                                            ? selectedOption.value
+                                            : "",
+                                          row.id
+                                        )
+                                      }
+                                      isClearable
+                                      isSearchable
+                                    />
+                                  </div>
+                                </td>
+                                <td className="text-right text-dark">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    className="form-control border-1 text-light text-right qty"
+                                    value={row.quantity}
+                                    onChange={(e) =>
+                                      handleItemsQInputChange(
+                                        row.id,
+                                        "quantity",
+                                        e.target.value
                                       )
                                     }
-                                    isClearable
-                                    isSearchable
+                                    name="quantity"
+                                    id={`qty${row.id}`}
                                   />
-                                </div>
-                              </td>
-                              <td className="text-right text-dark">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  className="form-control border-1 text-light text-right qty"
-                                  value={row.quantity}
-                                  onChange={(e) =>
-                                    handleItemsQInputChange(
-                                      row.id,
-                                      "quantity",
-                                      e.target.value
-                                    )
-                                  }
-                                  name="quantity"
-                                  id={`qty${row.id}`}
-                                />
-                              </td>
-                              <td className="text-right">
-                                <input
-                                  type="number"
-                                  id={`newQty${row.id}`}
-                                  className="form-control border-1 text-light text-right rate"
-                                  name="quantityInHand"
-                                  value={row.quantityInHand}
-                                  onChange={(e) =>
-                                    handleItemsQInputChange(
-                                      row.id,
-                                      "quantityInHand",
-                                      e.target.value
-                                    )
-                                  }
-                                  onBlur={(e) =>
-                                    calculateQtyDiff(row.id, e.target.value)
-                                  }
-                                />
-                              </td>
-                              <td className="text-right">
-                                <input
-                                  type="text"
-                                  id={`diff${row.id}`}
-                                  className="form-control border-1 text-light text-right discount"
-                                  name="difference"
-                                  value={row.difference}
-                                  onChange={(e) =>
-                                    handleItemsQInputChange(
-                                      row.id,
-                                      "difference",
-                                      e.target.value
-                                    )
-                                  }
-                                />
-                              </td>
-                              <td className="text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => removeRowQ(row.id)}
-                                  id={`deleteRow${row.id}`}
-                                  className="btn btn-outline-secondary delete-row"
-                                  style={{
-                                    width: "fit-content",
-                                    height: "fit-content",
-                                  }}
-                                >
-                                  -
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
+                                </td>
+                                <td className="text-right">
+                                  <input
+                                    type="number"
+                                    id={`newQty${row.id}`}
+                                    className="form-control border-1 text-light text-right rate"
+                                    name="quantityInHand"
+                                    value={row.quantityInHand}
+                                    onChange={(e) =>
+                                      handleItemsQInputChange(
+                                        row.id,
+                                        "quantityInHand",
+                                        e.target.value
+                                      )
+                                    }
+                                    onBlur={(e) =>
+                                      calculateQtyDiff(row.id, e.target.value)
+                                    }
+                                  />
+                                </td>
+                                <td className="text-right">
+                                  <input
+                                    type="text"
+                                    id={`diff${row.id}`}
+                                    className="form-control border-1 text-light text-right discount"
+                                    name="difference"
+                                    value={row.difference}
+                                    onChange={(e) =>
+                                      handleItemsQInputChange(
+                                        row.id,
+                                        "difference",
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </td>
+                                <td className="text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRowQ(row.id)}
+                                    id={`deleteRow${row.id}`}
+                                    className="btn btn-outline-secondary delete-row"
+                                    style={{
+                                      width: "fit-content",
+                                      height: "fit-content",
+                                    }}
+                                  >
+                                    -
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                       <button
@@ -1205,100 +1256,105 @@ function AddStockAdjust() {
                             </tr>
                           </thead>
                           <tbody>
-                            {itemsValue.map((row) => (
-                              <tr key={row.id} id={`row${row.id}`}>
-                                <td className="bg-transparent text-white rownum">
-                                  {row.id}
-                                </td>
-                                <td>
-                                  <div className="form-group mt-3">
-                                    <Select
-                                      options={items}
-                                      styles={customStyles}
-                                      name="item"
-                                      className="itemsValue"
-                                      id={`item${row.id}`}
-                                      required={isRequiredV}
-                                      onChange={(selectedOption) =>
-                                        handleValueItemChange(
-                                          selectedOption
-                                            ? selectedOption.value
-                                            : "",
-                                          row.id
+                            {itemsValue.map((row) => {
+                              const selectedOptionV = items.find(
+                                (option) => option.value === row.item
+                              );
+                              return (
+                                <tr key={row.id} id={`row${row.id}`}>
+                                  <td className="bg-transparent text-white rownum">
+                                    {row.id}
+                                  </td>
+                                  <td>
+                                    <div className="form-group mt-3">
+                                      <Select
+                                        options={items}
+                                        styles={customStyles}
+                                        name="item"
+                                        className="itemsValue"
+                                        value={selectedOptionV || null}
+                                        id={`item${row.id}`}
+                                        onChange={(selectedOption) =>
+                                          handleValueItemChange(
+                                            selectedOption
+                                              ? selectedOption.value
+                                              : "",
+                                            row.id
+                                          )
+                                        }
+                                        isClearable
+                                        isSearchable
+                                      />
+                                    </div>
+                                  </td>
+                                  <td className="text-right text-dark">
+                                    <input
+                                      type="number"
+                                      className="form-control border-1 text-light text-right"
+                                      value={row.value}
+                                      onChange={(e) =>
+                                        handleItemsVInputChange(
+                                          row.id,
+                                          "value",
+                                          e.target.value
                                         )
                                       }
-                                      isClearable
-                                      isSearchable
+                                      name="value"
+                                      id={`value${row.id}`}
                                     />
-                                  </div>
-                                </td>
-                                <td className="text-right text-dark">
-                                  <input
-                                    type="number"
-                                    className="form-control border-1 text-light text-right"
-                                    value={row.value}
-                                    onChange={(e) =>
-                                      handleItemsVInputChange(
-                                        row.id,
-                                        "value",
-                                        e.target.value
-                                      )
-                                    }
-                                    name="value"
-                                    id={`value${row.id}`}
-                                  />
-                                </td>
-                                <td className="text-right">
-                                  <input
-                                    type="number"
-                                    id={`changedValue${row.id}`}
-                                    className="form-control border-1 text-light text-right"
-                                    name="changedValue"
-                                    value={row.changedValue}
-                                    onChange={(e) =>
-                                      handleItemsVInputChange(
-                                        row.id,
-                                        "changedValue",
-                                        e.target.value
-                                      )
-                                    }
-                                    onBlur={(e) =>
-                                      calculateVlaDiff(row.id, e.target.value)
-                                    }
-                                  />
-                                </td>
-                                <td className="text-right">
-                                  <input
-                                    type="text"
-                                    id={`diff${row.id}`}
-                                    className="form-control border-1 text-light text-right"
-                                    name="difference"
-                                    value={row.difference}
-                                    onChange={(e) =>
-                                      handleItemsVInputChange(
-                                        row.id,
-                                        "difference",
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </td>
-                                <td className="text-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => removeRowV(row.id)}
-                                    id={`deleteRow${row.id}`}
-                                    className="btn btn-outline-secondary delete-row"
-                                    style={{
-                                      width: "fit-content",
-                                      height: "fit-content",
-                                    }}
-                                  >
-                                    -
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
+                                  </td>
+                                  <td className="text-right">
+                                    <input
+                                      type="number"
+                                      id={`changedValue${row.id}`}
+                                      className="form-control border-1 text-light text-right"
+                                      name="changedValue"
+                                      value={row.changedValue}
+                                      onChange={(e) =>
+                                        handleItemsVInputChange(
+                                          row.id,
+                                          "changedValue",
+                                          e.target.value
+                                        )
+                                      }
+                                      onBlur={(e) =>
+                                        calculateVlaDiff(row.id, e.target.value)
+                                      }
+                                    />
+                                  </td>
+                                  <td className="text-right">
+                                    <input
+                                      type="text"
+                                      id={`diff${row.id}`}
+                                      className="form-control border-1 text-light text-right"
+                                      name="difference"
+                                      value={row.difference}
+                                      onChange={(e) =>
+                                        handleItemsVInputChange(
+                                          row.id,
+                                          "difference",
+                                          e.target.value
+                                        )
+                                      }
+                                    />
+                                  </td>
+                                  <td className="text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => removeRowV(row.id)}
+                                      id={`deleteRow${row.id}`}
+                                      className="btn btn-outline-secondary delete-row"
+                                      style={{
+                                        width: "fit-content",
+                                        height: "fit-content",
+                                      }}
+                                    >
+                                      -
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                         <button
@@ -1338,27 +1394,25 @@ function AddStockAdjust() {
                     </div>
                   </div>
 
-                  <div className="row mt-5 mb-3">
-                    <div className="col-md-3"></div>
-                    <div className="col-md-6 d-flex justify-content-center gap-1">
+                  <div className="row mt-5 mb-5 w-100">
+                    <div className="col-md-4"></div>
+                    <div className="col-md-4 d-flex justify-content-center">
                       <button
-                        type="submit"
                         className="btn btn-outline-secondary text-light"
-                        onClick={()=>setStatus('Save')}
+                        type="submit"
                         style={{ width: "50%", height: "fit-content" }}
                       >
                         SAVE
                       </button>
-                      <button
-                        type="submit"
-                        className="btn btn-outline-secondary text-light"
-                        onClick={()=>setStatus('Draft')}
-                        style={{ width: "50%", height: "fit-content" }}
+                      <Link
+                        to={`/view_stock_adjust/${stockId}/`}
+                        className="btn btn-outline-secondary ml-1 text-light"
+                        style={{ width: "fit-content", height: "fit-content" }}
                       >
-                        DRAFT
-                      </button>
+                        CANCEL
+                      </Link>
                     </div>
-                    <div className="col-md-3"></div>
+                    <div className="col-md-4"></div>
                   </div>
                 </div>
               </div>
@@ -1420,4 +1474,4 @@ function AddStockAdjust() {
   );
 }
 
-export default AddStockAdjust;
+export default EditStockAdjust;

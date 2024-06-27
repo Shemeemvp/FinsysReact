@@ -7073,9 +7073,18 @@ def Fin_fetchStockAdjustDetails(request, id):
             }
         cmt = Stock_Adjustment_Comment.objects.filter(stock_adjustment=stk)
         itms = Stock_Adjustment_Items.objects.filter(stock_adjustment=stk)
+        statementDet = {
+            "name": stk.login_details.First_name,
+            "company": stk.company.Company_name,
+            "pincode": stk.company.Pincode,
+            "city": stk.company.City,
+            "email": stk.company.Email,
+            "state": stk.company.State,
+        }
         items = []
         for i in itms:
             obj = {
+                "id":i.id,
                 'name': i.item.name,
                 "quantity_avail": i.quantity_avail,
                 "quantity_inhand": i.quantity_inhand,
@@ -7093,7 +7102,8 @@ def Fin_fetchStockAdjustDetails(request, id):
                 "stock": stockSerializer.data,
                 "history": his,
                 "comments": commentsSerializer.data,
-                "items": items
+                "items": items,
+                "statement": statementDet,
             },
             status=status.HTTP_200_OK,
         )
@@ -7190,8 +7200,348 @@ def Fin_fetchStockAdjustHistory(request, id):
 def Fin_deleteStockAdjust(request, id):
     try:
         stock = Stock_Adjustment.objects.get(id=id)
+        com = stock.company
+        # Storing ref number to deleted table
+        # if entry exists and lesser than the current, update and save => Only one entry per company
+        if Stock_Adjustment_RefNo.objects.filter(company = com).exists():
+            deleted = Stock_Adjustment_RefNo.objects.get(company = com)
+            if int(stock.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = stock.reference_no
+                deleted.save()
+        else:
+            Stock_Adjustment_RefNo.objects.create(company = com, reference_no = stock.reference_no)
+
         stock.delete()
         return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_stockAdjustStatementPdf(request):
+    try:
+        id = request.GET['Id']
+        stockId = request.GET['stock_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        stk = Stock_Adjustment.objects.get(id=stockId)
+        itms = Stock_Adjustment_Items.objects.filter(stock_adjustment=stk)
+        context = {'stocks': stk, 'st_items':itms, 'com':com}
+
+        template_path = 'company/Fin_StockAdjustment_Pdf.html'
+        fname = 'StockAdjust_Statement'+ str(stk.reference_no)
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_shareStockAdjustStatementToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        stockId = request.data["stock_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        stk = Stock_Adjustment.objects.get(id=stockId)
+        itms = Stock_Adjustment_Items.objects.filter(stock_adjustment=stk)
+        context = {'stocks': stk, 'st_items':itms, 'com':com}
+        
+        template_path = 'company/Fin_StockAdjustment_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'StockAdjust_Statement_{stk.reference_no}.pdf'
+        subject = f"StockAdjust_Statement_{stk.reference_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - STOCK ADJUST STATEMENT-{stk.reference_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addStockAdjustAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        stockId = request.data['stock_id']
+        stock = Stock_Adjustment.objects.get(id=stockId)
+        if request.data['attach_file']:
+            stock.attach_file = request.data['attach_file']
+        stock.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_updateStockAdjust(request):
+    try:
+        s_id = request.data["Id"]
+        stockID = request.data['stock_id']
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["company"] = com.id
+        mutable_data["login_details"] = com.Login_Id.id
+        
+        stock = Stock_Adjustment.objects.get(id=stockID)
+        # Parse stock_items from JSON
+        stockItems = json.loads(request.data['stock_items'])
+
+        serializer = StockAdjustSerializer(stock,data=mutable_data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+
+            Stock_Adjustment_Items.objects.filter(stock_adjustment = stock).delete()
+
+            if request.data['mode_of_adjustment'] == 'Quantity':
+                for i in stockItems:
+                    item_instance = Fin_Items.objects.get(name=i.get('item'), Company=com)
+
+                    if float(i.get('quantityInHand')) > float(i.get('quantity')):
+                        diff = float(i.get('quantity')) + float(i.get('difference'))
+                        item_instance.current_stock = diff
+                    else:
+                        diff = float(i.get('quantity')) + float(i.get('difference'))
+                        item_instance.current_stock = diff
+                    item_instance.save()
+
+                    Stock_Adjustment_Items.objects.create(
+                        item=item_instance,
+                        quantity_avail=i.get('quantity'),
+                        quantity_inhand=i.get('quantityInHand'),
+                        quantity_adj=i.get('difference'),
+                        stock_adjustment=stock,
+                        company=com,
+                        type="Quantity",
+                        login_details=data   
+                    )
+                    
+                    Stock_Adjustment_History.objects.create(
+                        company=com,
+                        login_details=data,
+                        item=item_instance,
+                        date=request.data.get('adjusting_date'),
+                        action='Edited',
+                        stock_adjustment=stock
+                    )
+            elif request.data['mode_of_adjustment'] == 'Value':
+                for i in stockItems:
+                    item_instance = Fin_Items.objects.get(name=i.get('item'), Company=com)
+
+                    Stock_Adjustment_Items.objects.create(
+                        item=item_instance,
+                        current_val = i.get('value'),
+                        changed_val = i.get('changedValue'),
+                        adjusted_val = i.get('difference'),
+                        company=com,
+                        login_details=data,
+                        stock_adjustment=stock,
+                        type='Value'
+                    )
+
+                    Stock_Adjustment_History.objects.create(
+                        company=com,
+                        login_details=data,
+                        item=item_instance,
+                        date=request.data.get('adjusting_date'),
+                        action='Edited',
+                        stock_adjustment=stock
+                    )
+            else:
+                pass
+            
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+# Sales Order
+
+@api_view(("GET",))
+def Fin_fetchSalesOrderData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        items = Fin_Items.objects.filter(Company=cmp)
+        cust = Fin_Customers.objects.filter(Company=cmp)
+        trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        bnk = Fin_Banking.objects.filter(company = cmp)
+        lst = Fin_Price_List.objects.filter(Company = cmp, status = 'Active')
+        units = Fin_Units.objects.filter(Company = cmp)
+        acc = Fin_Chart_Of_Account.objects.filter(Q(account_type='Expense') | Q(account_type='Other Expense') | Q(account_type='Cost Of Goods Sold'), Company=cmp).order_by('account_name')
+        custLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='sales', status = 'Active')
+        
+        itemSerializer = ItemSerializer(items, many=True)
+        custSerializer = CustomerSerializer(cust, many=True)
+        pTermSerializer = CompanyPaymentTermsSerializer(trms, many=True)
+        bankSerializer = BankSerializer(bnk, many=True)
+        lstSerializer = PriceListSerializer(lst, many=True)
+        clSerializer = PriceListSerializer(custLists, many=True)
+        unitSerializer = ItemUnitSerializer(units, many=True)
+        accSerializer = AccountsSerializer(acc, many=True)
+
+        # Fetching last sales order and assigning upcoming ref no as current + 1
+        # Also check for if any bill is deleted and ref no is continuos w r t the deleted sales order
+        latest_so = Fin_Sales_Order.objects.filter(Company = cmp).order_by('-id').first()
+
+        new_number = int(latest_so.reference_no) + 1 if latest_so else 1
+
+        if Fin_Sales_Order_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_Sales_Order_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+        # Finding next SO number w r t last SO number if exists.
+        nxtSO = ""
+        lastSO = Fin_Sales_Order.objects.filter(Company = cmp).last()
+        if lastSO:
+            salesOrder_no = str(lastSO.sales_order_no)
+            numbers = []
+            stri = []
+            for word in salesOrder_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            s_order_num = int(num)+1
+
+            if num[0] == '0':
+                if s_order_num <10:
+                    nxtSO = st+'0'+ str(s_order_num)
+                else:
+                    nxtSO = st+ str(s_order_num)
+            else:
+                nxtSO = st+ str(s_order_num)
+
+        return Response(
+            {
+                "status": True,
+                "items": itemSerializer.data,
+                "customers":custSerializer.data,
+                "paymentTerms":pTermSerializer.data,
+                "banks":bankSerializer.data,
+                "priceList":lstSerializer.data,
+                "custPriceList":clSerializer.data,
+                "units":unitSerializer.data,
+                "accounts":accSerializer.data,
+                "refNo": new_number,
+                "soNo": nxtSO,
+                "state": cmp.State
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getCustomerData(request):
+    try:
+        custId = request.GET['c_id']
+        cust = Fin_Customers.objects.get(id=custId)
+        details = {
+            'id':cust.id,
+            'gstType': cust.gst_type,
+            'email': cust.email,
+            'gstIn': cust.gstin if cust.gstin else "None",
+            'placeOfSupply': cust.place_of_supply,
+            'address': f"{cust.billing_street},{cust.billing_city}\n{cust.billing_state}\n{cust.billing_country}\n{cust.billing_pincode}"
+        }
+        return Response(
+            {"status": True, "customerDetails":details}, status=status.HTTP_200_OK
+        )
     except Exception as e:
         print(e)
         return Response(

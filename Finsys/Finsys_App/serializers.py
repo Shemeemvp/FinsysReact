@@ -143,3 +143,19 @@ class StockReasonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Stock_Reason
         fields = '__all__'
+
+# Sales Order
+class SalesOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Sales_Order
+        fields = '__all__'
+
+class SalesOrderCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Sales_Order_Comments
+        fields = '__all__'
+
+class SalesOrderItemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Sales_Order_Items
+        fields = '__all__'

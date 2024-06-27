@@ -166,4 +166,12 @@ urlpatterns = [
     path('delete_stock_adjust_comment/<int:id>/',Fin_deleteStockAdjustComment),
     path('fetch_stock_adjust_history/<int:id>/',Fin_fetchStockAdjustHistory),
     path('delete_stock_adjust/<int:id>/',Fin_deleteStockAdjust),
+    path('stock_adjust_statement_pdf/',Fin_stockAdjustStatementPdf),
+    path('share_stock_adjust_statement_email/',Fin_shareStockAdjustStatementToEmail),
+    path('add_stock_adjust_attachment/',Fin_addStockAdjustAttachment),
+    path('update_stock_adjust/',Fin_updateStockAdjust),
+
+    #Sales Order
+    path('fetch_sales_order_data/<int:id>/',Fin_fetchSalesOrderData),
+    path('get_customer_data/',Fin_getCustomerData),
 ]

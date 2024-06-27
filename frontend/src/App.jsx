@@ -77,6 +77,9 @@ import StockAdjustment from './components/company/stockadjust/StockAdjustment';
 import AddStockAdjust from './components/company/stockadjust/AddStockAdjust';
 import ViewStockAdjust from './components/company/stockadjust/ViewStockAdjust';
 import StockAdjustHistory from './components/company/stockadjust/StockAdjustHistory';
+import EditStockAdjust from './components/company/stockadjust/EditStockAdjust';
+import SalesOrder from './components/company/salesorder/SalesOrder';
+import AddSalesOrder from './components/company/salesorder/AddSalesOrder';
 
 function App() {
   return (
@@ -180,6 +183,11 @@ function App() {
             <Route path="/add_stock_adjust" element={<AddStockAdjust />}></Route>
             <Route path="/view_stock_adjust/:stockId/" element={<ViewStockAdjust />}></Route>
             <Route path="/stock_adjust_history/:stockId/" element={<StockAdjustHistory />}></Route>
+            <Route path="/edit_stock_adjust/:stockId/" element={<EditStockAdjust />}></Route>
+
+            {/* Stock Adjustment */}
+            <Route path="/sales_order" element={<SalesOrder />}></Route>
+            <Route path="/add_sales_order" element={<AddSalesOrder />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>
