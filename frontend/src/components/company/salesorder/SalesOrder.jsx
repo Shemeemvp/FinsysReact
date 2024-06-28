@@ -9,7 +9,7 @@ import config from "../../../functions/config";
 function SalesOrder() {
   const navigate = useNavigate();
   function exportToExcel() {
-    const Table = document.getElementById("salesOrderTable");
+    const Table = document.getElementById("salesOrderTableExport");
     const ws = XLSX.utils.table_to_sheet(Table);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
@@ -200,7 +200,7 @@ function SalesOrder() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(3)}
+                          onClick={()=>sortTable(2)}
                         >
                           Customer Name
                         </a>
@@ -212,7 +212,7 @@ function SalesOrder() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(2)}
+                          onClick={()=>sortTable(1)}
                         >
                           Sales Order No.
                         </a>
@@ -252,7 +252,7 @@ function SalesOrder() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'all')}
+                        onClick={()=>filterTable(5,'all')}
                       >
                         All
                       </a>
@@ -264,7 +264,7 @@ function SalesOrder() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'saved')}
+                        onClick={()=>filterTable(5,'saved')}
                       >
                         Saved
                       </a>
@@ -276,7 +276,7 @@ function SalesOrder() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'draft')}
+                        onClick={()=>filterTable(5,'draft')}
                       >
                         Draft
                       </a>
@@ -317,16 +317,16 @@ function SalesOrder() {
                 {salesOrders &&salesOrders.map((i,index)=>(
                   <tr
                     className="clickable-row"
-                    onDoubleClick={()=>navigate(`/view_sales_order/${'i.id'}/`)}
+                    onDoubleClick={()=>navigate(`/view_sales_order/${i.id}/`)}
                     style={{ cursor: "pointer" }}
                   >
-                    <td>{'index+1'}</td>
-                    <td>{'i.sales_order_no'}</td>
-                    <td>{'i.customer_name'}</td>
-                    <td>{'i.mail'}</td>
-                    <td>{'i.grandtotal'}</td>
-                    <td>{'i.status'}</td>
-                    <td>{'i.balance'}</td>
+                    <td>{index+1}</td>
+                    <td>{i.sales_order_no}</td>
+                    <td>{i.customer_name}</td>
+                    <td>{i.customer_email}</td>
+                    <td>{i.grandtotal}</td>
+                    <td>{i.status}</td>
+                    <td>{i.balance}</td>
                     <td>
                       <div className="btn-group">
                         <button type="button" className="btn btn-secondary dropdown-toggle" style={{width:'fit-content', height: 'fit-content'}} data-toggle="dropdown" aria-expanded="false">
@@ -355,7 +355,6 @@ function SalesOrder() {
           <th>AMOUNT</th>
           <th>STATUS</th>
           <th>BALANCE</th>
-          <th>ACTION</th>
         </tr>
       </thead>
       <tbody>
@@ -364,11 +363,10 @@ function SalesOrder() {
             <td>{index+1}</td>
             <td>{i.sales_order_no}</td>
             <td>{i.customer_name}</td>
-            <td>{i.mail}</td>
+            <td>{i.customer_email}</td>
             <td>{i.grandtotal}</td>
             <td>{i.status}</td>
             <td>{i.balance}</td>
-            <td></td>
           </tr>
         ))}
       </tbody>

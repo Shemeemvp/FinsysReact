@@ -7440,7 +7440,7 @@ def Fin_fetchSalesOrderData(request, id):
         else:
             cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
 
-        items = Fin_Items.objects.filter(Company=cmp)
+        items = Fin_Items.objects.filter(Company = cmp, status = 'Active')
         cust = Fin_Customers.objects.filter(Company=cmp)
         trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
         bnk = Fin_Banking.objects.filter(company = cmp)
@@ -7541,6 +7541,264 @@ def Fin_getCustomerData(request):
         }
         return Response(
             {"status": True, "customerDetails":details}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_createNewPaymentTerm(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+        request.data["Company"] = com.id
+
+        serializer = CompanyPaymentTermsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "term": serializer.data},
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getBankAccountData(request, id):
+    try:
+        bank = Fin_Banking.objects.get(id=id)
+        acc = bank.account_number
+        return Response(
+            {"status": True, "account":acc}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getTableItemData(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        itemId = request.GET['item']
+        priceListId = request.GET['listId']
+        item = Fin_Items.objects.get(id = itemId)
+
+        if priceListId != "":
+            priceList = Fin_Price_List.objects.get(id = int(priceListId))
+
+            if priceList.item_rate == 'Customized individual rate':
+                try:
+                    priceListPrice = float(Fin_PriceList_Items.objects.get(Company = com, list = priceList, item = item).custom_rate)
+                except:
+                    priceListPrice = item.selling_price
+            else:
+                mark = priceList.up_or_down
+                percentage = float(priceList.percentage)
+                roundOff = priceList.round_off
+
+                if mark == 'Markup':
+                    price = float(item.selling_price) + float((item.selling_price) * (percentage/100))
+                else:
+                    price = float(item.selling_price) - float((item.selling_price) * (percentage/100))
+
+                if priceList.round_off != 'Never mind':
+                    if roundOff == 'Nearest whole number':
+                        finalPrice = round(price)
+                    else:
+                        finalPrice = int(price) + float(roundOff)
+                else:
+                    finalPrice = price
+
+                priceListPrice = finalPrice
+        else:
+            priceListPrice = None
+
+        context = {
+            'id': item.id,
+            'item_type':item.item_type,
+            'hsnSac':item.hsn if item.item_type == "Goods" else item.sac,
+            'sales_rate':item.selling_price,
+            'purchase_rate':item.purchase_price,
+            'avl':item.current_stock,
+            'tax': True if item.tax_reference == 'taxable' else False,
+            'gst':item.intra_state_tax,
+            'igst':item.inter_state_tax,
+            'PLPrice':priceListPrice
+        }
+        return Response(
+            {"status": True, "itemData":context}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkSalesOrderNo(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        SONo = request.GET['SONum']
+
+        nxtSO = ""
+        lastSOrder = Fin_Sales_Order.objects.filter(Company = com).last()
+        if lastSOrder:
+            salesOrder_no = str(lastSOrder.sales_order_no)
+            numbers = []
+            stri = []
+            for word in salesOrder_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            s_order_num = int(num)+1
+
+            if num[0] == '0':
+                if s_order_num <10:
+                    nxtSO = st+'0'+ str(s_order_num)
+                else:
+                    nxtSO = st+ str(s_order_num)
+            else:
+                nxtSO = st+ str(s_order_num)
+
+        if Fin_Sales_Order.objects.filter(Company = com, sales_order_no__iexact = SONo).exists():
+            return Response({'status':False, 'message':'Sales Order No. already Exists.!'})
+        elif nxtSO != "" and SONo != nxtSO:
+            return Response({'status':False, 'message':'Sales Order No. is not continuous.!'})
+        else:
+            return Response({'status':True, 'message':'Number is okay.!'})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_createSalesOrder(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        mutable_data["exp_ship_date"] = datetime.strptime(request.data['exp_ship_date'], '%d-%m-%Y').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+
+        # Parse stock_items from JSON
+        salesItems = json.loads(request.data['salesOrderItems'])
+        SONum = request.data['sales_order_no']
+        if Fin_Sales_Order.objects.filter(Company = com, sales_order_no__iexact = SONum).exists():
+            return Response({'status':False, 'message': f"Sales Order Number '{SONum}' already exists, try another!"})
+        else:
+            serializer = SalesOrderSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                sale = Fin_Sales_Order.objects.get(id=serializer.data['id'])
+
+                for ele in salesItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if sale.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Sales_Order_Items.objects.create(SalesOrder = sale, Item = itm, hsn = hsn,sac=sac, quantity = int(ele.get('quantity')), price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+            
+                # Save transaction
+                        
+                Fin_Sales_Order_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    SalesOrder = sale,
+                    action = 'Created'
+                )
+                
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchSalesOrders(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        sales = Fin_Sales_Order.objects.filter(Company = com)
+        sls = []
+        for i in sales:
+            obj = {
+                "id": i.id,
+                "sales_order_no": i.sales_order_no,
+                "customer_name": i.Customer.first_name+" "+i.Customer.last_name,
+                "customer_email":i. customer_email,
+                "grandtotal": i.grandtotal,
+                "status": i.status,
+                "balance": i.balance,
+            }
+            sls.append(obj)
+        return Response(
+            {"status": True, "salesOrder": sls}, status=status.HTTP_200_OK
         )
     except Exception as e:
         print(e)

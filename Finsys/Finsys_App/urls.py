@@ -172,6 +172,12 @@ urlpatterns = [
     path('update_stock_adjust/',Fin_updateStockAdjust),
 
     #Sales Order
+    path('fetch_sales_orders/<int:id>/',Fin_fetchSalesOrders),
     path('fetch_sales_order_data/<int:id>/',Fin_fetchSalesOrderData),
     path('get_customer_data/',Fin_getCustomerData),
+    path('create_new_payment_term/',Fin_createNewPaymentTerm),
+    path('get_bank_account_data/<int:id>/',Fin_getBankAccountData),
+    path('get_table_item_data/',Fin_getTableItemData),
+    path('check_sales_order_no/',Fin_checkSalesOrderNo),
+    path('create_new_sales_order/',Fin_createSalesOrder),
 ]
