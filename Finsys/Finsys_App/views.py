@@ -7806,3 +7806,353 @@ def Fin_fetchSalesOrders(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+@api_view(("GET",))
+def Fin_fetchSalesOrderDetails(request, id):
+    try:
+        sales = Fin_Sales_Order.objects.get(id=id)
+        cmp = sales.Company
+        hist = Fin_Sales_Order_History.objects.filter(SalesOrder=sales).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_Sales_Order_Comments.objects.filter(SalesOrder=sales)
+        itms = Fin_Sales_Order_Items.objects.filter(SalesOrder=sales)
+        try:
+            created = Fin_Sales_Order_History.objects.get(SalesOrder = sales, action = 'Created')
+        except:
+            created = None
+        otherDet = {
+            "Company_name": cmp.Company_name,
+            "Email": cmp.Email,
+            "Mobile": cmp.Contact,
+            "Address": cmp.Address,
+            "City": cmp.City,
+            "State": cmp.State,
+            "Pincode": cmp.Pincode,
+            "customerName": sales.Customer.first_name+' '+sales.Customer.last_name,
+            "customerEmail": sales.Customer.email,
+            "createdBy": created.LoginDetails.First_name if created else ""
+        }
+        items = []
+        for i in itms:
+            obj = {
+                "id":i.id,
+                "itemId": i.Item.id,
+                "sales_price": i.Item.selling_price,
+                'name': i.Item.name,
+                "item_type": i.Item.item_type,
+                "hsn": i.hsn,
+                "sac": i.sac,
+                "quantity": i.quantity,
+                "price": i.price,
+                "tax": i.tax,
+                "discount": i.discount,
+                "total": i.total
+            }
+            items.append(obj)
+        salesSerializer = SalesOrderSerializer(sales)
+        commentsSerializer = SalesOrderCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "sales": salesSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": items,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeSalesOrderStatus(request):
+    try:
+        salesId = request.data["id"]
+        data = Fin_Sales_Order.objects.get(id=salesId)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addSalesOrderComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = SalesOrderCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteSalesOrderComment(request, id):
+    try:
+        cmt = Fin_Sales_Order_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchSalesOrderHistory(request, id):
+    try:
+        sales = Fin_Sales_Order.objects.get(id=id)
+        hist = Fin_Sales_Order_History.objects.filter(SalesOrder=sales)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        salesSerializer = SalesOrderSerializer(sales)
+        return Response(
+            {"status": True, "salesOrder": salesSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addSalesOrderAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        sId = request.data['sales_id']
+        sale = Fin_Sales_Order.objects.get(id=sId)
+        if request.data['file']:
+            sale.file = request.data['file']
+        sale.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteSalesOrder(request, id):
+    try:
+        sales = Fin_Sales_Order.objects.get(id=id)
+        com = sales.Company
+        Fin_Sales_Order_Items.objects.filter(SalesOrder = sales).delete()
+
+        # Storing ref number to deleted table
+        # if entry exists and lesser than the current, update and save => Only one entry per company
+        if Fin_Sales_Order_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_Sales_Order_Reference.objects.get(Company = com)
+            if int(sales.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = sales.reference_no
+                deleted.save()
+        else:
+            Fin_Sales_Order_Reference.objects.create(Company = com, reference_no = sales.reference_no)
+        sales.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_salesOrderPdf(request):
+    try:
+        id = request.GET['Id']
+        slId = request.GET['sales_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        salesOrder = Fin_Sales_Order.objects.get(id=slId)
+        itms = Fin_Sales_Order_Items.objects.filter(SalesOrder=salesOrder)
+        context = {'order':salesOrder, 'orderItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_Sales_Order_Pdf.html'
+        fname = 'Sales_Order_'+salesOrder.sales_order_no
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_shareSalesOrderToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        slId = request.data["sales_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        salesOrder = Fin_Sales_Order.objects.get(id=slId)
+        itms = Fin_Sales_Order_Items.objects.filter(SalesOrder=salesOrder)
+        context = {'order':salesOrder, 'orderItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_Sales_Order_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'SalesOrder_{salesOrder.sales_order_no}.pdf'
+        subject = f"SalesOrder_{salesOrder.sales_order_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - SALES ORDER-{salesOrder.sales_order_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_updateSalesOrder(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        sales = Fin_Sales_Order.objects.get(id=request.data['sales_id'])
+        # Make a mutable copy of request.data
+
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        mutable_data["exp_ship_date"] = datetime.strptime(request.data['exp_ship_date'], '%Y-%m-%d').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+
+        # Parse stock_items from JSON
+        salesItems = json.loads(request.data['salesOrderItems'])
+        SONum = request.data['sales_order_no']
+        if sales.sales_order_no != SONum and Fin_Sales_Order.objects.filter(Company = com, sales_order_no__iexact = SONum).exists():
+            return Response({'status':False, 'message': f"Sales Order Number '{SONum}' already exists, try another!"})
+        else:
+            serializer = SalesOrderSerializer(sales,data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                Fin_Sales_Order_Items.objects.filter(SalesOrder = sales).delete()
+                sale = Fin_Sales_Order.objects.get(id=serializer.data['id'])
+
+                for ele in salesItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if sale.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Sales_Order_Items.objects.create(SalesOrder = sale, Item = itm, hsn = hsn,sac=sac, quantity = int(ele.get('quantity')), price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+            
+                # Save transaction
+                        
+                Fin_Sales_Order_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    SalesOrder = sales,
+                    action = 'Edited'
+                )
+                
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function AddSalesOrder() {
+function EditSalesOrder() {
+  const { salesId } = useParams();
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
@@ -17,6 +18,7 @@ function AddSalesOrder() {
   const [priceLists, setPriceLists] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
   const [cmpState, setCmpState] = useState("");
+  const [customerValue, setCustomerValue] = useState({});
 
   const fetchSalesOrderData = () => {
     axios
@@ -60,8 +62,6 @@ function AddSalesOrder() {
             value: item.id,
           }));
           setCustomers(newCustOptions);
-          setRefNo(res.data.refNo);
-          setNextSalesOrderNo(res.data.soNo);
         }
       })
       .catch((err) => {
@@ -141,6 +141,104 @@ function AddSalesOrder() {
     }),
   };
 
+  const fetchSalesOrderDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_sales_order_details/${salesId}/`)
+      .then((res) => {
+        console.log("SO DET=", res);
+        if (res.data.status) {
+          var sales = res.data.sales;
+          var itms = res.data.items;
+
+          var c = {
+            value: sales.Customer,
+            label: res.data.otherDetails.customerName
+          }
+          setCustomerValue(c)
+
+          setCustomer(sales.Customer);
+          setEmail(sales.customer_email);
+          setGstType(sales.gst_type);
+          setGstIn(sales.gstin);
+          setBillingAddress(sales.billing_address);
+          setRefNo(sales.reference_no);
+          setSalesOrderNo(sales.sales_order_no);
+          setDate(sales.sales_order_date);
+          setPlaceOfSupply(sales.place_of_supply);
+          setShipmentDate(sales.exp_ship_date);
+          setTerm(sales.payment_terms);
+          setPaymentMethod(sales.payment_method);
+          setChequeNumber(sales.cheque_no);
+          setUpiId(sales.upi_no);
+          setAccountNumber(sales.bank_acc_no);
+          setPriceList(sales.price_list_applied);
+          setPriceListId(sales.price_list);
+          setSubTotal(sales.subtotal);
+          setIgst(sales.igst);
+          setCgst(sales.cgst);
+          setSgst(sales.sgst);
+          setTaxAmount(sales.tax_amount);
+          setShippingCharge(sales.adjustment);
+          setAdjustment(sales.shipping_charge);
+          setGrandTotal(sales.grandtotal);
+          setPaid(sales.paid_off);
+          setBalance(sales.balance);
+          setDescription(sales.note);
+          setSalesOrderItems([])
+          const salesItems = itms.map((i)=>{
+            if(i.item_type == "Goods"){
+              var hsnSac = i.hsn
+            }else{
+              var hsnSac = i.sac
+            }
+            return {
+              id: 1,
+              item: i.itemId,
+              hsnSac: hsnSac,
+              quantity: i.quantity,
+              price: i.sales_price,
+              priceListPrice: i.price,
+              taxGst: i.tax,
+              taxIgst: i.tax,
+              discount: i.discount,
+              total: i.total,
+              taxAmount: "",
+            }
+          })
+
+          setSalesOrderItems(salesItems);
+          refreshIndexes(salesItems);
+
+          paymentMethodChange(sales.payment_method);
+          checkTax(res.data.otherDetails.State,sales.place_of_supply);
+          checkPL(sales.price_list_applied);
+          // applyPriceList(sales.price_list)
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchSalesOrderDetails();
+  }, []);
+
+  function refreshIndexes(items){
+    const itms = items.map((item, index) => ({
+      ...item,
+      id: index + 1,
+    }));
+
+    setSalesOrderItems(itms)
+  }
+
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
@@ -218,6 +316,24 @@ function AddSalesOrder() {
 
   function checkBalanceVal(val) {
     return val !== "" ? val : grandTotal;
+  }
+
+  function checkPL(priceList) {
+    if (priceList) {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+    } else {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+    }
   }
 
   function checkPriceList(priceList) {
@@ -442,7 +558,7 @@ function AddSalesOrder() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("status", status);
+    formData.append("sales_id", salesId);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
@@ -478,15 +594,15 @@ function AddSalesOrder() {
     }
 
     axios
-      .post(`${config.base_url}/create_new_sales_order/`, formData)
+      .put(`${config.base_url}/update_sales_order/`, formData)
       .then((res) => {
         console.log("Sales RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Sales Order Created",
+            title: "Sales Order Updated",
           });
-          navigate("/sales_order");
+          navigate(`/view_sales_order/${salesId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -713,10 +829,28 @@ function AddSalesOrder() {
     calc();
   }
 
-  function resetItem(id) {
-    setSalesOrderItems((prevItems) =>
-      prevItems.map((item) => (item.id === id ? { ...item, item: "" } : item))
-    );
+  function checkTax(cmp,plc) {
+    if (cmp == plc) {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "flex";
+      document.getElementById("taxamountSGST").style.display = "flex";
+      document.getElementById("taxamountIGST").style.display = "none";
+    } else {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "none";
+      document.getElementById("taxamountSGST").style.display = "none";
+      document.getElementById("taxamountIGST").style.display = "flex";
+    }
   }
 
   function refreshTax(plc) {
@@ -855,7 +989,7 @@ function AddSalesOrder() {
     });
 
     setSalesOrderItems(updatedItems);
-    refreshIndexes(updatedItems)
+    refreshIndexes(updatedItems);
     calc_total2(updatedItems, placeOfSupply);
   }
 
@@ -1073,15 +1207,6 @@ function AddSalesOrder() {
   function handlePaymentMethodChange(val) {
     setPaymentMethod(val);
     paymentMethodChange(val);
-  }
-
-  function refreshIndexes(items){
-    const itms = items.map((item, index) => ({
-      ...item,
-      id: index + 1,
-    }));
-
-    setSalesOrderItems(itms)
   }
 
   function paymentMethodChange(val) {
@@ -2055,7 +2180,7 @@ function AddSalesOrder() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/sales_order"}>
+          <Link to={`/view_sales_order/${salesId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2066,7 +2191,7 @@ function AddSalesOrder() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">NEW SALES ORDER</h2>
+                <h2 className="mt-3">EDIT SALES ORDER</h2>
               </center>
               <hr />
             </div>
@@ -2099,6 +2224,7 @@ function AddSalesOrder() {
                         className="w-100"
                         id="customer"
                         required
+                        value={customerValue || null}
                         onChange={(selectedOption) =>
                           handleCustomerChange(
                             selectedOption ? selectedOption.value : ""
@@ -2496,7 +2622,12 @@ function AddSalesOrder() {
                         </tr>
                       </thead>
                       <tbody id="items-table-body">
-                        {salesOrderItems.map((row) => (
+                        {salesOrderItems.map((row) => {
+                          const selectedOptionI = items.find(
+                            (option) => option.value === row.item
+                          )
+                          return(
+
                           <tr key={row.id} id={`tab_row${row.id}`}>
                             <td
                               className="nnum"
@@ -2513,7 +2644,7 @@ function AddSalesOrder() {
                                   className="w-100"
                                   id={`item${row.id}`}
                                   required
-                                  defaultInputValue={row.item}
+                                  value={selectedOptionI}
                                   onChange={(selectedOption) =>
                                     handleItemChange(
                                       selectedOption
@@ -2719,7 +2850,8 @@ function AddSalesOrder() {
                               ></button>
                             </td>
                           </tr>
-                        ))}
+                          )
+                        })}
                       </tbody>
                       <tr>
                         <td style={{ border: "none" }}>
@@ -3019,14 +3151,13 @@ function AddSalesOrder() {
                     <input
                       type="submit"
                       className="btn btn-outline-secondary w-50 text-light"
-                      onClick={() => setStatus("Draft")}
-                      value="Draft"
+                      value="Save"
                     />
                     <input
-                      type="submit"
+                      type="reset"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => setStatus("Saved")}
-                      value="Save"
+                      value="Cancel"
+                      onClick={()=>navigate(`/view_sales_order/${salesId}/`)}
                     />
                   </div>
                 </div>
@@ -4076,7 +4207,10 @@ function AddSalesOrder() {
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-            <div className="modal-body w-100" style={{maxHeight:"75vh", overflowY:"auto"}}>
+            <div
+              className="modal-body w-100"
+              style={{ maxHeight: "75vh", overflowY: "auto" }}
+            >
               <div className="card p-3 w-100">
                 <form id="newAccountForm" className="px-1">
                   <div className="row mt-2 mb-2 w-100">
@@ -4351,19 +4485,19 @@ function AddSalesOrder() {
                                   </option>
                                 ))}
                             </select>
-                              <button
-                                type="button"
-                                className="btn btn-outline-secondary ml-1"
-                                data-toggle="modal"
-                                data-dismiss="modal"
-                                data-target="#createNewUnit"
-                                style={{
-                                  width: "fit-content",
-                                  height: "fit-content",
-                                }}
-                              >
-                                +
-                              </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary ml-1"
+                              data-toggle="modal"
+                              data-dismiss="modal"
+                              data-target="#createNewUnit"
+                              style={{
+                                width: "fit-content",
+                                height: "fit-content",
+                              }}
+                            >
+                              +
+                            </button>
                           </div>
                         </div>
                         <div className="col-md-6 mt-3" id="hsnDiv">
@@ -4604,19 +4738,19 @@ function AddSalesOrder() {
                                   </option>
                                 ))}
                             </select>
-                              <button
-                                type="button"
-                                className="btn btn-outline-secondary ml-1"
-                                data-toggle="modal"
-                                data-dismiss="modal"
-                                data-target="#createNewAccount"
-                                style={{
-                                  width: "fit-content",
-                                  height: "fit-content",
-                                }}
-                              >
-                                +
-                              </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary ml-1"
+                              data-toggle="modal"
+                              data-dismiss="modal"
+                              data-target="#createNewAccount"
+                              style={{
+                                width: "fit-content",
+                                height: "fit-content",
+                              }}
+                            >
+                              +
+                            </button>
                           </div>
                         </div>
                         <div className="col-md-6 mt-3">
@@ -4808,4 +4942,4 @@ function AddSalesOrder() {
   );
 }
 
-export default AddSalesOrder;
+export default EditSalesOrder;

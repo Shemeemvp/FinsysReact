@@ -528,7 +528,7 @@ class Fin_Sales_Order(models.Model):
     upi_no = models.CharField(max_length=100, null=True, blank=True)
     bank_acc_no = models.CharField(max_length=100, null=True, blank=True)
 
-    subtotal = models.IntegerField(default=0, null=True)
+    subtotal = models.FloatField(default=0.0, null=True)
     igst = models.FloatField(default=0.0, null=True, blank=True)
     cgst = models.FloatField(default=0.0, null=True, blank=True)
     sgst = models.FloatField(default=0.0, null=True, blank=True)

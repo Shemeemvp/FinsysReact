@@ -73,6 +73,11 @@ import CashToBank from './components/company/banking/CashToBank';
 import BankToBank from './components/company/banking/BankToBank';
 import BankAdjust from './components/company/banking/BankAdjust';
 import EditTransactions from './components/company/banking/EditTransactions';
+import Employee from './components/company/employee/employee';
+import AddEmployee from './components/company/employee/addemployee';
+import Employeeoverview from './components/company/employee/employeeoverview';
+import EmployeeHistory from './components/company/employee/employeehistory';
+import EditEmployee from './components/company/employee/editemployee';
 import StockAdjustment from './components/company/stockadjust/StockAdjustment';
 import AddStockAdjust from './components/company/stockadjust/AddStockAdjust';
 import ViewStockAdjust from './components/company/stockadjust/ViewStockAdjust';
@@ -80,6 +85,9 @@ import StockAdjustHistory from './components/company/stockadjust/StockAdjustHist
 import EditStockAdjust from './components/company/stockadjust/EditStockAdjust';
 import SalesOrder from './components/company/salesorder/SalesOrder';
 import AddSalesOrder from './components/company/salesorder/AddSalesOrder';
+import ViewSalesOrder from './components/company/salesorder/ViewSalesOrder';
+import SalesOrderHistory from './components/company/salesorder/SalesOrderHistory';
+import EditSalesOrder from './components/company/salesorder/EditSalesOrder';
 
 function App() {
   return (
@@ -178,6 +186,13 @@ function App() {
             <Route path="/bank_to_bank/:bankId/" element={<BankToBank />}></Route>
             <Route path="/bank_adjust/:bankId/" element={<BankAdjust />}></Route>
 
+            {/* Employee */}
+            <Route path="/employee" element={<Employee />}></Route>
+            <Route path="/add_employee" element={<AddEmployee />}></Route>
+            <Route path="/employeeoverview/:itemId/" element={<Employeeoverview />}></Route>
+            <Route path="/employee_history/:itemId/" element={<EmployeeHistory />}></Route>
+            <Route path="/edit_employee/:itemId/" element={<EditEmployee />}></Route>
+
             {/* Stock Adjustment */}
             <Route path="/stock_adjust" element={<StockAdjustment />}></Route>
             <Route path="/add_stock_adjust" element={<AddStockAdjust />}></Route>
@@ -185,9 +200,12 @@ function App() {
             <Route path="/stock_adjust_history/:stockId/" element={<StockAdjustHistory />}></Route>
             <Route path="/edit_stock_adjust/:stockId/" element={<EditStockAdjust />}></Route>
 
-            {/* Stock Adjustment */}
+            {/* Sales Order */}
             <Route path="/sales_order" element={<SalesOrder />}></Route>
             <Route path="/add_sales_order" element={<AddSalesOrder />}></Route>
+            <Route path="/view_sales_order/:salesId/" element={<ViewSalesOrder />}></Route>
+            <Route path="/sales_order_history/:salesId/" element={<SalesOrderHistory />}></Route>
+            <Route path="/edit_sales_order/:salesId/" element={<EditSalesOrder />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>
