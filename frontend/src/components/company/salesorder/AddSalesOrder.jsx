@@ -2078,7 +2078,7 @@ function AddSalesOrder() {
           encType="multipart/form-data"
           onSubmit={handleSubmit}
         >
-          <div className="card radius-15">
+          <div className="card radius-15" style={{minWidth:'100%'}}>
             <div className="card-body">
               <div id="salesOrder">
                 <div className="row">

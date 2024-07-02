@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function EditSalesOrder() {
-  const { salesId } = useParams();
+function AddInvoice() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
@@ -18,13 +17,12 @@ function EditSalesOrder() {
   const [priceLists, setPriceLists] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
   const [cmpState, setCmpState] = useState("");
-  const [customerValue, setCustomerValue] = useState({});
 
-  const fetchSalesOrderData = () => {
+  const fetchInvoiceData = () => {
     axios
-      .get(`${config.base_url}/fetch_sales_order_data/${ID}/`)
+      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
       .then((res) => {
-        console.log("SO Data==", res);
+        console.log("INV Data==", res);
         if (res.data.status) {
           let itms = res.data.items;
           let cust = res.data.customers;
@@ -62,6 +60,8 @@ function EditSalesOrder() {
             value: item.id,
           }));
           setCustomers(newCustOptions);
+          setRefNo(res.data.refNo);
+          setNextInvoiceNo(res.data.soNo);
         }
       })
       .catch((err) => {
@@ -71,7 +71,7 @@ function EditSalesOrder() {
 
   function fetchPaymentTerms() {
     axios
-      .get(`${config.base_url}/fetch_sales_order_data/${ID}/`)
+      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let trms = res.data.paymentTerms;
@@ -88,7 +88,7 @@ function EditSalesOrder() {
 
   function fetchItems() {
     axios
-      .get(`${config.base_url}/fetch_sales_order_data/${ID}/`)
+      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let items = res.data.items;
@@ -106,7 +106,7 @@ function EditSalesOrder() {
   }
 
   useEffect(() => {
-    fetchSalesOrderData();
+    fetchInvoiceData();
   }, []);
 
   const customStyles = {
@@ -141,104 +141,6 @@ function EditSalesOrder() {
     }),
   };
 
-  const fetchSalesOrderDetails = () => {
-    axios
-      .get(`${config.base_url}/fetch_sales_order_details/${salesId}/`)
-      .then((res) => {
-        console.log("SO DET=", res);
-        if (res.data.status) {
-          var sales = res.data.sales;
-          var itms = res.data.items;
-
-          var c = {
-            value: sales.Customer,
-            label: res.data.otherDetails.customerName
-          }
-          setCustomerValue(c)
-
-          setCustomer(sales.Customer);
-          setEmail(sales.customer_email);
-          setGstType(sales.gst_type);
-          setGstIn(sales.gstin);
-          setBillingAddress(sales.billing_address);
-          setRefNo(sales.reference_no);
-          setSalesOrderNo(sales.sales_order_no);
-          setDate(sales.sales_order_date);
-          setPlaceOfSupply(sales.place_of_supply);
-          setShipmentDate(sales.exp_ship_date);
-          setTerm(sales.payment_terms);
-          setPaymentMethod(sales.payment_method);
-          setChequeNumber(sales.cheque_no);
-          setUpiId(sales.upi_no);
-          setAccountNumber(sales.bank_acc_no);
-          setPriceList(sales.price_list_applied);
-          setPriceListId(sales.price_list);
-          setSubTotal(sales.subtotal);
-          setIgst(sales.igst);
-          setCgst(sales.cgst);
-          setSgst(sales.sgst);
-          setTaxAmount(sales.tax_amount);
-          setShippingCharge(sales.adjustment);
-          setAdjustment(sales.shipping_charge);
-          setGrandTotal(sales.grandtotal);
-          setPaid(sales.paid_off);
-          setBalance(sales.balance);
-          setDescription(sales.note);
-          setSalesOrderItems([])
-          const salesItems = itms.map((i)=>{
-            if(i.item_type == "Goods"){
-              var hsnSac = i.hsn
-            }else{
-              var hsnSac = i.sac
-            }
-            return {
-              id: 1,
-              item: i.itemId,
-              hsnSac: hsnSac,
-              quantity: i.quantity,
-              price: i.sales_price,
-              priceListPrice: i.price,
-              taxGst: i.tax,
-              taxIgst: i.tax,
-              discount: i.discount,
-              total: i.total,
-              taxAmount: "",
-            }
-          })
-
-          setSalesOrderItems(salesItems);
-          refreshIndexes(salesItems);
-
-          paymentMethodChange(sales.payment_method);
-          checkTax(res.data.otherDetails.State,sales.place_of_supply);
-          checkPL(sales.price_list_applied);
-          // applyPriceList(sales.price_list)
-        }
-      })
-      .catch((err) => {
-        console.log("ERROR=", err);
-        if (!err.response.data.status) {
-          Swal.fire({
-            icon: "error",
-            title: `${err.response.data.message}`,
-          });
-        }
-      });
-  };
-
-  useEffect(() => {
-    fetchSalesOrderDetails();
-  }, []);
-
-  function refreshIndexes(items){
-    const itms = items.map((item, index) => ({
-      ...item,
-      id: index + 1,
-    }));
-
-    setSalesOrderItems(itms)
-  }
-
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
@@ -248,11 +150,12 @@ function EditSalesOrder() {
   const [gstIn, setGstIn] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [refNo, setRefNo] = useState("");
+  const [invoiceNo, setInvoiceNo] = useState("");
   const [salesOrderNo, setSalesOrderNo] = useState("");
-  const [nextSalesOrderNo, setNextSalesOrderNo] = useState("");
+  const [nextInvoiceNo, setNextInvoiceNo] = useState("");
   const [date, setDate] = useState(formattedDate);
   const [placeOfSupply, setPlaceOfSupply] = useState("");
-  const [shipmentDate, setShipmentDate] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [term, setTerm] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
@@ -276,12 +179,13 @@ function EditSalesOrder() {
   const [status, setStatus] = useState("");
   const [file, setFile] = useState(null);
 
-  const [salesOrderItems, setSalesOrderItems] = useState([
+  const [invoiceItems, setInvoiceItems] = useState([
     {
       id: 1,
       item: "",
       hsnSac: "",
       quantity: "",
+      available: "",
       price: "",
       priceListPrice: "",
       taxGst: "",
@@ -316,24 +220,6 @@ function EditSalesOrder() {
 
   function checkBalanceVal(val) {
     return val !== "" ? val : grandTotal;
-  }
-
-  function checkPL(priceList) {
-    if (priceList) {
-      document.querySelectorAll(".price").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-    } else {
-      document.querySelectorAll(".price").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-    }
   }
 
   function checkPriceList(priceList) {
@@ -411,14 +297,14 @@ function EditSalesOrder() {
       setPriceListId("");
       document.getElementById("custPriceListName").style.display = "none";
       document.getElementById("custPriceListName").innerText = "";
-      const updatedItems = salesOrderItems.map((item) => {
+      const updatedItems = invoiceItems.map((item) => {
         return {
           ...item,
           priceListPrice: "",
         };
       });
-      setSalesOrderItems(updatedItems);
-      refreshIndexes(updatedItems)
+      setInvoiceItems(updatedItems);
+      refreshIndexes(updatedItems);
     }
   }
 
@@ -430,10 +316,10 @@ function EditSalesOrder() {
       document.getElementById("custPriceListName").innerText = "";
       setPriceList(false);
       checkPriceList2();
-      calc3(salesOrderItems);
+      calc3(invoiceItems);
     } else {
       let updatedItems = await Promise.all(
-        salesOrderItems.map(async (pItem) => {
+        invoiceItems.map(async (pItem) => {
           var itemId = pItem.item;
           var plc = placeOfSupply;
           var PLId = priceListId;
@@ -484,44 +370,12 @@ function EditSalesOrder() {
         })
       );
 
-      setSalesOrderItems(updatedItems);
-      refreshIndexes(updatedItems)
+      setInvoiceItems(updatedItems);
+      refreshIndexes(updatedItems);
       checkPriceList2();
       refreshTax(placeOfSupply);
       calc3(updatedItems);
     }
-  }
-
-  function calculate() {
-    var rows = document.querySelectorAll("#salesOrderItemsTable tbody tr");
-    rows.forEach(function (row) {
-      var html = row.innerHTML;
-      if (html != "") {
-        var qty = row.querySelector(".qty").value;
-        var price;
-        if (document.getElementById("applyPriceList").checked) {
-          price = row.querySelector(".priceListPrice").value;
-        } else {
-          price = row.querySelector(".price").value;
-        }
-        var dis = row.querySelector(".disc").value;
-        var bc = document.getElementById("placeOfSupply").value;
-        var compstate = cmpState;
-
-        var tax;
-        if (bc == compstate) {
-          tax = row.querySelector(".tax_ref_gst").value;
-        } else {
-          tax = row.querySelector(".tax_ref_igst").value;
-        }
-
-        row.querySelector(".total").value =
-          parseFloat(qty) * parseFloat(price) - parseFloat(dis);
-        row.querySelector(".itemTaxAmount").value =
-          (qty * price - dis) * (tax / 100);
-        calculate_total();
-      }
-    });
   }
 
   function calculate_total() {
@@ -558,7 +412,7 @@ function EditSalesOrder() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("sales_id", salesId);
+    formData.append("status", status);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
@@ -566,10 +420,11 @@ function EditSalesOrder() {
     formData.append("gstin", gstIn);
     formData.append("place_of_supply", placeOfSupply);
     formData.append("reference_no", refNo);
-    formData.append("sales_order_no", salesOrderNo);
+    formData.append("invoice_no", invoiceNo);
+    formData.append("salesOrder_no", salesOrderNo);
     formData.append("payment_terms", term);
-    formData.append("sales_order_date", date);
-    formData.append("exp_ship_date", shipmentDate);
+    formData.append("invoice_date", date);
+    formData.append("duedate", dueDate);
     formData.append("price_list_applied", priceList);
     formData.append("price_list", checkForNull(priceListId));
     formData.append("payment_method", checkForNull(paymentMethod));
@@ -587,22 +442,22 @@ function EditSalesOrder() {
     formData.append("paid_off", checkForZero(paid));
     formData.append("balance", checkBalanceVal(balance));
     formData.append("note", description);
-    formData.append("salesOrderItems", JSON.stringify(salesOrderItems));
+    formData.append("invoiceItems", JSON.stringify(invoiceItems));
 
     if (file) {
       formData.append("file", file);
     }
 
     axios
-      .put(`${config.base_url}/update_sales_order/`, formData)
+      .post(`${config.base_url}/create_new_invoice/`, formData)
       .then((res) => {
-        console.log("Sales RES=", res);
+        console.log("INV RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Sales Order Updated",
+            title: "Invoice Created",
           });
-          navigate(`/view_sales_order/${salesId}/`);
+          navigate("/invoice");
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -664,27 +519,27 @@ function EditSalesOrder() {
     }
   }
 
-  function handleSalesOrderNoChange(val) {
-    setSalesOrderNo(val);
-    checkSalesOrderNo(val);
+  function handleInvoiceNoChange(val) {
+    setInvoiceNo(val);
+    checkInvoiceNo(val);
   }
 
-  function checkSalesOrderNo(val) {
-    document.getElementById("SONoErr").innerText = "";
-    var so_num = val;
-    if (so_num != "") {
+  function checkInvoiceNo(val) {
+    document.getElementById("INVNoErr").innerText = "";
+    var inv_num = val;
+    if (inv_num != "") {
       var s = {
         Id: ID,
-        SONum: so_num,
+        INVNum: inv_num,
       };
       axios
-        .get(`${config.base_url}/check_sales_order_no/`, { params: s })
+        .get(`${config.base_url}/check_invoice_no/`, { params: s })
         .then((res) => {
-          console.log("SO NUM Res=", res);
+          console.log("INV NUM Res=", res);
           if (!res.data.status) {
-            document.getElementById("SONoErr").innerText = res.data.message;
+            document.getElementById("INVNoErr").innerText = res.data.message;
           } else {
-            document.getElementById("SONoErr").innerText = "";
+            document.getElementById("INVNoErr").innerText = "";
           }
         })
         .catch((err) => {
@@ -712,7 +567,7 @@ function EditSalesOrder() {
       total: "",
       taxAmount: "",
     };
-    setSalesOrderItems((prevItems) => {
+    setInvoiceItems((prevItems) => {
       const updatedItems = [...prevItems, newItem];
 
       return updatedItems.map((item, index) => ({
@@ -723,7 +578,7 @@ function EditSalesOrder() {
   };
 
   const removeRow = (id) => {
-    setSalesOrderItems((prevItems) => {
+    setInvoiceItems((prevItems) => {
       const updatedItems = prevItems.filter((item) => item.id !== id);
 
       return updatedItems.map((item, index) => ({
@@ -733,8 +588,8 @@ function EditSalesOrder() {
     });
   };
 
-  const handleSalesOrderItemsInputChange = (id, field, value) => {
-    setSalesOrderItems((prevItems) =>
+  const handleInvoiceItemsInputChange = (id, field, value) => {
+    setInvoiceItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item
       )
@@ -745,26 +600,49 @@ function EditSalesOrder() {
     var exists = itemExists(value);
     if (!exists) {
       if (placeOfSupply != "") {
-        handleSalesOrderItemsInputChange(id, "item", value);
+        handleInvoiceItemsInputChange(id, "item", value);
         getItemData(value, id);
       } else {
         alert("Select Place of Supply.!");
       }
     } else {
       alert(
-        "Item already exists in the Sales Order, choose another or change quantity.!"
+        "Item already exists in the Invoice, choose another or change quantity.!"
       );
     }
   };
 
+  const handleQtyChange = (value, id) => {
+    handleInvoiceItemsInputChange(id, "quantity", value);
+    changeItemQty(id, value);
+  };
+
   const itemExists = (itemToCheck) => {
-    for (const item of salesOrderItems) {
+    for (const item of invoiceItems) {
       if (item.item === itemToCheck) {
         return true;
       }
     }
     return false;
   };
+
+  function changeItemQty(id, value) {
+    var qty = value;
+    var avl_val = document.getElementById(`avl${id}`).textContent;
+
+    if(value != ""){
+      if (parseInt(qty) > parseInt(avl_val)) {
+        alert("Quantity Greater than Available Quantity");
+        handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
+        document.getElementById(`qtyspan${id}`).textContent = "0"
+      } else {
+        document.getElementById(`qtyspan${id}`).textContent =
+          parseInt(avl_val) - parseInt(qty);
+      }
+    }else{
+      document.getElementById(`qtyspan${id}`).textContent = avl_val
+    }
+  }
 
   function getItemData(item, id) {
     var exists = itemExists(item);
@@ -774,7 +652,7 @@ function EditSalesOrder() {
     if (!exists) {
       if (plc != "") {
         if (priceList && PLId == "") {
-          handleSalesOrderItemsInputChange(id, "item", "");
+          handleInvoiceItemsInputChange(id, "item", "");
           alert("Select a Price List from the dropdown..!");
         } else {
           var itm = {
@@ -790,7 +668,7 @@ function EditSalesOrder() {
               if (res.data.status) {
                 var itemData = res.data.itemData;
 
-                setSalesOrderItems((prevItems) =>
+                setInvoiceItems((prevItems) =>
                   prevItems.map((item) =>
                     item.id === id
                       ? {
@@ -800,6 +678,7 @@ function EditSalesOrder() {
                           taxGst: itemData.gst,
                           taxIgst: itemData.igst,
                           hsnSac: itemData.hsnSac,
+                          available: itemData.avl,
                         }
                       : item
                   )
@@ -818,7 +697,7 @@ function EditSalesOrder() {
       }
     } else {
       alert(
-        "Item already exists in the Sales Order, choose another or change quantity.!"
+        "Item already exists in the Invoice, choose another or change quantity.!"
       );
     }
   }
@@ -827,30 +706,6 @@ function EditSalesOrder() {
     checkPriceList(priceList);
     refreshTax2();
     calc();
-  }
-
-  function checkTax(cmp,plc) {
-    if (cmp == plc) {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "flex";
-      document.getElementById("taxamountSGST").style.display = "flex";
-      document.getElementById("taxamountIGST").style.display = "none";
-    } else {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "none";
-      document.getElementById("taxamountSGST").style.display = "none";
-      document.getElementById("taxamountIGST").style.display = "flex";
-    }
   }
 
   function refreshTax(plc) {
@@ -930,14 +785,14 @@ function EditSalesOrder() {
       const year = isoString.slice(0, 4);
 
       const formattedDate = `${day}-${month}-${year}`;
-      setShipmentDate(formattedDate);
+      setDueDate(formattedDate);
     } else {
       alert("Please enter a valid date.");
       setTerm("");
     }
   }
-  const calc3 = (salesOrderItems) => {
-    const updatedItems = salesOrderItems.map((item) => {
+  const calc3 = (invoiceItems) => {
+    const updatedItems = invoiceItems.map((item) => {
       console.log("CALC3==", item);
 
       let qty = parseInt(item.quantity || 0);
@@ -956,8 +811,8 @@ function EditSalesOrder() {
 
       return {
         ...item,
-        total: total,
-        taxAmount: taxAmt,
+        total: total.toFixed(2),
+        taxAmount: taxAmt.toFixed(2),
       };
     });
 
@@ -965,7 +820,7 @@ function EditSalesOrder() {
   };
 
   function calc2(placeOfSupply) {
-    const updatedItems = salesOrderItems.map((item) => {
+    const updatedItems = invoiceItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -983,18 +838,18 @@ function EditSalesOrder() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total,
-        taxAmount: taxAmt,
+        total: total.toFixed(2),
+        taxAmount: taxAmt.toFixed(2),
       };
     });
 
-    setSalesOrderItems(updatedItems);
+    setInvoiceItems(updatedItems);
     refreshIndexes(updatedItems);
     calc_total2(updatedItems, placeOfSupply);
   }
 
   const calc = () => {
-    const updatedItems = salesOrderItems.map((item) => {
+    const updatedItems = invoiceItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -1012,23 +867,23 @@ function EditSalesOrder() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total,
-        taxAmount: taxAmt,
+        total: total.toFixed(2),
+        taxAmount: taxAmt.toFixed(2),
       };
     });
 
-    setSalesOrderItems(updatedItems);
+    setInvoiceItems(updatedItems);
     refreshIndexes(updatedItems);
     calc_total(updatedItems);
   };
 
-  function calc_total(salesOrderItems) {
+  function calc_total(invoiceItems) {
     var total = 0;
     var taxamount = 0;
-    salesOrderItems.map((item) => {
+    invoiceItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    salesOrderItems.map((item) => {
+    invoiceItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -1060,13 +915,13 @@ function EditSalesOrder() {
     }
   }
 
-  function calc_total2(salesOrderItems, placeOfSupply) {
+  function calc_total2(invoiceItems, placeOfSupply) {
     var total = 0;
     var taxamount = 0;
-    salesOrderItems.map((item) => {
+    invoiceItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    salesOrderItems.map((item) => {
+    invoiceItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -1207,6 +1062,15 @@ function EditSalesOrder() {
   function handlePaymentMethodChange(val) {
     setPaymentMethod(val);
     paymentMethodChange(val);
+  }
+
+  function refreshIndexes(items) {
+    const itms = items.map((item, index) => ({
+      ...item,
+      id: index + 1,
+    }));
+
+    setInvoiceItems(itms);
   }
 
   function paymentMethodChange(val) {
@@ -1717,7 +1581,7 @@ function EditSalesOrder() {
             icon: "success",
             title: "Customer Created",
           });
-          fetchSalesOrderData();
+          fetchInvoiceData();
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -2180,7 +2044,7 @@ function EditSalesOrder() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={`/view_sales_order/${salesId}/`}>
+          <Link to={"/invoice"}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2191,7 +2055,7 @@ function EditSalesOrder() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">EDIT SALES ORDER</h2>
+                <h2 className="mt-3">NEW INVOICE</h2>
               </center>
               <hr />
             </div>
@@ -2203,7 +2067,7 @@ function EditSalesOrder() {
           encType="multipart/form-data"
           onSubmit={handleSubmit}
         >
-          <div className="card radius-15" style={{minWidth:'100%'}}>
+          <div className="card radius-15" style={{ minWidth: "100%" }}>
             <div className="card-body">
               <div id="salesOrder">
                 <div className="row">
@@ -2224,7 +2088,6 @@ function EditSalesOrder() {
                         className="w-100"
                         id="customer"
                         required
-                        value={customerValue || null}
                         onChange={(selectedOption) =>
                           handleCustomerChange(
                             selectedOption ? selectedOption.value : ""
@@ -2306,18 +2169,18 @@ function EditSalesOrder() {
                 <div className="row">
                   <div className="col-md-4 mt-3">
                     <div className="d-flex">
-                      <label className="">Sales Order No.</label>
-                      <span className="text-danger ml-3" id="SONoErr"></span>
+                      <label className="">Invoice No.</label>
+                      <span className="text-danger ml-3" id="INVNoErr"></span>
                     </div>
                     <input
                       type="text"
                       className="form-control"
-                      name="sales_order_no"
-                      id="salesOrderNumber"
-                      value={salesOrderNo}
-                      onChange={(e) => handleSalesOrderNoChange(e.target.value)}
+                      name="invoice_no"
+                      id="invoiceNumber"
+                      value={invoiceNo}
+                      onChange={(e) => handleInvoiceNoChange(e.target.value)}
                       style={{ backgroundColor: "#43596c" }}
-                      placeholder={nextSalesOrderNo}
+                      placeholder={nextInvoiceNo}
                       required
                     />
                   </div>
@@ -2333,7 +2196,6 @@ function EditSalesOrder() {
                     />
                   </div>
                   <div className="col-md-4 mt-3">
-                    <input hidden value="{{cmp.State}}" id="cmpstate" />
                     <label className="">Place of supply</label>
                     <select
                       type="text"
@@ -2399,8 +2261,8 @@ function EditSalesOrder() {
                 </div>
 
                 <div className="row">
-                  <div className="col-md-4 mt-3">
-                    <label className="">Sales Order Date:</label>
+                  <div className="col-md-3 mt-3">
+                    <label className="">Invoice Date:</label>
                     <input
                       type="date"
                       className="form-control"
@@ -2411,7 +2273,7 @@ function EditSalesOrder() {
                       onChange={(e) => handleOrderDateChange(e.target.value)}
                     />
                   </div>
-                  <div className="col-md-4 mt-3">
+                  <div className="col-md-3 mt-3">
                     <label className="">Expected Shipment Date:</label>
                     <input
                       type="text"
@@ -2419,11 +2281,11 @@ function EditSalesOrder() {
                       className="form-control"
                       name="shipment_date"
                       style={{ backgroundColor: "#43596c", color: "white" }}
-                      value={shipmentDate}
+                      value={dueDate}
                       readOnly
                     />
                   </div>
-                  <div className="col-md-4 mt-3">
+                  <div className="col-md-3 mt-3">
                     <label className="">Terms </label>
                     <div className="d-flex align-items-center">
                       <select
@@ -2460,6 +2322,21 @@ function EditSalesOrder() {
                     </div>
                   </div>
 
+                  <div className="col-md-3 mt-3">
+                    <label className="">Order No.</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="sales_order_no"
+                      id="salesOrderNumber"
+                      value={salesOrderNo}
+                      onChange={(e) => setSalesOrderNo(e.target.value)}
+                      style={{ backgroundColor: "#43596c" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="row">
                   <div className="col-md-4 mt-3">
                     <label className="">Payment Type</label>
                     <select
@@ -2607,7 +2484,7 @@ function EditSalesOrder() {
                   <div className="col-md-12 table-responsive-md mt-3">
                     <table
                       className="table table-bordered table-hover mt-3"
-                      id="salesOrderItemsTable"
+                      id="invoiceItemsTable"
                     >
                       <thead>
                         <tr>
@@ -2622,12 +2499,7 @@ function EditSalesOrder() {
                         </tr>
                       </thead>
                       <tbody id="items-table-body">
-                        {salesOrderItems.map((row) => {
-                          const selectedOptionI = items.find(
-                            (option) => option.value === row.item
-                          )
-                          return(
-
+                        {invoiceItems.map((row) => (
                           <tr key={row.id} id={`tab_row${row.id}`}>
                             <td
                               className="nnum"
@@ -2644,7 +2516,7 @@ function EditSalesOrder() {
                                   className="w-100"
                                   id={`item${row.id}`}
                                   required
-                                  value={selectedOptionI}
+                                  defaultInputValue={row.item}
                                   onChange={(selectedOption) =>
                                     handleItemChange(
                                       selectedOption
@@ -2697,18 +2569,28 @@ function EditSalesOrder() {
                                 style={{
                                   backgroundColor: "#43596c",
                                   color: "white",
+                                  marginTop: "21px",
                                 }}
                                 value={row.quantity}
                                 onChange={(e) =>
-                                  handleSalesOrderItemsInputChange(
-                                    row.id,
-                                    "quantity",
-                                    e.target.value
+                                  handleQtyChange(
+                                    e.target.value,
+                                    row.id
                                   )
                                 }
                                 onBlur={refreshValues}
                                 required
                               />
+                              <span
+                                id={`avl${row.id}`}
+                                style={{ display: "none" }}
+                              >
+                                {row.available}
+                              </span>
+                              <div class="d-flex">
+                                <span>Available Qty :</span>
+                                <span id={`qtyspan${row.id}`} class="">{row.available}</span>
+                              </div>
                             </td>
                             <td>
                               <input
@@ -2751,7 +2633,7 @@ function EditSalesOrder() {
                                 style={{ display: "block" }}
                                 value={row.taxGst}
                                 onChange={(e) =>
-                                  handleSalesOrderItemsInputChange(
+                                  handleInvoiceItemsInputChange(
                                     row.id,
                                     "taxGst",
                                     e.target.value
@@ -2774,7 +2656,7 @@ function EditSalesOrder() {
                                 style={{ display: "none" }}
                                 value={row.taxIgst}
                                 onChange={(e) =>
-                                  handleSalesOrderItemsInputChange(
+                                  handleInvoiceItemsInputChange(
                                     row.id,
                                     "taxIgst",
                                     e.target.value
@@ -2799,7 +2681,7 @@ function EditSalesOrder() {
                                 id={`disc${row.id}`}
                                 value={row.discount}
                                 onChange={(e) =>
-                                  handleSalesOrderItemsInputChange(
+                                  handleInvoiceItemsInputChange(
                                     row.id,
                                     "discount",
                                     e.target.value
@@ -2850,8 +2732,7 @@ function EditSalesOrder() {
                               ></button>
                             </td>
                           </tr>
-                          )
-                        })}
+                        ))}
                       </tbody>
                       <tr>
                         <td style={{ border: "none" }}>
@@ -2893,7 +2774,7 @@ function EditSalesOrder() {
                   <div className="col-md-1"></div>
                   <div
                     className="col-md-5 table-responsive-md mt-3 "
-                    id="salesOrderItemsTableTotal"
+                    id="invoiceItemsTableTotal"
                     style={{
                       backgroundColor: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(128, 128, 128, 0.6)",
@@ -3078,7 +2959,7 @@ function EditSalesOrder() {
                   <div className="col-md-7"></div>
                   <div
                     className="col-md-5 table-responsive-md mt-3 "
-                    id="salesOrderItemsTablePaid"
+                    id="invoiceItemsTablePaid"
                     style={{
                       backgroundColor: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(128, 128, 128, 0.6)",
@@ -3151,13 +3032,16 @@ function EditSalesOrder() {
                     <input
                       type="submit"
                       className="btn btn-outline-secondary w-50 text-light"
-                      value="Save"
+                      onClick={() => setStatus("Draft")}
+                      value="Draft"
+                      style={{ height: "fit-content" }}
                     />
                     <input
-                      type="reset"
+                      type="submit"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      value="Cancel"
-                      onClick={()=>navigate(`/view_sales_order/${salesId}/`)}
+                      onClick={() => setStatus("Saved")}
+                      value="Save"
+                      style={{ height: "fit-content" }}
                     />
                   </div>
                 </div>
@@ -3168,7 +3052,7 @@ function EditSalesOrder() {
                   </div>
                 </div>
                 <span className="text-muted">
-                  Sales Order was created on a computer and is valid without the
+                  Invoice was created on a computer and is valid without the
                   signature and seal.
                 </span>
               </div>
@@ -4942,4 +4826,4 @@ function EditSalesOrder() {
   );
 }
 
-export default EditSalesOrder;
+export default AddInvoice;

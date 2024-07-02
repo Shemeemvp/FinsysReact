@@ -159,3 +159,25 @@ class SalesOrderItemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Sales_Order_Items
         fields = '__all__'
+
+# Invoice
+class InvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Invoice
+        fields = '__all__'
+
+class InvoiceCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Invoice_Comments
+        fields = '__all__'
+
+# Delivery Challan
+class DeliveryChallanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Delivery_Challan
+        fields = '__all__'
+
+class DeliveryChallanCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Delivery_Challan_Comments
+        fields = '__all__'

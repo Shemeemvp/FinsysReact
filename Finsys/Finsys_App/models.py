@@ -585,3 +585,157 @@ class Fin_Sales_Order_Comments(models.Model):
     Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
     SalesOrder = models.ForeignKey(Fin_Sales_Order,on_delete=models.CASCADE, null=True)
     comments = models.CharField(max_length=500,null=True,blank=True)
+
+
+# Invoice
+
+class Fin_Invoice(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    Customer = models.ForeignKey(Fin_Customers, on_delete=models.CASCADE, null=True)
+    customer_email = models.EmailField(max_length=100, null=True, blank=True)
+    billing_address = models.TextField(null=True, blank=True)
+    gst_type = models.CharField(max_length=100, null=True, blank=True)
+    gstin = models.CharField(max_length=100, null=True, blank=True)
+    place_of_supply = models.CharField(max_length=100, null=True, blank=True)
+    reference_no = models.IntegerField(null=True, blank=True)
+    invoice_no = models.CharField(max_length=100)
+    payment_terms = models.ForeignKey(Fin_Company_Payment_Terms, on_delete = models.SET_NULL,null=True)
+    invoice_date = models.DateField(null=True, blank=True)
+    duedate = models.DateField(null=True, blank=True)
+    salesOrder_no = models.CharField(max_length=100, null=True, blank=True)
+    exp_ship_date = models.DateField(null=True,blank=True)
+    
+    price_list_applied = models.BooleanField(null=True, default=False)
+    price_list = models.ForeignKey(Fin_Price_List, on_delete = models.SET_NULL,null=True)
+    
+    payment_method = models.CharField(max_length=100, null=True, blank=True)
+    cheque_no = models.CharField(max_length=100, null=True, blank=True)
+    upi_no = models.CharField(max_length=100, null=True, blank=True)
+    bank_acc_no = models.CharField(max_length=100, null=True, blank=True)
+
+    subtotal = models.FloatField(default=0, null=True)
+    igst = models.FloatField(default=0.0, null=True, blank=True)
+    cgst = models.FloatField(default=0.0, null=True, blank=True)
+    sgst = models.FloatField(default=0.0, null=True, blank=True)
+    tax_amount = models.FloatField(default=0.0, null=True, blank=True)
+    adjustment = models.FloatField(default=0.0, null=True, blank=True)
+    shipping_charge = models.FloatField(default=0.0, null=True, blank=True)
+    grandtotal = models.FloatField(default=0.0, null=True, blank=True)
+    paid_off = models.FloatField(default=0.0, null=True, blank=True)
+    balance = models.FloatField(default=0.0, null=True, blank=True)
+    
+    note = models.TextField(null=True, blank=True)
+    file = models.FileField(upload_to='invoice',default=None)
+    status =models.CharField(max_length=150,default='Draft')
+
+    def getNumFieldName(self):
+        return 'invoice_no'
+
+
+class Fin_Invoice_Items(models.Model):
+    Invoice = models.ForeignKey(Fin_Invoice,on_delete=models.CASCADE, null=True)
+    Item = models.ForeignKey(Fin_Items,on_delete=models.SET_NULL, null=True)
+    hsn = models.IntegerField(null=True, blank=True)
+    sac = models.IntegerField(null=True, blank=True)
+    quantity = models.IntegerField(default=0, null=True)
+    price = models.FloatField(default=0.0, null=True, blank=True)
+    total = models.FloatField(default=0.0, null=True, blank=True)
+    tax = models.CharField(max_length=100, null=True)
+    discount = models.FloatField(default=0.0, null=True, blank=True)
+
+
+class Fin_Invoice_Reference(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    reference_no = models.BigIntegerField(null = False, blank=False)
+
+
+class Fin_Invoice_History(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    Invoice = models.ForeignKey(Fin_Invoice,on_delete=models.CASCADE,null=True,blank=True)
+    date = models.DateField(auto_now_add=True, auto_now=False, null=True)
+    action_choices = [
+        ('Created', 'Created'),
+        ('Edited', 'Edited'),
+    ]
+    action = models.CharField(max_length=20, null=True, blank = True, choices=action_choices)
+
+
+class Fin_Invoice_Comments(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    Invoice = models.ForeignKey(Fin_Invoice,on_delete=models.CASCADE,null=True,blank=True)
+    comments = models.CharField(max_length=500,null=True,blank=True)
+
+
+# Delivery Challan
+
+class Fin_Delivery_Challan(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    Customer = models.ForeignKey(Fin_Customers, on_delete=models.CASCADE, null=True)
+    customer_email = models.EmailField(max_length=100, null=True, blank=True)
+    billing_address = models.TextField(null=True, blank=True)
+    gst_type = models.CharField(max_length=100, null=True, blank=True)
+    gstin = models.CharField(max_length=100, null=True, blank=True)
+    place_of_supply = models.CharField(max_length=100, null=True, blank=True)
+    challan_date = models.DateField(null=True, blank=True)
+    reference_no = models.BigIntegerField(null=True, blank=True)
+    challan_no = models.CharField(max_length=100, blank=True)
+    challan_type = models.CharField(max_length=100, blank=True)
+    
+    price_list_applied = models.BooleanField(null=True, default=False)
+    price_list = models.ForeignKey(Fin_Price_List, on_delete = models.SET_NULL,null=True)
+
+    subtotal = models.BigIntegerField(default=0, null=True)
+    igst = models.FloatField(default=0.0, null=True, blank=True)
+    cgst = models.FloatField(default=0.0, null=True, blank=True)
+    sgst = models.FloatField(default=0.0, null=True, blank=True)
+    price = models.FloatField(default=0.0, null=True, blank=True)
+    tax_amount = models.FloatField(default=0.0, null=True, blank=True)
+    adjustment = models.FloatField(default=0.0, null=True, blank=True)
+    shipping_charge = models.FloatField(default=0.0, null=True, blank=True)
+    grandtotal = models.FloatField(default=0.0, null=True, blank=True)
+    paid_number = models.IntegerField(default=0, null=True)
+    balance = models.FloatField(default=0.0, null=True, blank = True)
+    
+    converted_to_invoice =  models.ForeignKey(Fin_Invoice, on_delete = models.SET_NULL, null = True)
+    # converted_to_recurring_invoice =  models.ForeignKey(Fin_Recurring_Invoice, on_delete = models.SET_NULL, null = True)
+    
+    note = models.TextField(null=True, blank=True)
+    status =models.CharField(max_length=150,default='Draft')
+    document = models.FileField(upload_to='file/',blank=True) 
+
+
+class Fin_Delivery_Challan_Items(models.Model):
+    items = models.ForeignKey(Fin_Items, on_delete=models.CASCADE, null=True)
+    hsn = models.CharField( max_length=150,null=True, blank=True)
+    sac = models.CharField( max_length=150,null=True, blank=True)
+    quantity = models.IntegerField(default=0, null=True, blank=True)
+    delivery_challan = models.ForeignKey(Fin_Delivery_Challan, on_delete=models.CASCADE, null=True)
+    
+    tax_rate = models.FloatField(default=0, null=True, blank=True)
+    price = models.FloatField(default=0.0, null=True, blank=True)
+
+    discount = models.FloatField(default=0, null=True)
+    total = models.FloatField(default=0, null=True, blank = True)
+
+class Fin_Delivery_Challan_Reference(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    reference_no = models.BigIntegerField(null=True, blank=True)
+    
+
+class Fin_Delivery_Challan_History(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    delivery_challan = models.ForeignKey(Fin_Delivery_Challan, on_delete=models.CASCADE, null=True)
+    date = models.DateField(auto_now_add=True, null=True, blank = True)
+    action = models.CharField( max_length=150,default='Created')
+
+
+class Fin_Delivery_Challan_Comments(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    delivery_challan = models.ForeignKey(Fin_Delivery_Challan,on_delete=models.CASCADE, null=True)
+    comments = models.CharField(max_length=500,null=True,blank=True)

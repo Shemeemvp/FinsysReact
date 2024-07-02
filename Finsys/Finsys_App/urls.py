@@ -190,4 +190,20 @@ urlpatterns = [
     path('sales_order_pdf/',Fin_salesOrderPdf),
     path('share_sales_order_email/',Fin_shareSalesOrderToEmail),
     path('update_sales_order/',Fin_updateSalesOrder),
+
+    #Invoice
+    path('fetch_invoices/<int:id>/',Fin_fetchInvoices),
+    path('fetch_invoice_data/<int:id>/',Fin_fetchInvoiceData),
+    path('check_invoice_no/',Fin_checkInvoiceNo),
+    path('create_new_invoice/',Fin_createInvoice),
+    path('fetch_invoice_details/<int:id>/',Fin_fetchInvoiceDetails),
+    path('change_invoice_status/',Fin_changeInvoiceStatus),
+    path('add_invoice_comment/',Fin_addInvoiceComment),
+    path('add_invoice_attachment/',Fin_addInvoiceAttachment),
+    path('delete_invoice_comment/<int:id>/',Fin_deleteInvoiceComment),
+    path('fetch_invoice_history/<int:id>/',Fin_fetchInvoiceHistory),
+    path('delete_invoice/<int:id>/',Fin_deleteInvoice),
+    path('invoice_pdf/',Fin_invoicePdf),
+    path('share_invoice_email/',Fin_shareInvoiceToEmail),
+    path('update_invoice/',Fin_updateInvoice),
 ]

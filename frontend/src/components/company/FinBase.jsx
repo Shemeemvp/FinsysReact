@@ -1278,7 +1278,7 @@ function FinBase() {
 
                   {/* {% if allmodules.Invoice == 1 %} */}
                   
-                  <li id="invoices"><a href="{% url 'Fin_invoice' %}"><i className="bx bx-right-arrow-alt"></i>Invoices</a>
+                  <li id="invoices"><Link to="/invoice"><i className="bx bx-right-arrow-alt"></i>Invoices</Link>
                   </li>
                   {/* {% endif %} */}
             
@@ -1301,7 +1301,7 @@ function FinBase() {
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Delivery_Challan == 1 %} */}
-                  <li id="deliverychallan"><a href="{% url 'deliverylist' %}"><i className="bx bx-right-arrow-alt"></i> Delivery Challan</a>
+                  <li id="deliverychallan"><Link to="/delivery_challan"><i className="bx bx-right-arrow-alt"></i> Delivery Challan</Link>
                   </li>
                   {/* {% endif %} */}
 

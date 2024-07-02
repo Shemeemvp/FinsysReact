@@ -88,6 +88,12 @@ import AddSalesOrder from './components/company/salesorder/AddSalesOrder';
 import ViewSalesOrder from './components/company/salesorder/ViewSalesOrder';
 import SalesOrderHistory from './components/company/salesorder/SalesOrderHistory';
 import EditSalesOrder from './components/company/salesorder/EditSalesOrder';
+import DeliveryChallan from './components/company/deliverychallan/DeliveryChallan';
+import Invoice from './components/company/invoice/Invoice';
+import AddInvoice from './components/company/invoice/AddInvoice';
+import ViewInvoice from './components/company/invoice/ViewInvoice';
+import InvoiceHistory from './components/company/invoice/InvoiceHistory';
+import EditInvoice from './components/company/invoice/EditInvoice';
 
 function App() {
   return (
@@ -206,6 +212,16 @@ function App() {
             <Route path="/view_sales_order/:salesId/" element={<ViewSalesOrder />}></Route>
             <Route path="/sales_order_history/:salesId/" element={<SalesOrderHistory />}></Route>
             <Route path="/edit_sales_order/:salesId/" element={<EditSalesOrder />}></Route>
+            
+            {/* Invoice */}
+            <Route path="/invoice" element={<Invoice />}></Route>
+            <Route path="/add_invoice" element={<AddInvoice />}></Route>
+            <Route path="/view_invoice/:invoiceId/" element={<ViewInvoice />}></Route>
+            <Route path="/invoice_history/:invoiceId/" element={<InvoiceHistory />}></Route>
+            <Route path="/edit_invoice/:invoiceId/" element={<EditInvoice />}></Route>
+            
+            {/* Delivery Challan */}
+            <Route path="/delivery_challan" element={<DeliveryChallan />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>
