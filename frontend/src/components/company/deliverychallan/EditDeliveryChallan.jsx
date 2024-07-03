@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function AddDeliveryChallan() {
+function EditDeliveryChallan() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
+  const { challanId } = useParams();
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [terms, setTerms] = useState([]);
@@ -17,6 +18,7 @@ function AddDeliveryChallan() {
   const [priceLists, setPriceLists] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
   const [cmpState, setCmpState] = useState("");
+  const [customerValue, setCustomerValue] = useState({});
 
   const fetchDeliveryChallanData = () => {
     axios
@@ -60,8 +62,6 @@ function AddDeliveryChallan() {
             value: item.id,
           }));
           setCustomers(newCustOptions);
-          setRefNo(res.data.refNo);
-          setNextChallanNo(res.data.ChlNo);
         }
       })
       .catch((err) => {
@@ -141,6 +141,87 @@ function AddDeliveryChallan() {
     }),
   };
 
+  const fetchChallanDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_challan_details/${challanId}/`)
+      .then((res) => {
+        console.log("CHL DET=", res);
+        if (res.data.status) {
+          var challan = res.data.challan;
+          var itms = res.data.items;
+
+          var c = {
+            value: challan.Customer,
+            label: res.data.otherDetails.customerName,
+          };
+          setCustomerValue(c);
+
+          setCustomer(challan.Customer);
+          setEmail(challan.customer_email);
+          setGstType(challan.gst_type);
+          setGstIn(challan.gstin);
+          setBillingAddress(challan.billing_address);
+          setRefNo(challan.reference_no);
+          setChallanNo(challan.challan_no);
+          setDate(challan.challan_date);
+          setPlaceOfSupply(challan.place_of_supply);
+          setChallanType(challan.challan_type);
+          setPriceList(challan.price_list_applied);
+          setPriceListId(challan.price_list);
+          setSubTotal(challan.subtotal);
+          setIgst(challan.igst);
+          setCgst(challan.cgst);
+          setSgst(challan.sgst);
+          setTaxAmount(challan.tax_amount);
+          setAdjustment(challan.adjustment);
+          setShippingCharge(challan.shipping_charge);
+          setGrandTotal(challan.grandtotal);
+          setDescription(challan.note);
+          setChallanItems([]);
+          const chlItems = itms.map((i) => {
+            if (i.item_type == "Goods") {
+              var hsnSac = i.hsn;
+            } else {
+              var hsnSac = i.sac;
+            }
+            return {
+              id: 1,
+              item: i.itemId,
+              hsnSac: hsnSac,
+              quantity: i.quantity,
+              price: i.sales_price,
+              priceListPrice: i.price,
+              taxGst: i.tax,
+              taxIgst: i.tax,
+              discount: i.discount,
+              total: i.total,
+              taxAmount: "",
+            };
+          });
+
+          setChallanItems(chlItems);
+          refreshIndexes(chlItems);
+
+          checkTax(res.data.otherDetails.State, challan.place_of_supply);
+          checkPL(challan.price_list_applied);
+          // applyPriceList(sales.price_list)
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchChallanDetails();
+  }, []);
+
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
@@ -168,7 +249,6 @@ function AddDeliveryChallan() {
   const [grandTotal, setGrandTotal] = useState(0.0);
 
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("");
   const [file, setFile] = useState(null);
 
   const [challanItems, setChallanItems] = useState([
@@ -211,6 +291,48 @@ function AddDeliveryChallan() {
 
   function checkBalanceVal(val) {
     return val !== "" ? val : grandTotal;
+  }
+
+  function checkTax(cmp, plc) {
+    if (cmp == plc) {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "flex";
+      document.getElementById("taxamountSGST").style.display = "flex";
+      document.getElementById("taxamountIGST").style.display = "none";
+    } else {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "none";
+      document.getElementById("taxamountSGST").style.display = "none";
+      document.getElementById("taxamountIGST").style.display = "flex";
+    }
+  }
+
+  function checkPL(priceList) {
+    if (priceList) {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+    } else {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+    }
   }
 
   function checkPriceList(priceList) {
@@ -403,7 +525,7 @@ function AddDeliveryChallan() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("status", status);
+    formData.append("chl_id", challanId);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
@@ -432,15 +554,15 @@ function AddDeliveryChallan() {
     }
 
     axios
-      .post(`${config.base_url}/create_new_delivery_challan/`, formData)
+      .put(`${config.base_url}/update_delivery_challan/`, formData)
       .then((res) => {
         console.log("Chl RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Challan Created",
+            title: "Challan Updated",
           });
-          navigate("/delivery_challan");
+          navigate(`/view_delivery_challan/${challanId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -1895,7 +2017,7 @@ function AddDeliveryChallan() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/delivery_challan"}>
+          <Link to={`/view_delivery_challan/${challanId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -1906,7 +2028,7 @@ function AddDeliveryChallan() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">NEW DELIVERY CHALLAN</h2>
+                <h2 className="mt-3">EDIT DELIVERY CHALLAN</h2>
               </center>
               <hr />
             </div>
@@ -1938,6 +2060,7 @@ function AddDeliveryChallan() {
                         name="customer"
                         className="w-100"
                         id="customer"
+                        value={customerValue || null}
                         required
                         onChange={(selectedOption) =>
                           handleCustomerChange(
@@ -2235,8 +2358,11 @@ function AddDeliveryChallan() {
                         </tr>
                       </thead>
                       <tbody id="items-table-body">
-                        {challanItems.map((row) => (
-                          <tr key={row.id} id={`tab_row${row.id}`}>
+                        {challanItems.map((row) => {
+                          const selectedOptionI = items.find(
+                            (option) => option.value === row.item
+                          );
+                          return(<tr key={row.id} id={`tab_row${row.id}`}>
                             <td
                               className="nnum"
                               style={{ textAlign: "center" }}
@@ -2252,7 +2378,7 @@ function AddDeliveryChallan() {
                                   className="w-100"
                                   id={`item${row.id}`}
                                   required
-                                  defaultInputValue={row.item}
+                                  value={selectedOptionI}
                                   onChange={(selectedOption) =>
                                     handleItemChange(
                                       selectedOption
@@ -2457,8 +2583,8 @@ function AddDeliveryChallan() {
                                 title="Remove Row"
                               ></button>
                             </td>
-                          </tr>
-                        ))}
+                          </tr>)
+                        })}
                       </tbody>
                       <tr>
                         <td style={{ border: "none" }}>
@@ -2706,15 +2832,14 @@ function AddDeliveryChallan() {
                       type="submit"
                       style={{height:"fit-content"}}
                       className="btn btn-outline-secondary w-50 text-light"
-                      onClick={() => setStatus("Draft")}
-                      value="Draft"
+                      value="Save"
                     />
                     <input
-                      type="submit"
+                      type="reset"
                       style={{height:"fit-content"}}
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => setStatus("Saved")}
-                      value="Save"
+                      onClick={() => navigate(`/view_delivery_challan/${challanId}/`)}
+                      value="Cancel"
                     />
                   </div>
                 </div>
@@ -4496,4 +4621,4 @@ function AddDeliveryChallan() {
   );
 }
 
-export default AddDeliveryChallan;
+export default EditDeliveryChallan;

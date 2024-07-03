@@ -179,8 +179,8 @@ function EditInvoice() {
           setCgst(invoice.cgst);
           setSgst(invoice.sgst);
           setTaxAmount(invoice.tax_amount);
-          setShippingCharge(invoice.adjustment);
-          setAdjustment(invoice.shipping_charge);
+          setAdjustment(invoice.adjustment);
+          setShippingCharge(invoice.shipping_charge);
           setGrandTotal(invoice.grandtotal);
           setPaid(invoice.paid_off);
           setBalance(invoice.balance);

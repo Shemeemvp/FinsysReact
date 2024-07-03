@@ -112,7 +112,7 @@ function DeliveryChallan() {
     axios.get(`${config.base_url}/fetch_delivery_challan/${ID}/`).then((res)=>{
       console.log("DC RES=",res)
       if(res.data.status){
-        var dc = res.data.deliveryChallan;
+        var dc = res.data.challan;
         setDeliveryChallan([])
         dc.map((i)=>{
           setDeliveryChallan((prevState)=>[

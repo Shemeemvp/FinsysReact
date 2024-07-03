@@ -8,12 +8,12 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import "../../styles/SalesOrder.css";
 
-function ViewInvoice() {
+function ViewChallan() {
   const ID = Cookies.get("Login_id");
-  const { invoiceId } = useParams();
-  const [invoiceDetails, setInvoiceDetails] = useState({});
+  const { challanId } = useParams();
+  const [challanDetails, setChallanDetails] = useState({});
   const [otherDetails, setOtherDetails] = useState({});
-  const [invoiceItems, setInvoiceItems] = useState([]);
+  const [challanItems, setChallanItems] = useState([]);
   const [comments, setComments] = useState([]);
   const [history, setHistory] = useState({
     action: "",
@@ -23,32 +23,32 @@ function ViewInvoice() {
 
   const [fileUrl, setFileUrl] = useState(null);
 
-  const fetchInvoiceDetails = () => {
+  const fetchChallanDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_invoice_details/${invoiceId}/`)
+      .get(`${config.base_url}/fetch_challan_details/${challanId}/`)
       .then((res) => {
-        console.log("INV DATA=", res);
+        console.log("CHL DATA=", res);
         if (res.data.status) {
-          var invoice = res.data.invoice;
+          var chl = res.data.challan;
           var hist = res.data.history;
           var cmt = res.data.comments;
           var itms = res.data.items;
           var other = res.data.otherDetails;
-          if (invoice.file) {
-            var url = `${config.base_url}/${invoice.file}`;
+          if (chl.document) {
+            var url = `${config.base_url}/${chl.document}`;
             setFileUrl(url);
           }
 
           setOtherDetails(other);
-          setInvoiceItems([]);
+          setChallanItems([]);
           setComments([]);
           itms.map((i) => {
-            setInvoiceItems((prevState) => [...prevState, i]);
+            setChallanItems((prevState) => [...prevState, i]);
           });
           cmt.map((c) => {
             setComments((prevState) => [...prevState, c]);
           });
-          setInvoiceDetails(invoice);
+          setChallanDetails(chl);
           if (hist) {
             setHistory(hist);
           }
@@ -66,7 +66,7 @@ function ViewInvoice() {
   };
 
   useEffect(() => {
-    fetchInvoiceDetails();
+    fetchChallanDetails();
   }, []);
 
   const currentUrl = window.location.href;
@@ -76,9 +76,9 @@ function ViewInvoice() {
 
   const navigate = useNavigate();
 
-  function handleConvertInvoice() {
+  function handleConvertChallan() {
     Swal.fire({
-      title: `Convert Invoice - ${invoiceDetails.invoice_no}?`,
+      title: `Convert Delivery Challan - ${challanDetails.challan_no}?`,
       text: "Are you sure you want to convert this.!",
       icon: "warning",
       showCancelButton: true,
@@ -88,17 +88,17 @@ function ViewInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         var st = {
-          id: invoiceId,
+          id: challanId,
         };
         axios
-          .post(`${config.base_url}/change_invoice_status/`, st)
+          .post(`${config.base_url}/change_challan_status/`, st)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
                 icon: "success",
                 title: "Converted",
               });
-              fetchInvoiceDetails();
+              fetchChallanDetails();
             }
           })
           .catch((err) => {
@@ -109,15 +109,15 @@ function ViewInvoice() {
   }
 
   const [comment, setComment] = useState("");
-  const saveInvoiceComment = (e) => {
+  const saveChallanComment = (e) => {
     e.preventDefault();
     var cmt = {
       Id: ID,
-      Invoice: invoiceId,
+      delivery_challan: challanId,
       comments: comment,
     };
     axios
-      .post(`${config.base_url}/add_invoice_comment/`, cmt)
+      .post(`${config.base_url}/add_challan_comment/`, cmt)
       .then((res) => {
         console.log(res);
         if (res.data.status) {
@@ -126,7 +126,7 @@ function ViewInvoice() {
             title: "Comment Added",
           });
           setComment("");
-          fetchInvoiceDetails();
+          fetchChallanDetails();
         }
       })
       .catch((err) => {
@@ -140,9 +140,9 @@ function ViewInvoice() {
       });
   };
 
-  function handleDeleteInvoice(id) {
+  function handleDeleteChallan(id) {
     Swal.fire({
-      title: `Delete Invoice - ${invoiceDetails.invoice_no}?`,
+      title: `Delete Challan - ${challanDetails.challan_no}?`,
       text: "Data cannot be restored.!",
       icon: "warning",
       showCancelButton: true,
@@ -152,15 +152,15 @@ function ViewInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_invoice/${id}/`)
+          .delete(`${config.base_url}/delete_challan/${id}/`)
           .then((res) => {
             console.log(res);
 
             Toast.fire({
               icon: "success",
-              title: "Invoice Deleted.",
+              title: "Challan Deleted.",
             });
-            navigate("/invoice");
+            navigate("/delivery_challan");
           })
           .catch((err) => {
             console.log(err);
@@ -181,7 +181,7 @@ function ViewInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_invoice_comment/${id}/`)
+          .delete(`${config.base_url}/delete_challan_comment/${id}/`)
           .then((res) => {
             console.log(res);
 
@@ -189,7 +189,7 @@ function ViewInvoice() {
               icon: "success",
               title: "Comment Deleted",
             });
-            fetchInvoiceDetails();
+            fetchChallanDetails();
           })
           .catch((err) => {
             console.log(err);
@@ -224,7 +224,7 @@ function ViewInvoice() {
     document.getElementById("attachBtn").style.display = "block";
     document.getElementById("historyBtn").style.display = "block";
     document.getElementById("commentBtn").style.display = "block";
-    if (invoiceDetails.status == "Draft") {
+    if (challanDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "block";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
@@ -248,7 +248,7 @@ function ViewInvoice() {
     document.getElementById("historyBtn").style.display = "none";
     document.getElementById("commentBtn").style.display = "none";
     document.getElementById("slipPdfBtn").style.display = "none";
-    if (invoiceDetails.status == "Draft") {
+    if (challanDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "none";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
@@ -272,7 +272,7 @@ function ViewInvoice() {
     document.getElementById("attachBtn").style.display = "none";
     document.getElementById("slipPdfBtn").style.display = "block";
     document.getElementById("commentBtn").style.display = "none";
-    if (invoiceDetails.status == "Draft") {
+    if (challanDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "none";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
@@ -404,11 +404,11 @@ p {
   setInterval(updateDateTime, 1000);
 
   function slipPdf() {
-    var invoiceNo = `${invoiceDetails.invoice_no}`;
+    var challanNo = `${challanDetails.challan_no}`;
     var element = document.getElementById("slip");
     var opt = {
       margin: 1,
-      filename: "Invoice_Slip_" + invoiceNo + ".pdf",
+      filename: "DeliveryChallan_Slip_" + challanNo + ".pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
@@ -432,13 +432,13 @@ p {
     document.getElementById("page-content").scrollIntoView();
   }
 
-  function invoicePdf() {
+  function challanPdf() {
     var data = {
       Id: ID,
-      inv_id: invoiceId,
+      chl_id: challanId,
     };
     axios
-      .get(`${config.base_url}/invoice_pdf/`, {
+      .get(`${config.base_url}/challan_pdf/`, {
         responseType: "blob",
         params: data,
       })
@@ -449,7 +449,7 @@ p {
         const fileURL = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = fileURL;
-        a.download = `Invoice_${invoiceDetails.invoice_no}.pdf`;
+        a.download = `DeliveryChallan_${challanDetails.challan_no}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -496,13 +496,13 @@ p {
       } else {
         // document.getElementById("share_to_email_form").submit();
         var em = {
-          inv_id: invoiceId,
+          chl_id: challanId,
           Id: ID,
           email_ids: emailIds,
           email_message: emailMessage,
         };
         axios
-          .post(`${config.base_url}/share_invoice_email/`, em)
+          .post(`${config.base_url}/share_challan_email/`, em)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
@@ -536,13 +536,13 @@ p {
     e.preventDefault();
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("inv_id", invoiceId);
+    formData.append("chl_id", challanId);
     if (file) {
       formData.append("file", file);
     }
 
     axios
-      .post(`${config.base_url}/add_invoice_attachment/`, formData)
+      .post(`${config.base_url}/add_challan_attachment/`, formData)
       .then((res) => {
         console.log("FILE RES==", res);
         if (res.data.status) {
@@ -552,7 +552,7 @@ p {
           });
           setFile(null);
           document.getElementById("fileModalDismiss").click();
-          fetchInvoiceDetails();
+          fetchChallanDetails();
         }
       })
       .catch((err) => {
@@ -577,7 +577,7 @@ p {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to="/invoice"
+          to="/delivery_challan"
         >
           <i
             className="fa fa-times-circle text-white"
@@ -627,9 +627,9 @@ p {
                   </div>
 
                   <div className="col-md-6 d-flex justify-content-end">
-                    {invoiceDetails.status == "Draft" ? (
+                    {challanDetails.status == "Draft" ? (
                       <a
-                        onClick={handleConvertInvoice}
+                        onClick={handleConvertChallan}
                         id="statusBtn"
                         style={{
                           display: "block",
@@ -643,7 +643,7 @@ p {
                       </a>
                     ) : null}
                     <a
-                      onClick={invoicePdf}
+                      onClick={challanPdf}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-file"
                       role="button"
                       id="pdfBtn"
@@ -744,7 +744,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/edit_invoice/${invoiceId}/`}
+                      to={`/edit_delivery_challan/${challanId}/`}
                       className="ml-2 fa fa-pencil btn btn-outline-secondary text-grey"
                       id="editBtn"
                       role="button"
@@ -757,7 +757,7 @@ p {
                       id="deleteBtn"
                       role="button"
                       onClick={() =>
-                        handleDeleteInvoice(`${invoiceDetails.id}`)
+                        handleDeleteChallan(challanId)
                       }
                       style={{ height: "fit-content", width: "fit-content" }}
                     >
@@ -819,7 +819,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/invoice_history/${invoiceId}/`}
+                      to={`/delivery_challan_history/${challanId}/`}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-history"
                       id="historyBtn"
                       role="button"
@@ -835,7 +835,7 @@ p {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  INVOICE OVERVIEW
+                  DELIVERY CHALLAN OVERVIEW
                 </h3>
               </center>
             </div>
@@ -887,7 +887,7 @@ p {
                         <div className="row">
                           <div className="col mt-3">
                             <h2 className="mb-0">
-                              # {invoiceDetails.invoice_no}
+                              # {challanDetails.challan_no}
                             </h2>
                           </div>
                         </div>
@@ -958,18 +958,18 @@ p {
                               width: "fit-content",
                             }}
                           >
-                            Invoice Details
+                            Delivery Challan Details
                           </h5>
                         </div>
                         <div className="col-md-4 mt-3"></div>
                         <div className="col-md-4 mt-3"></div>
 
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Invoice No,</h6>
+                          <h6 className="mb-0">Challan No,</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.invoice_no}
+                            {challanDetails.challan_no}
                           </p>
                         </div>
 
@@ -984,36 +984,20 @@ p {
                       </div>
                       <div className="row mb-4 d-flex justify-content-between align-items-center">
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Invoice Date</h6>
+                          <h6 className="mb-0">Challan Date</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.invoice_date}
+                            {challanDetails.challan_date}
                           </p>
                         </div>
 
                         <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">Shipment Date</h6>
+                          <h6 className="mb-0">Challan Type</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.duedate}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="row mb-4 d-flex justify-content-start align-items-center">
-                        <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Address</h6>
-                        </div>
-                        <div className="col-md-3 mt-3 vr">
-                          <p className="mb-0">{invoiceDetails.billing_address}</p>
-                        </div>
-                        <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">Payment Method</h6>
-                        </div>
-                        <div className="col-md-3 mt-3">
-                          <p className="mb-0 text-right">
-                            {invoiceDetails.payment_method}
+                            {challanDetails.challan_type}
                           </p>
                         </div>
                       </div>
@@ -1058,18 +1042,18 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0" style={{ textAlign: "right" }}>
-                            {invoiceDetails.gst_type}
+                            {challanDetails.gst_type}
                           </p>
                         </div>
 
-                        {invoiceDetails.gstin != "None" && (
+                        {challanDetails.gstin != "None" && (
                           <>
                             <div className="col-md-3 mt-3 vl">
                               <h6 className="mb-0">GSTIN No</h6>
                             </div>
                             <div className="col-md-3 mt-3">
                               <p className="mb-0 text-right">
-                                {invoiceDetails.gstin}
+                                {challanDetails.gstin}
                               </p>
                             </div>
                           </>
@@ -1081,7 +1065,7 @@ p {
                         </div>
                         <div className="col-md-3 mt-3 ">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.billing_address}
+                            {challanDetails.billing_address}
                           </p>
                         </div>
                       </div>
@@ -1098,8 +1082,8 @@ p {
                           >
                             Items Details
                           </h5>
-                          {invoiceItems &&
-                            invoiceItems.map((itm) => (
+                          {challanItems &&
+                            challanItems.map((itm) => (
                               <>
                                 <div className="row mb-4 d-flex justify-content-between align-items-center">
                                   <div className="col-md-3 mt-3">
@@ -1195,12 +1179,12 @@ p {
                 >
                   <div className="px-3 py-4">
                     <h4 className="fw-bold mb-2 mt-4 pt-1">
-                      Invoice Tax Details
+                      Challan Tax Details
                     </h4>
                     <hr className="my-4" />
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Status</h6>
-                      {invoiceDetails.status == "Draft" ? (
+                      {challanDetails.status == "Draft" ? (
                         <span className="text-info h5 font-weight-bold">
                           DRAFT
                         </span>
@@ -1212,49 +1196,49 @@ p {
                     </div>
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Sub Total</h6>
-                      {invoiceDetails.subtotal}
+                      {challanDetails.subtotal}
                     </div>
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Tax Amount</h6>
-                      {invoiceDetails.tax_amount}
+                      {challanDetails.tax_amount}
                     </div>
-                    {invoiceDetails.igst != 0 ? (
+                    {challanDetails.igst != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">IGST</h6>
-                        {invoiceDetails.igst}
+                        {challanDetails.igst}
                       </div>
                     ) : null}
-                    {invoiceDetails.cgst != 0 ? (
+                    {challanDetails.cgst != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">CGST</h6>
-                        {invoiceDetails.cgst}
+                        {challanDetails.cgst}
                       </div>
                     ) : null}
-                    {invoiceDetails.sgst != 0 ? (
+                    {challanDetails.sgst != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">SGST</h6>
-                        {invoiceDetails.sgst}
+                        {challanDetails.sgst}
                       </div>
                     ) : null}
 
-                    {invoiceDetails.shipping_charge != 0 ? (
+                    {challanDetails.shipping_charge != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">Shipping Charge</h6>
-                        {invoiceDetails.shipping_charge}
+                        {challanDetails.shipping_charge}
                       </div>
                     ) : null}
 
-                    {invoiceDetails.adjustment != 0 ? (
+                    {challanDetails.adjustment != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">Adjustment</h6>
-                        {invoiceDetails.adjustment}
+                        {challanDetails.adjustment}
                       </div>
                     ) : null}
                     <hr className="my-4" />
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Grand Total</h6>
                       <span className="font-weight-bold">
-                        {invoiceDetails.grandtotal}
+                        {challanDetails.grandtotal}
                       </span>
                     </div>
                   </div>
@@ -1273,7 +1257,7 @@ p {
                         className="tooltip-container ember-view ribbon text-ellipsis"
                       >
                         <div className="ribbon-inner ribbon-open">
-                          {invoiceDetails.status}
+                          {challanDetails.status}
                         </div>
                       </div>
                       <section className="top-content bb d-flex justify-content-between">
@@ -1282,16 +1266,13 @@ p {
                         </div>
                         <div className="top-left">
                           <div className="graphic-path">
-                            <p>Invoice</p>
+                            <p>Challan</p>
                           </div>
                           <div className="position-relative">
                             <p>
-                              Invoice No.
-                              <span>{invoiceDetails.invoice_no}</span>
+                              Challan No.
+                              <span>{challanDetails.challan_no}</span>
                             </p>
-                            {invoiceDetails.salesOrder_no != ""? (
-                              <p>Order No. <span>{invoiceDetails.salesOrder_no}</span></p>
-                            ):null}
                           </div>
                         </div>
                       </section>
@@ -1303,7 +1284,6 @@ p {
                               <p>FROM,</p>
                               <h5>{otherDetails.Company_name}</h5>
                               <p className="address ">
-                                {" "}
                                 {otherDetails.Address}
                                 <br />
                                 {otherDetails.City},{otherDetails.State}
@@ -1319,27 +1299,22 @@ p {
                                 className="address col-9"
                                 style={{ marginLeft: "-14px" }}
                               >
-                                {" "}
-                                {invoiceDetails.billing_address}{" "}
+                                {challanDetails.billing_address}
                               </p>
                             </div>
                           </div>
                           <div className="row extra-info pt-3">
                             <div className="col-6">
                               <p>
-                                Invoice Date:{" "}
-                                <span>{invoiceDetails.invoice_date}</span>
+                                Challan Date:
+                                <span>{challanDetails.challan_date}</span>
                               </p>
                               {/* <p>
                                 Payment Method:{" "}
-                                <span>{invoiceDetails.payment_method}</span>
+                                <span>{challanDetails.payment_method}</span>
                               </p> */}
                             </div>
                             <div className="col-6">
-                              <p>
-                                Expected Shipment Date :{" "}
-                                <span>{invoiceDetails.duedate}</span>
-                              </p>
                             </div>
                           </div>
                         </div>
@@ -1394,7 +1369,7 @@ p {
                             </tr>
                           </thead>
                           <tbody>
-                            {invoiceItems.map((j) => (
+                            {challanItems.map((j) => (
                               <tr>
                                 <td
                                   style={{
@@ -1436,11 +1411,11 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.subtotal}
+                                    {challanDetails.subtotal}
                                   </td>
                                 </tr>
 
-                                {invoiceDetails.igst != 0 ? (
+                                {challanDetails.igst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>IGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -1449,11 +1424,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.igst}
+                                      {challanDetails.igst}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.cgst != 0 ? (
+                                {challanDetails.cgst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>CGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -1462,11 +1437,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.cgst}
+                                      {challanDetails.cgst}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.sgst != 0 ? (
+                                {challanDetails.sgst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>SGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -1475,7 +1450,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.sgst}
+                                      {challanDetails.sgst}
                                     </td>
                                   </tr>
                                 ) : null}
@@ -1487,10 +1462,10 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.tax_amount}
+                                    {challanDetails.tax_amount}
                                   </td>
                                 </tr>
-                                {invoiceDetails.shipping_charge != 0 ? (
+                                {challanDetails.shipping_charge != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
                                       Shipping Charge
@@ -1501,11 +1476,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.shipping_charge}
+                                      {challanDetails.shipping_charge}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.adjustment != 0 ? (
+                                {challanDetails.adjustment != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
                                       Adjustment
@@ -1516,7 +1491,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.adjustment}
+                                      {challanDetails.adjustment}
                                     </td>
                                   </tr>
                                 ) : null}
@@ -1533,7 +1508,7 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.grandtotal}
+                                    {challanDetails.grandtotal}
                                   </th>
                                 </tr>
                               </tbody>
@@ -1568,23 +1543,20 @@ p {
                               backgroundColor: "#999999",
                             }}
                           >
-                            {invoiceDetails.status}
+                            {challanDetails.status}
                           </div>
                         </div>
                         <div className="col-md-4 d-flex justify-content-center">
                           <center className="h3 text-white">
-                            <b>Invoice</b>
+                            <b>DELIVERY CHALLAN</b>
                           </center>
                         </div>
                         <div className="col-md-4 d-flex justify-content-end">
                           <div className="text-white">
                             <p className="mb-0 mt-2">
                               Invoice No:{" "}
-                              <b>{invoiceDetails.invoice_no}</b>
+                              <b>{challanDetails.challan_no}</b>
                             </p>
-                            {invoiceDetails.salesOrder_no != ""? (
-                              <p>Order No. <b>{invoiceDetails.salesOrder_no}</b></p>
-                            ):null}
                           </div>
                         </div>
                       </div>
@@ -1647,8 +1619,13 @@ p {
                                   className="address"
                                   style={{ fontWeight: "bold", color: "#000" }}
                                 >
-                                  {invoiceDetails.billing_address}{" "}
+                                  {challanDetails.billing_address}{" "}
                                 </p>
+                              </div>
+                            </div>
+                            <div className="row my-3">
+                              <div className="col-12">
+                                  <p>Challan Date: <span>{challanDetails.challan_date}</span></p>
                               </div>
                             </div>
                           </div>
@@ -1706,7 +1683,7 @@ p {
                               </tr>
                             </thead>
                             <tbody style={{ backgroundColor: "#999999" }}>
-                              {invoiceItems.map((j) => (
+                              {challanItems.map((j) => (
                                 <tr>
                                   <td
                                     className="text-center"
@@ -1764,7 +1741,7 @@ p {
                             <div className="col-4">
                               <table className="table table-borderless">
                                 <tbody>
-                                  {invoiceDetails.note ? (
+                                  {challanDetails.note ? (
                                     <tr>
                                       <td
                                         style={{
@@ -1788,7 +1765,7 @@ p {
                                           textAlign: "center",
                                         }}
                                       >
-                                        {invoiceDetails.note}
+                                        {challanDetails.note}
                                       </th>
                                     </tr>
                                   ) : null}
@@ -1809,11 +1786,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.subtotal}
+                                      {challanDetails.subtotal}
                                     </td>
                                   </tr>
 
-                                  {invoiceDetails.igst != 0 ? (
+                                  {challanDetails.igst != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>IGST</td>
                                       <td style={{ color: "#000" }}>:</td>
@@ -1822,11 +1799,11 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.igst}
+                                        {challanDetails.igst}
                                       </td>
                                     </tr>
                                   ) : null}
-                                  {invoiceDetails.cgst != 0 ? (
+                                  {challanDetails.cgst != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>CGST</td>
                                       <td style={{ color: "#000" }}>:</td>
@@ -1835,11 +1812,11 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.cgst}
+                                        {challanDetails.cgst}
                                       </td>
                                     </tr>
                                   ) : null}
-                                  {invoiceDetails.sgst != 0 ? (
+                                  {challanDetails.sgst != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>SGST</td>
                                       <td style={{ color: "#000" }}>:</td>
@@ -1848,7 +1825,7 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.sgst}
+                                        {challanDetails.sgst}
                                       </td>
                                     </tr>
                                   ) : null}
@@ -1862,10 +1839,10 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.tax_amount}
+                                      {challanDetails.tax_amount}
                                     </td>
                                   </tr>
-                                  {invoiceDetails.shipping_charge != 0 ? (
+                                  {challanDetails.shipping_charge != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>
                                         Shipping Charge
@@ -1876,11 +1853,11 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.shipping_charge}
+                                        {challanDetails.shipping_charge}
                                       </td>
                                     </tr>
                                   ) : null}
-                                  {invoiceDetails.adjustment != 0 ? (
+                                  {challanDetails.adjustment != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>
                                         Adjustment
@@ -1891,7 +1868,7 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.adjustment}
+                                        {challanDetails.adjustment}
                                       </td>
                                     </tr>
                                   ) : null}
@@ -1910,7 +1887,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.grandtotal}
+                                      {challanDetails.grandtotal}
                                     </th>
                                   </tr>
                                 </tbody>
@@ -1940,7 +1917,7 @@ p {
                           }}
                         >
                           <p style={{ fontSize: "4vh", textAlign: "center" }}>
-                            INVOICE
+                            DELIVERY CHALLAN
                           </p>
                           <p style={{ textAlign: "center" }}>
                             {" "}
@@ -1965,7 +1942,7 @@ p {
                               <br />
                               {otherDetails.customerName}
                               <br />
-                              {invoiceDetails.billing_address}
+                              {challanDetails.billing_address}
                             </p>
                           </div>
                           <div className="col-md-1"></div>
@@ -1982,14 +1959,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Invoice No.
+                                    Challan No.
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.invoice_no}
+                                    {challanDetails.challan_no}
                                   </td>
                                 </tr>
 
@@ -2000,14 +1977,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Invoice Date
+                                    Challan Date
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.invoice_date}
+                                    {challanDetails.challan_date}
                                   </td>
                                 </tr>
 
@@ -2018,31 +1995,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Shipment Date
+                                    Challan Type
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.duedate}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td
-                                    style={{
-                                      color: "#000",
-                                      fontWeight: "bold",
-                                    }}
-                                  >
-                                    Payment Method
-                                  </td>
-                                  <td style={{ color: "#000" }}>:</td>
-                                  <td
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    {invoiceDetails.payment_method}
+                                    {challanDetails.challan_type}
                                   </td>
                                 </tr>
                               </tbody>
@@ -2103,7 +2063,7 @@ p {
                               </tr>
                             </thead>
                             <tbody>
-                              {invoiceItems.map((j) => (
+                              {challanItems.map((j) => (
                                 <tr>
                                   <td
                                     className="text-center"
@@ -2171,11 +2131,11 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.subtotal}
+                                    {challanDetails.subtotal}
                                   </td>
                                 </tr>
 
-                                {invoiceDetails.igst != 0 ? (
+                                {challanDetails.igst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>IGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -2184,11 +2144,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.igst}
+                                      {challanDetails.igst}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.cgst != 0 ? (
+                                {challanDetails.cgst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>CGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -2197,11 +2157,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.cgst}
+                                      {challanDetails.cgst}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.sgst != 0 ? (
+                                {challanDetails.sgst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>SGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -2210,7 +2170,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.sgst}
+                                      {challanDetails.sgst}
                                     </td>
                                   </tr>
                                 ) : null}
@@ -2222,10 +2182,10 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.tax_amount}
+                                    {challanDetails.tax_amount}
                                   </td>
                                 </tr>
-                                {invoiceDetails.shipping_charge != 0 ? (
+                                {challanDetails.shipping_charge != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
                                       Shipping Charge
@@ -2236,11 +2196,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.shipping_charge}
+                                      {challanDetails.shipping_charge}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.adjustment != 0 ? (
+                                {challanDetails.adjustment != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
                                       Adjustment
@@ -2251,7 +2211,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.adjustment}
+                                      {challanDetails.adjustment}
                                     </td>
                                   </tr>
                                 ) : null}
@@ -2268,7 +2228,7 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.grandtotal}
+                                    {challanDetails.grandtotal}
                                   </th>
                                 </tr>
                               </tbody>
@@ -2334,9 +2294,9 @@ p {
 
                   <div className="ml-4 mt-2" style={{ color: "black" }}>
                     <div className="row">
-                      <div className="col-md-6 text-left">Invoice No:</div>
+                      <div className="col-md-6 text-left">Challan No:</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.invoice_no}
+                        {challanDetails.challan_no}
                       </div>
                     </div>
                     <div className="row">
@@ -2347,16 +2307,10 @@ p {
                     </div>
                     <div className="row">
                       <div className="col-md-6 text-left">
-                        Invoice Date :
+                        Challan Date :
                       </div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.invoice_date}
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6 text-left">Shipment Date:</div>
-                      <div className="col-md-5 text-right">
-                        {invoiceDetails.duedate}
+                        {challanDetails.challan_date}
                       </div>
                     </div>
                   </div>
@@ -2451,7 +2405,7 @@ p {
                       />
                     </div>
                   </div>
-                  {invoiceItems.map((i) => (
+                  {challanItems.map((i) => (
                     <div
                       className="equal-length-container"
                       style={{
@@ -2505,31 +2459,31 @@ p {
                       <span>Subtotal</span>
                       <span>
                         <span>&#8377; </span>
-                        {invoiceDetails.subtotal}
+                        {challanDetails.subtotal}
                       </span>
                     </div>
                     <div className="subtot-item d-flex justify-content-between">
                       <span>Tax Amount</span>
                       <span>
                         <span>&#8377; </span>
-                        {invoiceDetails.tax_amount}
+                        {challanDetails.tax_amount}
                       </span>
                     </div>
 
-                    {invoiceDetails.igst == 0 ? (
+                    {challanDetails.igst == 0 ? (
                       <>
                         <div className="subtot-item d-flex justify-content-between">
                           <span>CGST</span>
                           <span>
                             <span>&#8377; </span>
-                            {invoiceDetails.cgst}
+                            {challanDetails.cgst}
                           </span>
                         </div>
                         <div className="subtot-item d-flex justify-content-between">
                           <span>SGST</span>
                           <span>
                             <span>&#8377; </span>
-                            {invoiceDetails.sgst}
+                            {challanDetails.sgst}
                           </span>
                         </div>
                       </>
@@ -2538,17 +2492,17 @@ p {
                         <span>IGST</span>
                         <span>
                           <span>&#8377; </span>
-                          {invoiceDetails.igst}
+                          {challanDetails.igst}
                         </span>
                       </div>
                     )}
 
-                    {invoiceDetails.adjustment != 0 ? (
+                    {challanDetails.adjustment != 0 ? (
                       <div className="subtot-item d-flex justify-content-between">
                         <span>Adjustment</span>
                         <span>
                           <span>&#8377; </span>
-                          {invoiceDetails.adjustment}
+                          {challanDetails.adjustment}
                         </span>
                       </div>
                     ) : null}
@@ -2561,14 +2515,14 @@ p {
                     <span>
                       <strong>
                         <span>&#8377; </span>
-                        {invoiceDetails.grandtotal}
+                        {challanDetails.grandtotal}
                       </strong>
                     </span>
                   </div>
                   <div className="divider"></div>
                   <div className="paid-by mb-4 d-flex justify-content-between">
                     <span>Paid By:</span>
-                    <span>{invoiceDetails.payment_method}</span>
+                    <span>{challanDetails.payment_method}</span>
                   </div>
                   <div className="createdby d-flex justify-content-between">
                     <p className="">Created By:</p>
@@ -2596,7 +2550,7 @@ p {
         <div className="modal-dialog modal-lg">
           <div className="modal-content" style={{ backgroundColor: "#213b52" }}>
             <div className="modal-header">
-              <h5 className="m-3">Share Invoice</h5>
+              <h5 className="m-3">Share Delivery Challan</h5>
               <button
                 type="button"
                 className="close"
@@ -2636,7 +2590,7 @@ p {
                       rows="4"
                       value={emailMessage}
                       onChange={(e) => setEmailMessage(e.target.value)}
-                      placeholder="This message will be sent along with Invoice details."
+                      placeholder="This message will be sent along with Challan details."
                     />
                   </div>
                 </div>
@@ -2683,7 +2637,7 @@ p {
               </button>
             </div>
 
-            <form onSubmit={saveInvoiceComment} className="px-1">
+            <form onSubmit={saveChallanComment} className="px-1">
               <div className="modal-body w-100">
                 <textarea
                   type="text"
@@ -2813,4 +2767,4 @@ p {
   );
 }
 
-export default ViewInvoice;
+export default ViewChallan;

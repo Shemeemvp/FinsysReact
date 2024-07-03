@@ -206,4 +206,21 @@ urlpatterns = [
     path('invoice_pdf/',Fin_invoicePdf),
     path('share_invoice_email/',Fin_shareInvoiceToEmail),
     path('update_invoice/',Fin_updateInvoice),
+
+    # Delivery Challan
+    path('fetch_delivery_challan/<int:id>/',Fin_fetchDeliveryChallan),
+    path('fetch_delivery_challan_data/<int:id>/',Fin_fetchDeliveryChallanData),
+    path('check_challan_no/',Fin_checkChallanNo),
+    path('create_new_delivery_challan/',Fin_createDeliveryChallan),
+    
+    path('fetch_challan_details/<int:id>/',Fin_fetchChallanDetails),
+    path('change_challan_status/',Fin_changeChallanStatus),
+    path('add_challan_comment/',Fin_addChallanComment),
+    path('add_challan_attachment/',Fin_addChallanAttachment),
+    path('delete_challan_comment/<int:id>/',Fin_deleteChallanComment),
+    path('fetch_challan_history/<int:id>/',Fin_fetchChallanHistory),
+    path('delete_challan/<int:id>/',Fin_deleteChallan),
+    path('challan_pdf/',Fin_challanPdf),
+    path('share_challan_email/',Fin_shareChallanToEmail),
+    path('update_delivery_challan/',Fin_updateChallan),
 ]

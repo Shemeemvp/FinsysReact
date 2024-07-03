@@ -8774,3 +8774,622 @@ def Fin_updateInvoice(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
+# Delivery Challan
+
+@api_view(("GET",))
+def Fin_fetchDeliveryChallan(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        challan = Fin_Delivery_Challan.objects.filter(Company = com)
+        chl = []
+        for i in challan:
+            obj = {
+                "id": i.id,
+                "challan_no": i.challan_no,
+                "challan_date": i.challan_date,
+                "customer_name": i.Customer.first_name+" "+i.Customer.last_name,
+                "customer_email":i. customer_email,
+                "grandtotal": i.grandtotal,
+                "status": i.status,
+                "balance": i.balance,
+            }
+            chl.append(obj)
+        return Response(
+            {"status": True, "challan": chl}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchDeliveryChallanData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        items = Fin_Items.objects.filter(Company = cmp, status = 'Active')
+        cust = Fin_Customers.objects.filter(Company=cmp)
+        trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        bnk = Fin_Banking.objects.filter(company = cmp)
+        lst = Fin_Price_List.objects.filter(Company = cmp, status = 'Active')
+        units = Fin_Units.objects.filter(Company = cmp)
+        acc = Fin_Chart_Of_Account.objects.filter(Q(account_type='Expense') | Q(account_type='Other Expense') | Q(account_type='Cost Of Goods Sold'), Company=cmp).order_by('account_name')
+        custLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='sales', status = 'Active')
+        
+        itemSerializer = ItemSerializer(items, many=True)
+        custSerializer = CustomerSerializer(cust, many=True)
+        pTermSerializer = CompanyPaymentTermsSerializer(trms, many=True)
+        bankSerializer = BankSerializer(bnk, many=True)
+        lstSerializer = PriceListSerializer(lst, many=True)
+        clSerializer = PriceListSerializer(custLists, many=True)
+        unitSerializer = ItemUnitSerializer(units, many=True)
+        accSerializer = AccountsSerializer(acc, many=True)
+
+        # Fetching last challan and assigning upcoming ref no as current + 1
+        # Also check for if any bill is deleted and ref no is continuos w r t the deleted challan
+        latest_chl = Fin_Delivery_Challan.objects.filter(Company = cmp).order_by('-id').first()
+
+        new_number = int(latest_chl.reference_no) + 1 if latest_chl else 1
+
+        if Fin_Delivery_Challan_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_Delivery_Challan_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+        # Finding next CHL number w r t last CHL number if exists.
+        nxtChl = ""
+        lastCHL = Fin_Delivery_Challan.objects.filter(Company = cmp).last()
+        if lastCHL:
+            challan_no = str(lastCHL.challan_no)
+            numbers = []
+            stri = []
+            for word in challan_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            chl_num = int(num)+1
+
+            if num[0] == '0':
+                if chl_num <10:
+                    nxtChl = st+'0'+ str(chl_num)
+                else:
+                    nxtChl = st+ str(chl_num)
+            else:
+                nxtChl = st+ str(chl_num)
+
+        return Response(
+            {
+                "status": True,
+                "items": itemSerializer.data,
+                "customers":custSerializer.data,
+                "paymentTerms":pTermSerializer.data,
+                "banks":bankSerializer.data,
+                "priceList":lstSerializer.data,
+                "custPriceList":clSerializer.data,
+                "units":unitSerializer.data,
+                "accounts":accSerializer.data,
+                "refNo": new_number,
+                "chlNo": nxtChl,
+                "state": cmp.State
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkChallanNo(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        CHLno = request.GET['CHLNum']
+
+        nxtChl = ""
+        lastCHL = Fin_Delivery_Challan.objects.filter(Company = com).last()
+        if lastCHL:
+            challan_no = str(lastCHL.challan_no)
+            numbers = []
+            stri = []
+            for word in challan_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            chl_num = int(num)+1
+
+            if num[0] == '0':
+                if chl_num <10:
+                    nxtChl = st+'0'+ str(chl_num)
+                else:
+                    nxtChl = st+ str(chl_num)
+            else:
+                nxtChl = st+ str(chl_num)
+
+        if Fin_Delivery_Challan.objects.filter(Company = com, challan_no__iexact = CHLno).exists():
+            return Response({'status':False, 'message':'Challan No. already Exists.!'})
+        elif nxtChl != "" and CHLno != nxtChl:
+            return Response({'status':False, 'message':'Challan No. is not continuous.!'})
+        else:
+            return Response({'status':True, 'message':'Number is okay.!'})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_createDeliveryChallan(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+
+        # Parse stock_items from JSON
+        chlItems = json.loads(request.data['challanItems'])
+        CHLNum = request.data['challan_no']
+        if Fin_Delivery_Challan.objects.filter(Company = com, challan_no__iexact = CHLNum).exists():
+            return Response({'status':False, 'message': f"Challan Number '{CHLNum}' already exists, try another!"})
+        else:
+            serializer = DeliveryChallanSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                chl = Fin_Delivery_Challan.objects.get(id=serializer.data['id'])
+
+                for ele in chlItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if chl.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Delivery_Challan_Items.objects.create(delivery_challan = chl, items = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax_rate = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                        
+                Fin_Delivery_Challan_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    delivery_challan = chl,
+                    action = 'Created'
+                )
+                
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchChallanDetails(request, id):
+    try:
+        challan = Fin_Delivery_Challan.objects.get(id=id)
+        cmp = challan.Company
+        hist = Fin_Delivery_Challan_History.objects.filter(delivery_challan=challan).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_Delivery_Challan_Comments.objects.filter(delivery_challan=challan)
+        itms = Fin_Delivery_Challan_Items.objects.filter(delivery_challan=challan)
+        try:
+            created = Fin_Delivery_Challan_History.objects.get(delivery_challan = challan, action = 'Created')
+        except:
+            created = None
+        otherDet = {
+            "Company_name": cmp.Company_name,
+            "Email": cmp.Email,
+            "Mobile": cmp.Contact,
+            "Address": cmp.Address,
+            "Country": cmp.Country,
+            "City": cmp.City,
+            "State": cmp.State,
+            "Pincode": cmp.Pincode,
+            "customerName": challan.Customer.first_name+' '+challan.Customer.last_name,
+            "customerEmail": challan.Customer.email,
+            "createdBy": created.LoginDetails.First_name if created else ""
+        }
+        items = []
+        for i in itms:
+            obj = {
+                "id":i.id,
+                "itemId": i.items.id,
+                "sales_price": i.items.selling_price,
+                'name': i.items.name,
+                "item_type": i.items.item_type,
+                "hsn": i.hsn,
+                "sac": i.sac,
+                "quantity": i.quantity,
+                "avl": i.items.current_stock,
+                "price": i.price,
+                "tax": i.tax_rate,
+                "discount": i.discount,
+                "total": i.total
+            }
+            items.append(obj)
+        chlSerializer = DeliveryChallanSerializer(challan)
+        commentsSerializer = DeliveryChallanCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "challan": chlSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": items,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeChallanStatus(request):
+    try:
+        chlId = request.data["id"]
+        data = Fin_Delivery_Challan.objects.get(id=chlId)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addChallanComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = DeliveryChallanCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteChallanComment(request, id):
+    try:
+        cmt = Fin_Delivery_Challan_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchChallanHistory(request, id):
+    try:
+        challan = Fin_Delivery_Challan.objects.get(id=id)
+        hist = Fin_Delivery_Challan_History.objects.filter(delivery_challan=challan)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        chlSerializer = DeliveryChallanSerializer(challan)
+        return Response(
+            {"status": True, "challan": chlSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteChallan(request, id):
+    try:
+        chl = Fin_Delivery_Challan.objects.get(id=id)
+        com = chl.Company
+
+        for i in Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl):
+            item = Fin_Items.objects.get(id = i.items.id)
+            item.current_stock += i.quantity
+            item.save()
+        
+        Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl).delete()
+
+        # Storing ref number to deleted table
+        # if entry exists and lesser than the current, update and save => Only one entry per company
+        if Fin_Delivery_Challan_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_Delivery_Challan_Reference.objects.get(Company = com)
+            if int(chl.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = chl.reference_no
+                deleted.save()
+        else:
+            Fin_Delivery_Challan_Reference.objects.create(Company = com, reference_no = chl.reference_no)
+        
+        chl.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_challanPdf(request):
+    try:
+        id = request.GET['Id']
+        chlId = request.GET['chl_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        chl = Fin_Delivery_Challan.objects.get(id = chlId)
+        itms = Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl)
+    
+        context = {'challan':chl, 'challanItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_Delivery_Challan_Pdf.html'
+        fname = 'DeliveryChallan_'+chl.challan_no
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addChallanAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        chlId = request.data['chl_id']
+        challan = Fin_Delivery_Challan.objects.get(id=chlId)
+        if request.data['file']:
+            challan.document = request.data['file']
+        challan.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_shareChallanToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        chlId = request.data["chl_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        chl = Fin_Delivery_Challan.objects.get(id = chlId)
+        itms = Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl)
+    
+        context = {'challan':chl, 'challanItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_Delivery_Challan_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'DeliveryChallan_{chl.challan_no}.pdf'
+        subject = f"DeliveryChallan_{chl.challan_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - DELIVERY CHALLAN-{chl.challan_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_updateChallan(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        challan = Fin_Delivery_Challan.objects.get(id=request.data['chl_id'])
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+
+        # Parse stock_items from JSON
+        chlItems = json.loads(request.data['challanItems'])
+        CHLNum = request.data['challan_no']
+        if challan.challan_no != CHLNum and Fin_Delivery_Challan.objects.filter(Company = com, challan_no__iexact = CHLNum).exists():
+            return Response({'status':False, 'message': f"Challan Number '{CHLNum}' already exists, try another!"})
+        else:
+            serializer = DeliveryChallanSerializer(challan,data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                chl = Fin_Delivery_Challan.objects.get(id=serializer.data['id'])
+
+                for i in Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl):
+                    item = Fin_Items.objects.get(id = i.items.id)
+                    item.current_stock += i.quantity
+                    item.save()
+                
+                Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl).delete()
+
+                for ele in chlItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if chl.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Delivery_Challan_Items.objects.create(delivery_challan = chl, items = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax_rate = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                        
+                Fin_Delivery_Challan_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    delivery_challan = chl,
+                    action = 'Edited'
+                )
+                
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

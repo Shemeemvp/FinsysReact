@@ -88,12 +88,16 @@ import AddSalesOrder from './components/company/salesorder/AddSalesOrder';
 import ViewSalesOrder from './components/company/salesorder/ViewSalesOrder';
 import SalesOrderHistory from './components/company/salesorder/SalesOrderHistory';
 import EditSalesOrder from './components/company/salesorder/EditSalesOrder';
-import DeliveryChallan from './components/company/deliverychallan/DeliveryChallan';
 import Invoice from './components/company/invoice/Invoice';
 import AddInvoice from './components/company/invoice/AddInvoice';
 import ViewInvoice from './components/company/invoice/ViewInvoice';
 import InvoiceHistory from './components/company/invoice/InvoiceHistory';
 import EditInvoice from './components/company/invoice/EditInvoice';
+import DeliveryChallan from './components/company/deliverychallan/DeliveryChallan';
+import AddDeliveryChallan from './components/company/deliverychallan/AddDeliveryChallan';
+import ViewChallan from './components/company/deliverychallan/ViewChallan';
+import ChallanHistory from './components/company/deliverychallan/ChallanHistory';
+import EditDeliveryChallan from './components/company/deliverychallan/EditDeliveryChallan';
 
 function App() {
   return (
@@ -222,6 +226,10 @@ function App() {
             
             {/* Delivery Challan */}
             <Route path="/delivery_challan" element={<DeliveryChallan />}></Route>
+            <Route path="/add_delivery_challan" element={<AddDeliveryChallan />}></Route>
+            <Route path="/view_delivery_challan/:challanId/" element={<ViewChallan />}></Route>
+            <Route path="/delivery_challan_history/:challanId/" element={<ChallanHistory />}></Route>
+            <Route path="/edit_delivery_challan/:challanId/" element={<EditDeliveryChallan />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>
