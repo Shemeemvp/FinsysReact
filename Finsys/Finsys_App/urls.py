@@ -212,7 +212,6 @@ urlpatterns = [
     path('fetch_delivery_challan_data/<int:id>/',Fin_fetchDeliveryChallanData),
     path('check_challan_no/',Fin_checkChallanNo),
     path('create_new_delivery_challan/',Fin_createDeliveryChallan),
-    
     path('fetch_challan_details/<int:id>/',Fin_fetchChallanDetails),
     path('change_challan_status/',Fin_changeChallanStatus),
     path('add_challan_comment/',Fin_addChallanComment),
@@ -223,4 +222,5 @@ urlpatterns = [
     path('challan_pdf/',Fin_challanPdf),
     path('share_challan_email/',Fin_shareChallanToEmail),
     path('update_delivery_challan/',Fin_updateChallan),
+    path('convert_challan_to_invoice/',Fin_convertChallanToInvoice),
 ]

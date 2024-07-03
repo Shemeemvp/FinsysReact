@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
 import * as XLSX from "xlsx";
 import { Link, useNavigate } from "react-router-dom";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 
@@ -47,14 +47,17 @@ function DeliveryChallan() {
     }
   }
 
-  function filterTable(row,filterValue) {
+  function filterTable(row, filterValue) {
     var table1 = document.getElementById("deliveryChallanTable");
     var rows1 = table1.getElementsByTagName("tr");
 
     for (var i = 1; i < rows1.length; i++) {
       var statusCell = rows1[i].getElementsByTagName("td")[row];
 
-      if (filterValue == "all" || statusCell.textContent.toLowerCase() == filterValue) {
+      if (
+        filterValue == "all" ||
+        statusCell.textContent.toLowerCase() == filterValue
+      ) {
         rows1[i].style.display = "";
       } else {
         rows1[i].style.display = "none";
@@ -67,7 +70,10 @@ function DeliveryChallan() {
     for (var i = 1; i < rows2.length; i++) {
       var statusCell = rows2[i].getElementsByTagName("td")[row];
 
-      if (filterValue == "all" || statusCell.textContent.toLowerCase() == filterValue) {
+      if (
+        filterValue == "all" ||
+        statusCell.textContent.toLowerCase() == filterValue
+      ) {
         rows2[i].style.display = "";
       } else {
         rows2[i].style.display = "none";
@@ -96,41 +102,46 @@ function DeliveryChallan() {
     });
   }
 
-  function searchTable(){
-    var rows = document.querySelectorAll('#deliveryChallanTable tbody tr');
-    var val = document.getElementById('search').value.trim().replace(/ +/g, ' ').toLowerCase();
-    rows.forEach(function(row) {
-      var text = row.textContent.replace(/\s+/g, ' ').toLowerCase();
-      row.style.display = text.includes(val) ? '' : 'none';
+  function searchTable() {
+    var rows = document.querySelectorAll("#deliveryChallanTable tbody tr");
+    var val = document
+      .getElementById("search")
+      .value.trim()
+      .replace(/ +/g, " ")
+      .toLowerCase();
+    rows.forEach(function (row) {
+      var text = row.textContent.replace(/\s+/g, " ").toLowerCase();
+      row.style.display = text.includes(val) ? "" : "none";
     });
   }
 
-  const ID = Cookies.get('Login_id');
+  const ID = Cookies.get("Login_id");
   const [deliveryChallan, setDeliveryChallan] = useState([]);
 
-  const fetchDeliveryChallan = () =>{
-    axios.get(`${config.base_url}/fetch_delivery_challan/${ID}/`).then((res)=>{
-      console.log("DC RES=",res)
-      if(res.data.status){
-        var dc = res.data.challan;
-        setDeliveryChallan([])
-        dc.map((i)=>{
-          setDeliveryChallan((prevState)=>[
-            ...prevState, i
-          ])
-        })
-      }
-    }).catch((err)=>{
-      console.log('ERR',err)
-    })
-  }
+  const fetchDeliveryChallan = () => {
+    axios
+      .get(`${config.base_url}/fetch_delivery_challan/${ID}/`)
+      .then((res) => {
+        console.log("DC RES=", res);
+        if (res.data.status) {
+          var dc = res.data.challan;
+          setDeliveryChallan([]);
+          dc.map((i) => {
+            setDeliveryChallan((prevState) => [...prevState, i]);
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("ERR", err);
+      });
+  };
 
-  useEffect(()=>{
+  useEffect(() => {
     fetchDeliveryChallan();
-  },[])
-  
-  function refreshAll(){
-    setDeliveryChallan([])
+  }, []);
+
+  function refreshAll() {
+    setDeliveryChallan([]);
     fetchDeliveryChallan();
   }
   return (
@@ -200,7 +211,7 @@ function DeliveryChallan() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(3)}
+                          onClick={() => sortTable(3)}
                         >
                           Customer Name
                         </a>
@@ -212,7 +223,7 @@ function DeliveryChallan() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(2)}
+                          onClick={() => sortTable(2)}
                         >
                           Challan No.
                         </a>
@@ -252,7 +263,7 @@ function DeliveryChallan() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'all')}
+                        onClick={() => filterTable(6, "all")}
                       >
                         All
                       </a>
@@ -264,7 +275,7 @@ function DeliveryChallan() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'saved')}
+                        onClick={() => filterTable(6, "saved")}
                       >
                         Saved
                       </a>
@@ -276,7 +287,7 @@ function DeliveryChallan() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'draft')}
+                        onClick={() => filterTable(6, "draft")}
                       >
                         Draft
                       </a>
@@ -288,7 +299,8 @@ function DeliveryChallan() {
                       style={{ width: "fit-content", height: "fit-content" }}
                       className="btn btn-outline-secondary text-grey"
                     >
-                      <i className="fa fa-plus font-weight-light"></i> Delivery Challan
+                      <i className="fa fa-plus font-weight-light"></i> Delivery
+                      Challan
                     </button>
                   </Link>
                 </div>
@@ -315,65 +327,106 @@ function DeliveryChallan() {
                 </tr>
               </thead>
               <tbody>
-                {deliveryChallan &&deliveryChallan.map((i,index)=>(
-                  <tr
-                    className="clickable-row"
-                    onDoubleClick={()=>navigate(`/view_delivery_challan/${i.id}/`)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <td>{index+1}</td>
-                    <td>{i.challan_date}</td>
-                    <td>{i.challan_no}</td>
-                    <td>{i.customer_name}</td>
-                    <td>{i.customer_email}</td>
-                    <td>{i.grandtotal}</td>
-                    <td>{i.status}</td>
-                    <td>{i.balance}</td>
-                    <td>
-                      <div className="btn-group">
-                        <button type="button" className="btn btn-secondary dropdown-toggle" style={{width:'fit-content', height: 'fit-content'}} data-toggle="dropdown" aria-expanded="false">
-                            Convert
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li><button type="button" className="dropdown-item fw-bold">To Invoice</button></li>
-                          <li><button type="button" className="dropdown-item fw-bold">To Recurring Invoice</button></li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {deliveryChallan &&
+                  deliveryChallan.map((i, index) => (
+                    <tr
+                      className="clickable-row"
+                      onDoubleClick={() =>
+                        navigate(`/view_delivery_challan/${i.id}/`)
+                      }
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>{index + 1}</td>
+                      <td>{i.challan_date}</td>
+                      <td>{i.challan_no}</td>
+                      <td>{i.customer_name}</td>
+                      <td>{i.customer_email}</td>
+                      <td>{i.grandtotal}</td>
+                      <td>{i.status}</td>
+                      <td>{i.balance}</td>
+                      <td>
+                        {i.converted ? (
+                          <span
+                            className="text-info font-weight-bolder text-center"
+                            onClick={() => navigate(i.link)}
+                          >
+                            Converted to <br />
+                            {i.type} - #{i.number}
+                          </span>
+                        ) : (
+                          <div className="btn-group">
+                            <button
+                              type="button"
+                              className="btn btn-secondary dropdown-toggle"
+                              style={{
+                                width: "fit-content",
+                                height: "fit-content",
+                              }}
+                              data-toggle="dropdown"
+                              aria-expanded="false"
+                            >
+                              Convert
+                            </button>
+                            <ul className="dropdown-menu">
+                              <li>
+                                <Link
+                                  to={`/convert_challan_to_invoice/${i.id}/`}
+                                  className="dropdown-item fw-bold"
+                                >
+                                  To Invoice
+                                </Link>
+                              </li>
+                              <li>
+                                <button
+                                  type="button"
+                                  className="dropdown-item fw-bold"
+                                >
+                                  To Recurring Invoice
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
         </div>
       </div>
-      <table className="deliveryChallanTable" id="deliveryChallanTableExport" hidden>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>DATE</th>
-          <th>CHALLAN NO.</th>
-          <th>CUSTOMER NAME</th>
-          <th>MAIL ID</th>
-          <th>AMOUNT</th>
-          <th>STATUS</th>
-          <th>BALANCE</th>
-        </tr>
-      </thead>
-      <tbody>
-        {deliveryChallan && deliveryChallan.map((i,index)=>(
+      <table
+        className="deliveryChallanTable"
+        id="deliveryChallanTableExport"
+        hidden
+      >
+        <thead>
           <tr>
-            <td>{index+1}</td>
-            <td>{i.challan_date}</td>
-            <td>{i.challan_no}</td>
-            <td>{i.customer_name}</td>
-            <td>{i.customer_email}</td>
-            <td>{i.grandtotal}</td>
-            <td>{i.status}</td>
-            <td>{i.balance}</td>
+            <th>#</th>
+            <th>DATE</th>
+            <th>CHALLAN NO.</th>
+            <th>CUSTOMER NAME</th>
+            <th>MAIL ID</th>
+            <th>AMOUNT</th>
+            <th>STATUS</th>
+            <th>BALANCE</th>
           </tr>
-        ))}
-      </tbody>
+        </thead>
+        <tbody>
+          {deliveryChallan &&
+            deliveryChallan.map((i, index) => (
+              <tr>
+                <td>{index + 1}</td>
+                <td>{i.challan_date}</td>
+                <td>{i.challan_no}</td>
+                <td>{i.customer_name}</td>
+                <td>{i.customer_email}</td>
+                <td>{i.grandtotal}</td>
+                <td>{i.status}</td>
+                <td>{i.balance}</td>
+              </tr>
+            ))}
+        </tbody>
       </table>
     </>
   );

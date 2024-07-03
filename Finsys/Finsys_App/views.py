@@ -8790,6 +8790,23 @@ def Fin_fetchDeliveryChallan(request, id):
         challan = Fin_Delivery_Challan.objects.filter(Company = com)
         chl = []
         for i in challan:
+            converted = False
+            if i.converted_to_invoice:
+                converted = True
+                type = "Invoice"
+                number = i.converted_to_invoice.invoice_no
+                link = f"/view_invoice/{i.converted_to_invoice.id}/"
+            # elif i.converted_to_rec_invoice:
+            #     converted = True
+            #     type = "Recurring Invoice"
+            #     number = i.converted_to_rec_invoice.rec_invoice_no
+            #     link = f"/view_recurring_invoice/{i.converted_to_rec_invoice.id}/"
+            # else:
+            #     converted = False
+            #     type = None
+            #     number = None
+            #     link = None
+
             obj = {
                 "id": i.id,
                 "challan_no": i.challan_no,
@@ -8799,6 +8816,10 @@ def Fin_fetchDeliveryChallan(request, id):
                 "grandtotal": i.grandtotal,
                 "status": i.status,
                 "balance": i.balance,
+                "converted": converted,
+                "type": type,
+                "number": number,
+                "link": link
             }
             chl.append(obj)
         return Response(
@@ -8894,7 +8915,7 @@ def Fin_fetchDeliveryChallanData(request, id):
                 "units":unitSerializer.data,
                 "accounts":accSerializer.data,
                 "refNo": new_number,
-                "chlNo": nxtChl,
+                "ChlNo": nxtChl,
                 "state": cmp.State
 
             }, status=status.HTTP_200_OK
@@ -8998,10 +9019,6 @@ def Fin_createDeliveryChallan(request):
                     tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
                     disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
                     Fin_Delivery_Challan_Items.objects.create(delivery_challan = chl, items = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax_rate = tax, discount = disc, total = float(ele.get('total')))
-                    
-                    # Reduce item stock
-                    itm.current_stock -= qty
-                    itm.save()
             
                 # Save transaction
                         
@@ -9184,11 +9201,6 @@ def Fin_deleteChallan(request, id):
     try:
         chl = Fin_Delivery_Challan.objects.get(id=id)
         com = chl.Company
-
-        for i in Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl):
-            item = Fin_Items.objects.get(id = i.items.id)
-            item.current_stock += i.quantity
-            item.save()
         
         Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl).delete()
 
@@ -9349,11 +9361,6 @@ def Fin_updateChallan(request):
             if serializer.is_valid():
                 serializer.save()
                 chl = Fin_Delivery_Challan.objects.get(id=serializer.data['id'])
-
-                for i in Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl):
-                    item = Fin_Items.objects.get(id = i.items.id)
-                    item.current_stock += i.quantity
-                    item.save()
                 
                 Fin_Delivery_Challan_Items.objects.filter(delivery_challan = chl).delete()
 
@@ -9366,10 +9373,6 @@ def Fin_updateChallan(request):
                     tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
                     disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
                     Fin_Delivery_Challan_Items.objects.create(delivery_challan = chl, items = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax_rate = tax, discount = disc, total = float(ele.get('total')))
-                    
-                    # Reduce item stock
-                    itm.current_stock -= qty
-                    itm.save()
             
                 # Save transaction
                         
@@ -9379,6 +9382,79 @@ def Fin_updateChallan(request):
                     delivery_challan = chl,
                     action = 'Edited'
                 )
+                
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_convertChallanToInvoice(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        challan = Fin_Delivery_Challan.objects.get(id=request.data['chl_id'])
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        mutable_data["duedate"] = datetime.strptime(request.data['duedate'], '%d-%m-%Y').date()
+        mutable_data["exp_ship_date"] = None
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+
+        # Parse stock_items from JSON
+        invItems = json.loads(request.data['invoiceItems'])
+        INVNum = request.data['invoice_no']
+        if Fin_Invoice.objects.filter(Company = com, invoice_no__iexact = INVNum).exists():
+            return Response({'status':False, 'message': f"Invoice Number '{INVNum}' already exists, try another!"})
+        else:
+            serializer = InvoiceSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                inv = Fin_Invoice.objects.get(id=serializer.data['id'])
+
+                for ele in invItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if inv.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Invoice_Items.objects.create(Invoice = inv, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                        
+                Fin_Invoice_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    Invoice = inv,
+                    action = 'Created'
+                )
+
+                # Save invoice details to Challan
+                challan.converted_to_invoice = inv
+                challan.balance = inv.balance
+                challan.save()
                 
                 return Response(
                     {"status": True, "data": serializer.data}, status=status.HTTP_200_OK

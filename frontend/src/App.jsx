@@ -98,6 +98,7 @@ import AddDeliveryChallan from './components/company/deliverychallan/AddDelivery
 import ViewChallan from './components/company/deliverychallan/ViewChallan';
 import ChallanHistory from './components/company/deliverychallan/ChallanHistory';
 import EditDeliveryChallan from './components/company/deliverychallan/EditDeliveryChallan';
+import ConvertChallanToInvoice from './components/company/deliverychallan/ConvertChallanToInvoice';
 
 function App() {
   return (
@@ -230,6 +231,7 @@ function App() {
             <Route path="/view_delivery_challan/:challanId/" element={<ViewChallan />}></Route>
             <Route path="/delivery_challan_history/:challanId/" element={<ChallanHistory />}></Route>
             <Route path="/edit_delivery_challan/:challanId/" element={<EditDeliveryChallan />}></Route>
+            <Route path="/convert_challan_to_invoice/:challanId/" element={<ConvertChallanToInvoice />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>
