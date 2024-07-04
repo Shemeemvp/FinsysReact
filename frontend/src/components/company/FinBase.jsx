@@ -1227,9 +1227,8 @@ function FinBase() {
                   
 
                   {/* {% if allmodules.Bank_Holders == 1 %} */}
-                  <li id="Fin_bankholder"><a href="{% url 'Fin_bankholder' %}"><i className="bx bx-right-arrow-alt"></i>Bank
-                      Holders</a>
-                  </li>
+                 
+                  <li id="bank_holder"><Link to="/banklist"><i className="bx bx-right-arrow-alt"></i>Bank Holders</Link></li>
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Cash_in_hand == 1 %} */}
@@ -1306,7 +1305,7 @@ function FinBase() {
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Recurring_Invoice == 1 %} */}
-                  <li id="reccuringinvoices"><a href="{% url 'Fin_recurringInvoice' %}"><i className="bx bx-right-arrow-alt"></i> Recurring Invoices</a>
+                  <li id="reccuringinvoices"><Link to="/rec_invoice"><i className="bx bx-right-arrow-alt"></i> Recurring Invoices</Link>
                   </li>
                   {/* {% endif %} */}
                 </ul>
@@ -1319,7 +1318,8 @@ function FinBase() {
                 </a>
                 <ul className="submenu" id="purchaseSubmenu">
                   {/* {% if allmodules.Vendors == 1 %} */}
-                  <li id="vendor"><a href="{% url 'Fin_vendors' %}"><i className="bx bx-right-arrow-alt"></i>Vendor</a>
+                  {/* <li id="vendor"><a href="{% url 'Fin_vendors' %}"><i className="bx bx-right-arrow-alt"></i>Vendor</a> */}
+                  <li id="vendor"><Link to="/vendors"><i className="bx bx-right-arrow-alt"></i>Vendor</Link>
                   </li>
                   {/* {% endif %} */}
 

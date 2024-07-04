@@ -99,6 +99,8 @@ import ViewChallan from './components/company/deliverychallan/ViewChallan';
 import ChallanHistory from './components/company/deliverychallan/ChallanHistory';
 import EditDeliveryChallan from './components/company/deliverychallan/EditDeliveryChallan';
 import ConvertChallanToInvoice from './components/company/deliverychallan/ConvertChallanToInvoice';
+import RecInvoice from './components/company/recurringinvoice/RecInvoice';
+import AddRecInvoice from './components/company/recurringinvoice/AddRecInvoice';
 
 function App() {
   return (
@@ -232,6 +234,13 @@ function App() {
             <Route path="/delivery_challan_history/:challanId/" element={<ChallanHistory />}></Route>
             <Route path="/edit_delivery_challan/:challanId/" element={<EditDeliveryChallan />}></Route>
             <Route path="/convert_challan_to_invoice/:challanId/" element={<ConvertChallanToInvoice />}></Route>
+
+            {/* Recurring Invoice */}
+            <Route path="/rec_invoice" element={<RecInvoice />}></Route>
+            <Route path="/add_rec_invoice" element={<AddRecInvoice />}></Route>
+            {/* <Route path="/view_invoice/:invoiceId/" element={<ViewInvoice />}></Route>
+            <Route path="/invoice_history/:invoiceId/" element={<InvoiceHistory />}></Route>
+            <Route path="/edit_invoice/:invoiceId/" element={<EditInvoice />}></Route> */}
           </Route>
         </Routes>
       </BrowserRouter>

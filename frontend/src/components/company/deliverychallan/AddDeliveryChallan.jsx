@@ -743,8 +743,8 @@ function AddDeliveryChallan() {
 
       return {
         ...item,
-        total: total,
-        taxAmount: taxAmt,
+        total: total.toFixed(2),
+        taxAmount: taxAmt.toFixed(2),
       };
     });
 
@@ -770,8 +770,8 @@ function AddDeliveryChallan() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total,
-        taxAmount: taxAmt,
+        total: total.toFixed(2),
+        taxAmount: taxAmt.toFixed(2),
       };
     });
 
@@ -799,8 +799,8 @@ function AddDeliveryChallan() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total,
-        taxAmount: taxAmt,
+        total: total.toFixed(2),
+        taxAmount: taxAmt.toFixed(2),
       };
     });
 

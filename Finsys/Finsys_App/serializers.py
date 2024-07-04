@@ -181,3 +181,19 @@ class DeliveryChallanCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Delivery_Challan_Comments
         fields = '__all__'
+
+# Rec. Invoice
+class RecInvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Recurring_Invoice
+        fields = '__all__'
+
+class RecInvoiceCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Recurring_Invoice_Comments
+        fields = '__all__'
+
+class RepeatEverySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_CompanyRepeatEvery
+        fields = '__all__'

@@ -7,10 +7,10 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function EditDeliveryChallan() {
+function EditInvoice() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
-  const { challanId } = useParams();
+  const { invoiceId } = useParams();
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [terms, setTerms] = useState([]);
@@ -20,11 +20,11 @@ function EditDeliveryChallan() {
   const [cmpState, setCmpState] = useState("");
   const [customerValue, setCustomerValue] = useState({});
 
-  const fetchDeliveryChallanData = () => {
+  const fetchInvoiceData = () => {
     axios
-      .get(`${config.base_url}/fetch_delivery_challan_data/${ID}/`)
+      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
       .then((res) => {
-        console.log("DC Data==", res);
+        console.log("INV Data==", res);
         if (res.data.status) {
           let itms = res.data.items;
           let cust = res.data.customers;
@@ -71,7 +71,7 @@ function EditDeliveryChallan() {
 
   function fetchPaymentTerms() {
     axios
-      .get(`${config.base_url}/fetch_delivery_challan_data/${ID}/`)
+      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let trms = res.data.paymentTerms;
@@ -88,7 +88,7 @@ function EditDeliveryChallan() {
 
   function fetchItems() {
     axios
-      .get(`${config.base_url}/fetch_delivery_challan_data/${ID}/`)
+      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let items = res.data.items;
@@ -106,7 +106,7 @@ function EditDeliveryChallan() {
   }
 
   useEffect(() => {
-    fetchDeliveryChallanData();
+    fetchInvoiceData();
   }, []);
 
   const customStyles = {
@@ -141,44 +141,52 @@ function EditDeliveryChallan() {
     }),
   };
 
-  const fetchChallanDetails = () => {
+  const fetchInvoiceDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_challan_details/${challanId}/`)
+      .get(`${config.base_url}/fetch_invoice_details/${invoiceId}/`)
       .then((res) => {
-        console.log("CHL DET=", res);
+        console.log("INV DET=", res);
         if (res.data.status) {
-          var challan = res.data.challan;
+          var invoice = res.data.invoice;
           var itms = res.data.items;
 
           var c = {
-            value: challan.Customer,
+            value: invoice.Customer,
             label: res.data.otherDetails.customerName,
           };
           setCustomerValue(c);
 
-          setCustomer(challan.Customer);
-          setEmail(challan.customer_email);
-          setGstType(challan.gst_type);
-          setGstIn(challan.gstin);
-          setBillingAddress(challan.billing_address);
-          setRefNo(challan.reference_no);
-          setChallanNo(challan.challan_no);
-          setDate(challan.challan_date);
-          setPlaceOfSupply(challan.place_of_supply);
-          setChallanType(challan.challan_type);
-          setPriceList(challan.price_list_applied);
-          setPriceListId(challan.price_list);
-          setSubTotal(challan.subtotal);
-          setIgst(challan.igst);
-          setCgst(challan.cgst);
-          setSgst(challan.sgst);
-          setTaxAmount(challan.tax_amount);
-          setAdjustment(challan.adjustment);
-          setShippingCharge(challan.shipping_charge);
-          setGrandTotal(challan.grandtotal);
-          setDescription(challan.note);
-          setChallanItems([]);
-          const chlItems = itms.map((i) => {
+          setCustomer(invoice.Customer);
+          setEmail(invoice.customer_email);
+          setGstType(invoice.gst_type);
+          setGstIn(invoice.gstin);
+          setBillingAddress(invoice.billing_address);
+          setRefNo(invoice.reference_no);
+          setInvoiceNo(invoice.invoice_no);
+          setSalesOrderNo(invoice.salesOrder_no);
+          setDate(invoice.invoice_date);
+          setPlaceOfSupply(invoice.place_of_supply);
+          setDueDate(invoice.duedate);
+          setTerm(invoice.payment_terms);
+          setPaymentMethod(invoice.payment_method);
+          setChequeNumber(invoice.cheque_no);
+          setUpiId(invoice.upi_no);
+          setAccountNumber(invoice.bank_acc_no);
+          setPriceList(invoice.price_list_applied);
+          setPriceListId(invoice.price_list);
+          setSubTotal(invoice.subtotal);
+          setIgst(invoice.igst);
+          setCgst(invoice.cgst);
+          setSgst(invoice.sgst);
+          setTaxAmount(invoice.tax_amount);
+          setAdjustment(invoice.adjustment);
+          setShippingCharge(invoice.shipping_charge);
+          setGrandTotal(invoice.grandtotal);
+          setPaid(invoice.paid_off);
+          setBalance(invoice.balance);
+          setDescription(invoice.note);
+          setInvoiceItems([]);
+          const invItems = itms.map((i) => {
             if (i.item_type == "Goods") {
               var hsnSac = i.hsn;
             } else {
@@ -189,6 +197,8 @@ function EditDeliveryChallan() {
               item: i.itemId,
               hsnSac: hsnSac,
               quantity: i.quantity,
+              available: i.avl,
+              initialQty: i.quantity,
               price: i.sales_price,
               priceListPrice: i.price,
               taxGst: i.tax,
@@ -199,11 +209,12 @@ function EditDeliveryChallan() {
             };
           });
 
-          setChallanItems(chlItems);
-          refreshIndexes(chlItems);
+          setInvoiceItems(invItems);
+          refreshIndexes(invItems);
 
-          checkTax(res.data.otherDetails.State, challan.place_of_supply);
-          checkPL(challan.price_list_applied);
+          paymentMethodChange(invoice.payment_method);
+          checkTax(res.data.otherDetails.State, invoice.place_of_supply);
+          checkPL(invoice.price_list_applied);
           // applyPriceList(sales.price_list)
         }
       })
@@ -219,7 +230,7 @@ function EditDeliveryChallan() {
   };
 
   useEffect(() => {
-    fetchChallanDetails();
+    fetchInvoiceDetails();
   }, []);
 
   var currentDate = new Date();
@@ -231,11 +242,17 @@ function EditDeliveryChallan() {
   const [gstIn, setGstIn] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [refNo, setRefNo] = useState("");
-  const [challanNo, setChallanNo] = useState("");
-  const [nextChallanNo, setNextChallanNo] = useState("");
+  const [invoiceNo, setInvoiceNo] = useState("");
+  const [salesOrderNo, setSalesOrderNo] = useState("");
+  const [nextInvoiceNo, setNextInvoiceNo] = useState("");
   const [date, setDate] = useState(formattedDate);
   const [placeOfSupply, setPlaceOfSupply] = useState("");
-  const [challanType, setChallanType] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [term, setTerm] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [chequeNumber, setChequeNumber] = useState("");
+  const [upiId, setUpiId] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
   const [priceList, setPriceList] = useState(false);
   const [priceListId, setPriceListId] = useState("");
 
@@ -247,16 +264,20 @@ function EditDeliveryChallan() {
   const [shippingCharge, setShippingCharge] = useState(0.0);
   const [adjustment, setAdjustment] = useState(0.0);
   const [grandTotal, setGrandTotal] = useState(0.0);
+  const [paid, setPaid] = useState(0.0);
+  const [balance, setBalance] = useState(0.0);
 
   const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
 
-  const [challanItems, setChallanItems] = useState([
+  const [invoiceItems, setInvoiceItems] = useState([
     {
       id: 1,
       item: "",
       hsnSac: "",
       quantity: "",
+      initialQty: "",
+      available: "",
       price: "",
       priceListPrice: "",
       taxGst: "",
@@ -410,14 +431,14 @@ function EditDeliveryChallan() {
       setPriceListId("");
       document.getElementById("custPriceListName").style.display = "none";
       document.getElementById("custPriceListName").innerText = "";
-      const updatedItems = challanItems.map((item) => {
+      const updatedItems = invoiceItems.map((item) => {
         return {
           ...item,
           priceListPrice: "",
         };
       });
-      setChallanItems(updatedItems);
-      refreshIndexes(updatedItems)
+      setInvoiceItems(updatedItems);
+      refreshIndexes(updatedItems);
     }
   }
 
@@ -429,10 +450,10 @@ function EditDeliveryChallan() {
       document.getElementById("custPriceListName").innerText = "";
       setPriceList(false);
       checkPriceList2();
-      calc3(challanItems);
+      calc3(invoiceItems);
     } else {
       let updatedItems = await Promise.all(
-        challanItems.map(async (pItem) => {
+        invoiceItems.map(async (pItem) => {
           var itemId = pItem.item;
           var plc = placeOfSupply;
           var PLId = priceListId;
@@ -483,8 +504,8 @@ function EditDeliveryChallan() {
         })
       );
 
-      setChallanItems(updatedItems);
-      refreshIndexes(updatedItems)
+      setInvoiceItems(updatedItems);
+      refreshIndexes(updatedItems);
       checkPriceList2();
       refreshTax(placeOfSupply);
       calc3(updatedItems);
@@ -525,7 +546,7 @@ function EditDeliveryChallan() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("chl_id", challanId);
+    formData.append("inv_id", invoiceId);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
@@ -533,11 +554,17 @@ function EditDeliveryChallan() {
     formData.append("gstin", gstIn);
     formData.append("place_of_supply", placeOfSupply);
     formData.append("reference_no", refNo);
-    formData.append("challan_no", challanNo);
-    formData.append("challan_date", date);
+    formData.append("invoice_no", invoiceNo);
+    formData.append("salesOrder_no", salesOrderNo);
+    formData.append("payment_terms", term);
+    formData.append("invoice_date", date);
+    formData.append("duedate", dueDate);
     formData.append("price_list_applied", priceList);
     formData.append("price_list", checkForNull(priceListId));
-    formData.append("challan_type", challanType);
+    formData.append("payment_method", checkForNull(paymentMethod));
+    formData.append("cheque_no", checkForNull(chequeNumber));
+    formData.append("upi_no", checkForNull(upiId));
+    formData.append("bank_acc_no", checkForNull(accountNumber));
     formData.append("subtotal", checkForZero(subTotal));
     formData.append("igst", checkForZero(igst));
     formData.append("cgst", checkForZero(cgst));
@@ -546,23 +573,25 @@ function EditDeliveryChallan() {
     formData.append("adjustment", checkForZero(adjustment));
     formData.append("shipping_charge", checkForZero(shippingCharge));
     formData.append("grandtotal", checkForZero(grandTotal));
+    formData.append("paid_off", checkForZero(paid));
+    formData.append("balance", checkBalanceVal(balance));
     formData.append("note", description);
-    formData.append("challanItems", JSON.stringify(challanItems));
+    formData.append("invoiceItems", JSON.stringify(invoiceItems));
 
     if (file) {
-      formData.append("document", file);
+      formData.append("file", file);
     }
 
     axios
-      .put(`${config.base_url}/update_delivery_challan/`, formData)
+      .put(`${config.base_url}/update_invoice/`, formData)
       .then((res) => {
-        console.log("Chl RES=", res);
+        console.log("INV RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Challan Updated",
+            title: "Invoice Updated",
           });
-          navigate(`/view_delivery_challan/${challanId}/`);
+          navigate(`/view_invoice/${invoiceId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -624,27 +653,27 @@ function EditDeliveryChallan() {
     }
   }
 
-  function handleChallanNoChange(val) {
-    setChallanNo(val);
-    checkChallanNo(val);
+  function handleInvoiceNoChange(val) {
+    setInvoiceNo(val);
+    checkInvoiceNo(val);
   }
 
-  function checkChallanNo(val) {
-    document.getElementById("CHLNoErr").innerText = "";
-    var chl_num = val;
-    if (chl_num != "") {
+  function checkInvoiceNo(val) {
+    document.getElementById("INVNoErr").innerText = "";
+    var inv_num = val;
+    if (inv_num != "") {
       var s = {
         Id: ID,
-        CHLNum: chl_num,
+        INVNum: inv_num,
       };
       axios
-        .get(`${config.base_url}/check_challan_no/`, { params: s })
+        .get(`${config.base_url}/check_invoice_no/`, { params: s })
         .then((res) => {
-          console.log("CHL NUM Res=", res);
+          console.log("INV NUM Res=", res);
           if (!res.data.status) {
-            document.getElementById("CHLNoErr").innerText = res.data.message;
+            document.getElementById("INVNoErr").innerText = res.data.message;
           } else {
-            document.getElementById("CHLNoErr").innerText = "";
+            document.getElementById("INVNoErr").innerText = "";
           }
         })
         .catch((err) => {
@@ -664,6 +693,7 @@ function EditDeliveryChallan() {
       item: "",
       hsnSac: "",
       quantity: "",
+      initialQty: "",
       price: "",
       priceListPrice: "",
       taxGst: "",
@@ -672,7 +702,7 @@ function EditDeliveryChallan() {
       total: "",
       taxAmount: "",
     };
-    setChallanItems((prevItems) => {
+    setInvoiceItems((prevItems) => {
       const updatedItems = [...prevItems, newItem];
 
       return updatedItems.map((item, index) => ({
@@ -683,7 +713,7 @@ function EditDeliveryChallan() {
   };
 
   const removeRow = (id) => {
-    setChallanItems((prevItems) => {
+    setInvoiceItems((prevItems) => {
       const updatedItems = prevItems.filter((item) => item.id !== id);
 
       return updatedItems.map((item, index) => ({
@@ -693,8 +723,8 @@ function EditDeliveryChallan() {
     });
   };
 
-  const handleChallanItemsInputChange = (id, field, value) => {
-    setChallanItems((prevItems) =>
+  const handleInvoiceItemsInputChange = (id, field, value) => {
+    setInvoiceItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item
       )
@@ -705,26 +735,67 @@ function EditDeliveryChallan() {
     var exists = itemExists(value);
     if (!exists) {
       if (placeOfSupply != "") {
-        handleChallanItemsInputChange(id, "item", value);
+        handleInvoiceItemsInputChange(id, "item", value);
         getItemData(value, id);
       } else {
         alert("Select Place of Supply.!");
       }
     } else {
       alert(
-        "Item already exists in the Challan, choose another or change quantity.!"
+        "Item already exists in the Invoice, choose another or change quantity.!"
       );
     }
   };
 
+  const handleQtyChange = (value, id, initialValue) => {
+    handleInvoiceItemsInputChange(id, "quantity", value);
+    changeItemQty(id, value, initialValue);
+  };
+
   const itemExists = (itemToCheck) => {
-    for (const item of challanItems) {
+    for (const item of invoiceItems) {
       if (item.item === itemToCheck) {
         return true;
       }
     }
     return false;
   };
+
+  function changeItemQty(id, value, initialValue) {
+    var qty = value;
+    var avl_val = document.getElementById(`avl${id}`).textContent;
+    
+    if (value != "" && initialValue != "") {
+      var crQty = parseInt(initialValue);
+      var diff = Math.abs(parseInt(qty) - crQty);
+      if (parseInt(qty) > parseInt(avl_val)) {
+        alert("Quantity Greater than Available Quantity");
+        handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
+        document.getElementById(`qtyspan${id}`).textContent = "0";
+      } else {
+        if (crQty < parseInt(qty)) {
+          document.getElementById(`qtyspan${id}`).textContent =
+            parseInt(avl_val) - diff;
+        } else {
+          document.getElementById(`qtyspan${id}`).textContent =
+            parseInt(avl_val) + diff;
+        }
+      }
+    } else {
+      if (value != "") {
+        if (parseInt(qty) > parseInt(avl_val)) {
+          alert("Quantity Greater than Available Quantity");
+          handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
+          document.getElementById(`qtyspan${id}`).textContent = "0";
+        } else {
+          document.getElementById(`qtyspan${id}`).textContent =
+            parseInt(avl_val) - parseInt(qty);
+        }
+      } else {
+        document.getElementById(`qtyspan${id}`).textContent = avl_val;
+      }
+    }
+  }
 
   function getItemData(item, id) {
     var exists = itemExists(item);
@@ -734,7 +805,7 @@ function EditDeliveryChallan() {
     if (!exists) {
       if (plc != "") {
         if (priceList && PLId == "") {
-          handleChallanItemsInputChange(id, "item", "");
+          handleInvoiceItemsInputChange(id, "item", "");
           alert("Select a Price List from the dropdown..!");
         } else {
           var itm = {
@@ -750,7 +821,7 @@ function EditDeliveryChallan() {
               if (res.data.status) {
                 var itemData = res.data.itemData;
 
-                setChallanItems((prevItems) =>
+                setInvoiceItems((prevItems) =>
                   prevItems.map((item) =>
                     item.id === id
                       ? {
@@ -760,6 +831,7 @@ function EditDeliveryChallan() {
                           taxGst: itemData.gst,
                           taxIgst: itemData.igst,
                           hsnSac: itemData.hsnSac,
+                          available: itemData.avl,
                         }
                       : item
                   )
@@ -778,7 +850,7 @@ function EditDeliveryChallan() {
       }
     } else {
       alert(
-        "Item already exists in the Challan, choose another or change quantity.!"
+        "Item already exists in the Invoice, choose another or change quantity.!"
       );
     }
   }
@@ -787,12 +859,6 @@ function EditDeliveryChallan() {
     checkPriceList(priceList);
     refreshTax2();
     calc();
-  }
-
-  function resetItem(id) {
-    setChallanItems((prevItems) =>
-      prevItems.map((item) => (item.id === id ? { ...item, item: "" } : item))
-    );
   }
 
   function refreshTax(plc) {
@@ -845,8 +911,41 @@ function EditDeliveryChallan() {
     }
   }
 
-  const calc3 = (challanItems) => {
-    const updatedItems = challanItems.map((item) => {
+  function handleOrderDateChange(date) {
+    setDate(date);
+    findShipmentDate();
+  }
+
+  function handlePaymentTermChange(term) {
+    setTerm(term);
+    findShipmentDate();
+  }
+
+  function findShipmentDate() {
+    var paymentTerm = document.querySelector("#paymentTerm");
+    var selectedOption = paymentTerm.options[paymentTerm.selectedIndex];
+    var days = parseInt(selectedOption.getAttribute("text"));
+    var order_date = new Date(document.getElementById("salesOrderDate").value);
+    console.log(days);
+    console.log(order_date);
+    if (!isNaN(order_date.getTime())) {
+      const endDate = new Date(order_date);
+      endDate.setDate(endDate.getDate() + days);
+
+      const isoString = endDate.toISOString();
+      const day = isoString.slice(8, 10);
+      const month = isoString.slice(5, 7);
+      const year = isoString.slice(0, 4);
+
+      const formattedDate = `${day}-${month}-${year}`;
+      setDueDate(formattedDate);
+    } else {
+      alert("Please enter a valid date.");
+      setTerm("");
+    }
+  }
+  const calc3 = (invoiceItems) => {
+    const updatedItems = invoiceItems.map((item) => {
       console.log("CALC3==", item);
 
       let qty = parseInt(item.quantity || 0);
@@ -874,7 +973,7 @@ function EditDeliveryChallan() {
   };
 
   function calc2(placeOfSupply) {
-    const updatedItems = challanItems.map((item) => {
+    const updatedItems = invoiceItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -897,13 +996,13 @@ function EditDeliveryChallan() {
       };
     });
 
-    setChallanItems(updatedItems);
-    refreshIndexes(updatedItems)
+    setInvoiceItems(updatedItems);
+    refreshIndexes(updatedItems);
     calc_total2(updatedItems, placeOfSupply);
   }
 
   const calc = () => {
-    const updatedItems = challanItems.map((item) => {
+    const updatedItems = invoiceItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -926,18 +1025,18 @@ function EditDeliveryChallan() {
       };
     });
 
-    setChallanItems(updatedItems);
+    setInvoiceItems(updatedItems);
     refreshIndexes(updatedItems);
     calc_total(updatedItems);
   };
 
-  function calc_total(challanItems) {
+  function calc_total(invoiceItems) {
     var total = 0;
     var taxamount = 0;
-    challanItems.map((item) => {
+    invoiceItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    challanItems.map((item) => {
+    invoiceItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -948,6 +1047,10 @@ function EditDeliveryChallan() {
     var gtot = taxamount + total + ship + adj_val;
 
     setGrandTotal(gtot.toFixed(2));
+
+    var adv_val = parseFloat(paid || 0);
+    var bal = gtot - adv_val;
+    setBalance(bal.toFixed(2));
     splitTax(taxamount, placeOfSupply);
   }
 
@@ -965,13 +1068,13 @@ function EditDeliveryChallan() {
     }
   }
 
-  function calc_total2(challanItems, placeOfSupply) {
+  function calc_total2(invoiceItems, placeOfSupply) {
     var total = 0;
     var taxamount = 0;
-    challanItems.map((item) => {
+    invoiceItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    challanItems.map((item) => {
+    invoiceItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -982,6 +1085,10 @@ function EditDeliveryChallan() {
     var gtot = taxamount + total + ship + adj_val;
 
     setGrandTotal(gtot.toFixed(2));
+
+    var adv_val = parseFloat(paid || 0);
+    var bal = gtot - adv_val;
+    setBalance(bal.toFixed(2));
     splitTax2(taxamount, placeOfSupply);
   }
 
@@ -1009,6 +1116,11 @@ function EditDeliveryChallan() {
     updateGrandTotalAdj(val);
   }
 
+  function handlePaid(val) {
+    setPaid(val);
+    updateBalance(val);
+  }
+
   function updateGrandTotalShip(val) {
     var subtot = subTotal;
     var tax = taxAmount;
@@ -1021,6 +1133,7 @@ function EditDeliveryChallan() {
       parseFloat(adj || 0)
     ).toFixed(2);
     setGrandTotal(gtot);
+    setBalance((parseFloat(gtot) - parseFloat(paid)).toFixed(2));
   }
 
   function updateGrandTotalAdj(val) {
@@ -1035,8 +1148,25 @@ function EditDeliveryChallan() {
       parseFloat(adj || 0)
     ).toFixed(2);
     setGrandTotal(gtot);
+    setBalance((parseFloat(gtot) - parseFloat(paid)).toFixed(2));
   }
 
+  function updateBalance(val) {
+    var tot_val = grandTotal;
+    var adv_val = val;
+    if (adv_val != "") {
+      if (parseFloat(tot_val) < parseFloat(adv_val)) {
+        setPaid(parseFloat(tot_val));
+        setBalance(0);
+        alert("Advance Greater than Total Amount");
+      } else {
+        var bal = parseFloat(tot_val) - parseFloat(adv_val);
+        setBalance(bal.toFixed(2));
+      }
+    } else {
+      setBalance(parseFloat(tot_val));
+    }
+  }
 
   const [newTermName, setNewTermName] = useState("");
   const [newTermDays, setNewTermDays] = useState("");
@@ -1082,14 +1212,64 @@ function EditDeliveryChallan() {
     }
   }
 
+  function handlePaymentMethodChange(val) {
+    setPaymentMethod(val);
+    paymentMethodChange(val);
+  }
 
-  function refreshIndexes(items){
+  function refreshIndexes(items) {
     const itms = items.map((item, index) => ({
       ...item,
       id: index + 1,
     }));
 
-    setChallanItems(itms)
+    setInvoiceItems(itms);
+  }
+
+  function paymentMethodChange(val) {
+    if (val === "Cash") {
+      document.getElementById("chequediv").style.display = "none";
+      document.getElementById("bnkdiv").style.display = "none";
+      document.getElementById("upidiv").style.display = "none";
+      setChequeNumber("");
+      setUpiId("");
+      setAccountNumber("");
+    } else if (val === "Cheque") {
+      document.getElementById("chequediv").style.display = "block";
+      document.getElementById("bnkdiv").style.display = "none";
+      document.getElementById("upidiv").style.display = "none";
+      setUpiId("");
+      setAccountNumber("");
+    } else if (val === "UPI") {
+      document.getElementById("chequediv").style.display = "none";
+      document.getElementById("bnkdiv").style.display = "none";
+      document.getElementById("upidiv").style.display = "block";
+      setChequeNumber("");
+      setAccountNumber("");
+    } else {
+      document.getElementById("chequediv").style.display = "none";
+      document.getElementById("bnkdiv").style.display = "block";
+      document.getElementById("upidiv").style.display = "none";
+      setChequeNumber("");
+      setUpiId("");
+
+      var bnk = document.querySelector("#paymentMethod");
+      var selectedOption = bnk.options[bnk.selectedIndex];
+      var bank_id = parseInt(selectedOption.getAttribute("text"));
+
+      axios
+        .get(`${config.base_url}/get_bank_account_data/${bank_id}/`)
+        .then((res) => {
+          if (res.data.status) {
+            setChequeNumber("");
+            setUpiId("");
+            setAccountNumber(res.data.account);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
   }
 
   // NEW CUSTOMER
@@ -1554,7 +1734,7 @@ function EditDeliveryChallan() {
             icon: "success",
             title: "Customer Created",
           });
-          fetchDeliveryChallanData();
+          fetchInvoiceData();
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -2017,7 +2197,7 @@ function EditDeliveryChallan() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={`/view_delivery_challan/${challanId}/`}>
+          <Link to={`/view_invoice/${invoiceId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2028,7 +2208,7 @@ function EditDeliveryChallan() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">EDIT DELIVERY CHALLAN</h2>
+                <h2 className="mt-3">EDIT INVOICE</h2>
               </center>
               <hr />
             </div>
@@ -2040,7 +2220,7 @@ function EditDeliveryChallan() {
           encType="multipart/form-data"
           onSubmit={handleSubmit}
         >
-          <div className="card radius-15" style={{minWidth:'100%'}}>
+          <div className="card radius-15" style={{ minWidth: "100%" }}>
             <div className="card-body">
               <div id="salesOrder">
                 <div className="row">
@@ -2143,18 +2323,18 @@ function EditDeliveryChallan() {
                 <div className="row">
                   <div className="col-md-4 mt-3">
                     <div className="d-flex">
-                      <label className="">Challan No.</label>
-                      <span className="text-danger ml-3" id="CHLNoErr"></span>
+                      <label className="">Invoice No.</label>
+                      <span className="text-danger ml-3" id="INVNoErr"></span>
                     </div>
                     <input
                       type="text"
                       className="form-control"
-                      name="challan_no"
-                      id="challanNumber"
-                      value={challanNo}
-                      onChange={(e) => handleChallanNoChange(e.target.value)}
+                      name="invoice_no"
+                      id="invoiceNumber"
+                      value={invoiceNo}
+                      onChange={(e) => handleInvoiceNoChange(e.target.value)}
                       style={{ backgroundColor: "#43596c" }}
-                      placeholder={nextChallanNo}
+                      placeholder={nextInvoiceNo}
                       required
                     />
                   </div>
@@ -2235,40 +2415,155 @@ function EditDeliveryChallan() {
                 </div>
 
                 <div className="row">
-                  <div className="col-md-4 mt-3">
-                    <label className="">Challan Date:</label>
+                  <div className="col-md-3 mt-3">
+                    <label className="">Invoice Date:</label>
                     <input
                       type="date"
                       className="form-control"
-                      name="challan_date"
-                      id="challanDate"
+                      name="sales_order_date"
+                      id="salesOrderDate"
                       style={{ backgroundColor: "#43596c", color: "white" }}
                       value={date}
-                      onChange={(e) => setDate(e.target.value)}
+                      onChange={(e) => handleOrderDateChange(e.target.value)}
                     />
                   </div>
+                  <div className="col-md-3 mt-3">
+                    <label className="">Expected Shipment Date:</label>
+                    <input
+                      type="text"
+                      id="shipmentDate"
+                      className="form-control"
+                      name="shipment_date"
+                      style={{ backgroundColor: "#43596c", color: "white" }}
+                      value={dueDate}
+                      readOnly
+                    />
+                  </div>
+                  <div className="col-md-3 mt-3">
+                    <label className="">Terms </label>
+                    <div className="d-flex align-items-center">
+                      <select
+                        className="form-control"
+                        name="payment_term"
+                        value={term}
+                        onChange={(e) =>
+                          handlePaymentTermChange(e.target.value)
+                        }
+                        style={{ backgroundColor: "#43596c", color: "white" }}
+                        id="paymentTerm"
+                        required
+                      >
+                        <option value="" selected>
+                          Select Payment Term
+                        </option>
+                        {terms &&
+                          terms.map((term) => (
+                            <option value={term.id} text={term.days}>
+                              {term.term_name}
+                            </option>
+                          ))}
+                      </select>
+                      <a
+                        className="btn btn-outline-secondary ml-1"
+                        role="button"
+                        data-target="#newPaymentTerm"
+                        data-toggle="modal"
+                        style={{ width: "fit-content", height: "fit-content" }}
+                        id="termsadd"
+                      >
+                        +
+                      </a>
+                    </div>
+                  </div>
 
+                  <div className="col-md-3 mt-3">
+                    <label className="">Order No.</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="sales_order_no"
+                      id="salesOrderNumber"
+                      value={salesOrderNo}
+                      onChange={(e) => setSalesOrderNo(e.target.value)}
+                      style={{ backgroundColor: "#43596c" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="row">
                   <div className="col-md-4 mt-3">
-                    <label className="">Challan Type</label>
+                    <label className="">Payment Type</label>
                     <select
                       className="form-control my-select"
-                      id="challanType"
-                      name="challan_type"
-                      value={challanType}
+                      id="paymentMethod"
+                      name="payment_method"
+                      value={paymentMethod}
                       onChange={(e) =>
-                        setChallanType(e.target.value)
+                        handlePaymentMethodChange(e.target.value)
                       }
                       style={{ backgroundColor: "#43596c" }}
-                      required
                     >
-                      <option value="" selected disabled>
-                        Choose
+                      <option value="" selected>
+                        Select Payment Method
                       </option>
-                      <option value="Supply Of Liquid Gas">Supply Of Liquid Gas </option>
-                      <option value="Job Work">Job Work </option>
-                      <option value="Supply Of Approval">Supply Of Approval </option>
-                      <option value="Others">Others  </option>
+                      <option value="Cash">Cash</option>
+                      <option value="Cheque">Cheque</option>
+                      <option value="UPI">UPI</option>
+                      {banks &&
+                        banks.map((b) => (
+                          <option value={b.bank_name} text={b.id}>
+                            {b.bank_name} ({b.account_number})
+                          </option>
+                        ))}
                     </select>
+                  </div>
+                  <div
+                    className="col-md-4 mt-3"
+                    style={{ display: "none" }}
+                    id="chequediv"
+                  >
+                    <label className="">Cheque No</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="cheque_id"
+                      id="cheque_id"
+                      value={chequeNumber}
+                      onChange={(e) => setChequeNumber(e.target.value)}
+                      placeholder="Enter Cheque No"
+                    />
+                  </div>
+                  <div
+                    className="col-md-4 mt-3"
+                    style={{ display: "none" }}
+                    id="upidiv"
+                  >
+                    <label className="">UPI ID</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="upi_id"
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      id="upi_id"
+                      placeholder="Enter UPI ID"
+                    />
+                  </div>
+                  <div
+                    className="col-md-4 mt-3"
+                    style={{ display: "none" }}
+                    id="bnkdiv"
+                  >
+                    <label className="">Account#</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="bnk_id"
+                      id="bnk_id"
+                      value={accountNumber}
+                      style={{ backgroundColor: "#43596c" }}
+                      readOnly
+                    />
                   </div>
                 </div>
 
@@ -2343,7 +2638,7 @@ function EditDeliveryChallan() {
                   <div className="col-md-12 table-responsive-md mt-3">
                     <table
                       className="table table-bordered table-hover mt-3"
-                      id="challanItemsTable"
+                      id="invoiceItemsTable"
                     >
                       <thead>
                         <tr>
@@ -2358,232 +2653,248 @@ function EditDeliveryChallan() {
                         </tr>
                       </thead>
                       <tbody id="items-table-body">
-                        {challanItems.map((row) => {
+                        {invoiceItems.map((row) => {
                           const selectedOptionI = items.find(
                             (option) => option.value === row.item
                           );
-                          return(<tr key={row.id} id={`tab_row${row.id}`}>
-                            <td
-                              className="nnum"
-                              style={{ textAlign: "center" }}
-                            >
-                              {row.id}
-                            </td>
-                            <td style={{ width: "20%" }}>
-                              <div className="d-flex align-items-center">
-                                <Select
-                                  options={items}
-                                  styles={customStyles}
-                                  name="item"
-                                  className="w-100"
-                                  id={`item${row.id}`}
-                                  required
-                                  value={selectedOptionI}
-                                  onChange={(selectedOption) =>
-                                    handleItemChange(
-                                      selectedOption
-                                        ? selectedOption.value
-                                        : "",
-                                      row.id
+
+                          return (
+                            <tr key={row.id} id={`tab_row${row.id}`}>
+                              <td
+                                className="nnum"
+                                style={{ textAlign: "center" }}
+                              >
+                                {row.id}
+                              </td>
+                              <td style={{ width: "20%" }}>
+                                <div className="d-flex align-items-center">
+                                  <Select
+                                    options={items}
+                                    styles={customStyles}
+                                    name="item"
+                                    className="w-100"
+                                    id={`item${row.id}`}
+                                    required
+                                    value={selectedOptionI}
+                                    onChange={(selectedOption) =>
+                                      handleItemChange(
+                                        selectedOption
+                                          ? selectedOption.value
+                                          : "",
+                                        row.id
+                                      )
+                                    }
+                                    onBlur={refreshValues}
+                                    isClearable
+                                    isSearchable
+                                  />
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline-secondary ml-1"
+                                    data-target="#newItem"
+                                    data-toggle="modal"
+                                    style={{
+                                      width: "fit-content",
+                                      height: "fit-content",
+                                    }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </td>
+                              <td>
+                                <input
+                                  type="text"
+                                  name="hsnSac"
+                                  value={row.hsnSac}
+                                  id={`hsn${row.id}`}
+                                  placeholder="HSN/SAC Code"
+                                  className="form-control HSNCODE"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                  }}
+                                  readOnly
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  name="qty[]"
+                                  id={`qty${row.id}`}
+                                  className="form-control qty"
+                                  step="0"
+                                  min="1"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                    marginTop: "21px",
+                                  }}
+                                  value={row.quantity}
+                                  onChange={(e) =>
+                                    handleQtyChange(
+                                      e.target.value,
+                                      row.id,
+                                      row.initialQty
                                     )
                                   }
                                   onBlur={refreshValues}
-                                  isClearable
-                                  isSearchable
+                                  required
                                 />
+                                <span
+                                  id={`avl${row.id}`}
+                                  style={{ display: "none" }}
+                                >
+                                  {row.available}
+                                </span>
+                                <div class="d-flex">
+                                  <span>Available Qty :</span>
+                                  <span id={`qtyspan${row.id}`} class="">
+                                    {row.available}
+                                  </span>
+                                </div>
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  name="price"
+                                  id={`price${row.id}`}
+                                  className="form-control price"
+                                  step="0.00"
+                                  min="0"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                    display: "block",
+                                  }}
+                                  value={row.price}
+                                  readOnly
+                                />
+                                <input
+                                  type="number"
+                                  name="priceListPrice"
+                                  id={`priceListPrice${row.id}`}
+                                  className="form-control priceListPrice"
+                                  step="0.00"
+                                  min="0"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                    display: "none",
+                                  }}
+                                  value={row.priceListPrice}
+                                  readOnly
+                                />
+                              </td>
+
+                              <td style={{ width: "13%" }}>
+                                <select
+                                  name="taxGST"
+                                  id={`taxGST${row.id}`}
+                                  className="form-control tax_ref tax_ref_gst"
+                                  style={{ display: "block" }}
+                                  value={row.taxGst}
+                                  onChange={(e) =>
+                                    handleInvoiceItemsInputChange(
+                                      row.id,
+                                      "taxGst",
+                                      e.target.value
+                                    )
+                                  }
+                                  onBlur={refreshValues}
+                                >
+                                  <option value="">Select GST</option>
+                                  <option value="28">28.0% GST</option>
+                                  <option value="18">18.0% GST</option>
+                                  <option value="12">12.0% GST</option>
+                                  <option value="5">05.0% GST</option>
+                                  <option value="3">03.0% GST</option>
+                                  <option value="0">0.0% GST</option>
+                                </select>
+                                <select
+                                  name="taxIGST"
+                                  id={`taxIGST${row.id}`}
+                                  className="form-control tax_ref tax_ref_igst"
+                                  style={{ display: "none" }}
+                                  value={row.taxIgst}
+                                  onChange={(e) =>
+                                    handleInvoiceItemsInputChange(
+                                      row.id,
+                                      "taxIgst",
+                                      e.target.value
+                                    )
+                                  }
+                                  onBlur={refreshValues}
+                                >
+                                  <option value="">Select IGST</option>
+                                  <option value="28">28.0% IGST</option>
+                                  <option value="18">18.0% IGST</option>
+                                  <option value="12">12.0% IGST</option>
+                                  <option value="5">05.0% IGST</option>
+                                  <option value="3">03.0% IGST</option>
+                                  <option value="0">0.0% IGST</option>
+                                </select>
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  name="discount"
+                                  placeholder="Enter Discount"
+                                  id={`disc${row.id}`}
+                                  value={row.discount}
+                                  onChange={(e) =>
+                                    handleInvoiceItemsInputChange(
+                                      row.id,
+                                      "discount",
+                                      e.target.value
+                                    )
+                                  }
+                                  onBlur={refreshValues}
+                                  className="form-control disc"
+                                  step="0"
+                                  min="0"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                  }}
+                                />
+                              </td>
+
+                              <td>
+                                <input
+                                  type="number"
+                                  name="total"
+                                  id={`total${row.id}`}
+                                  className="form-control total"
+                                  value={row.total}
+                                  readOnly
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                  }}
+                                />
+                                <input
+                                  type="hidden"
+                                  id={`taxamount${row.id}`}
+                                  className="form-control itemTaxAmount"
+                                  value={row.taxAmount}
+                                />
+                              </td>
+                              <td>
                                 <button
                                   type="button"
-                                  className="btn btn-outline-secondary ml-1"
-                                  data-target="#newItem"
-                                  data-toggle="modal"
+                                  id={`${row.id}`}
                                   style={{
                                     width: "fit-content",
                                     height: "fit-content",
                                   }}
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </td>
-                            <td>
-                              <input
-                                type="text"
-                                name="hsnSac"
-                                value={row.hsnSac}
-                                id={`hsn${row.id}`}
-                                placeholder="HSN/SAC Code"
-                                className="form-control HSNCODE"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                }}
-                                readOnly
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                name="qty[]"
-                                id={`qty${row.id}`}
-                                className="form-control qty"
-                                step="0"
-                                min="1"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                }}
-                                value={row.quantity}
-                                onChange={(e) =>
-                                  handleChallanItemsInputChange(
-                                    row.id,
-                                    "quantity",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={refreshValues}
-                                required
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                name="price"
-                                id={`price${row.id}`}
-                                className="form-control price"
-                                step="0.00"
-                                min="0"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                  display: "block",
-                                }}
-                                value={row.price}
-                                readOnly
-                              />
-                              <input
-                                type="number"
-                                name="priceListPrice"
-                                id={`priceListPrice${row.id}`}
-                                className="form-control priceListPrice"
-                                step="0.00"
-                                min="0"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                  display: "none",
-                                }}
-                                value={row.priceListPrice}
-                                readOnly
-                              />
-                            </td>
-
-                            <td style={{ width: "13%" }}>
-                              <select
-                                name="taxGST"
-                                id={`taxGST${row.id}`}
-                                className="form-control tax_ref tax_ref_gst"
-                                style={{ display: "block" }}
-                                value={row.taxGst}
-                                onChange={(e) =>
-                                  handleChallanItemsInputChange(
-                                    row.id,
-                                    "taxGst",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={refreshValues}
-                              >
-                                <option value="">Select GST</option>
-                                <option value="28">28.0% GST</option>
-                                <option value="18">18.0% GST</option>
-                                <option value="12">12.0% GST</option>
-                                <option value="5">05.0% GST</option>
-                                <option value="3">03.0% GST</option>
-                                <option value="0">0.0% GST</option>
-                              </select>
-                              <select
-                                name="taxIGST"
-                                id={`taxIGST${row.id}`}
-                                className="form-control tax_ref tax_ref_igst"
-                                style={{ display: "none" }}
-                                value={row.taxIgst}
-                                onChange={(e) =>
-                                  handleChallanItemsInputChange(
-                                    row.id,
-                                    "taxIgst",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={refreshValues}
-                              >
-                                <option value="">Select IGST</option>
-                                <option value="28">28.0% IGST</option>
-                                <option value="18">18.0% IGST</option>
-                                <option value="12">12.0% IGST</option>
-                                <option value="5">05.0% IGST</option>
-                                <option value="3">03.0% IGST</option>
-                                <option value="0">0.0% IGST</option>
-                              </select>
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                name="discount"
-                                placeholder="Enter Discount"
-                                id={`disc${row.id}`}
-                                value={row.discount}
-                                onChange={(e) =>
-                                  handleChallanItemsInputChange(
-                                    row.id,
-                                    "discount",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={refreshValues}
-                                className="form-control disc"
-                                step="0"
-                                min="0"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                }}
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                type="number"
-                                name="total"
-                                id={`total${row.id}`}
-                                className="form-control total"
-                                value={row.total}
-                                readOnly
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                }}
-                              />
-                              <input
-                                type="hidden"
-                                id={`taxamount${row.id}`}
-                                className="form-control itemTaxAmount"
-                                value={row.taxAmount}
-                              />
-                            </td>
-                            <td>
-                              <button
-                                type="button"
-                                id={`${row.id}`}
-                                style={{
-                                  width: "fit-content",
-                                  height: "fit-content",
-                                }}
-                                onClick={() => removeRow(row.id)}
-                                className="btn btn-danger remove_row px-2 py-1 mx-1 fa fa-close"
-                                title="Remove Row"
-                              ></button>
-                            </td>
-                          </tr>)
+                                  onClick={() => removeRow(row.id)}
+                                  className="btn btn-danger remove_row px-2 py-1 mx-1 fa fa-close"
+                                  title="Remove Row"
+                                ></button>
+                              </td>
+                            </tr>
+                          );
                         })}
                       </tbody>
                       <tr>
@@ -2626,7 +2937,7 @@ function EditDeliveryChallan() {
                   <div className="col-md-1"></div>
                   <div
                     className="col-md-5 table-responsive-md mt-3 "
-                    id="challanItemsTableTotal"
+                    id="invoiceItemsTableTotal"
                     style={{
                       backgroundColor: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(128, 128, 128, 0.6)",
@@ -2807,6 +3118,59 @@ function EditDeliveryChallan() {
                     </div>
                   </div>
                 </div>
+                <div className="row">
+                  <div className="col-md-7"></div>
+                  <div
+                    className="col-md-5 table-responsive-md mt-3 "
+                    id="invoiceItemsTablePaid"
+                    style={{
+                      backgroundColor: "rgba(0,0,0,0.4)",
+                      border: "1px solid rgba(128, 128, 128, 0.6)",
+                      marginLeft: "-2vh",
+                    }}
+                  >
+                    <div className="p-3">
+                      <div className="row container-fluid p-2 m-0">
+                        <div className="col-sm-4 mt-2">
+                          <label for="a" className="text-center">
+                            Paid Off
+                          </label>
+                        </div>
+                        <div className="col-sm-1 mt-2">:</div>
+                        <div className="col-sm-7 mt-2">
+                          <input
+                            type="number"
+                            step="any"
+                            name="advance"
+                            id="advance"
+                            value={paid}
+                            onChange={(e) => handlePaid(e.target.value)}
+                            className="form-control"
+                          />
+                        </div>
+                      </div>
+                      <div className="row container-fluid p-2 m-0">
+                        <div className="col-sm-4 mt-2">
+                          <label for="a" className="text-center">
+                            Balance
+                          </label>
+                        </div>
+                        <div className="col-sm-1 mt-2">:</div>
+                        <div className="col-sm-7 mt-2">
+                          <input
+                            type="number"
+                            name="balance"
+                            id="balance"
+                            value={balance}
+                            readOnly
+                            style={{ backgroundColor: "#37444f" }}
+                            className="form-control"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="row">
                   <div className="col-md-7 mt-3">
@@ -2830,16 +3194,16 @@ function EditDeliveryChallan() {
                   <div className="col-md-5 mt-3 d-flex">
                     <input
                       type="submit"
-                      style={{height:"fit-content"}}
                       className="btn btn-outline-secondary w-50 text-light"
                       value="Save"
+                      style={{ height: "fit-content" }}
                     />
                     <input
                       type="reset"
-                      style={{height:"fit-content"}}
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => navigate(`/view_delivery_challan/${challanId}/`)}
+                      onClick={() => navigate(`/view_invoice/${invoiceId}/`)}
                       value="Cancel"
+                      style={{ height: "fit-content" }}
                     />
                   </div>
                 </div>
@@ -2850,7 +3214,7 @@ function EditDeliveryChallan() {
                   </div>
                 </div>
                 <span className="text-muted">
-                  Delivery Challan was created on a computer and is valid without the
+                  Invoice was created on a computer and is valid without the
                   signature and seal.
                 </span>
               </div>
@@ -3889,7 +4253,10 @@ function EditDeliveryChallan() {
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-            <div className="modal-body w-100" style={{maxHeight:"75vh", overflowY:"auto"}}>
+            <div
+              className="modal-body w-100"
+              style={{ maxHeight: "75vh", overflowY: "auto" }}
+            >
               <div className="card p-3 w-100">
                 <form id="newAccountForm" className="px-1">
                   <div className="row mt-2 mb-2 w-100">
@@ -4164,19 +4531,19 @@ function EditDeliveryChallan() {
                                   </option>
                                 ))}
                             </select>
-                              <button
-                                type="button"
-                                className="btn btn-outline-secondary ml-1"
-                                data-toggle="modal"
-                                data-dismiss="modal"
-                                data-target="#createNewUnit"
-                                style={{
-                                  width: "fit-content",
-                                  height: "fit-content",
-                                }}
-                              >
-                                +
-                              </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary ml-1"
+                              data-toggle="modal"
+                              data-dismiss="modal"
+                              data-target="#createNewUnit"
+                              style={{
+                                width: "fit-content",
+                                height: "fit-content",
+                              }}
+                            >
+                              +
+                            </button>
                           </div>
                         </div>
                         <div className="col-md-6 mt-3" id="hsnDiv">
@@ -4417,19 +4784,19 @@ function EditDeliveryChallan() {
                                   </option>
                                 ))}
                             </select>
-                              <button
-                                type="button"
-                                className="btn btn-outline-secondary ml-1"
-                                data-toggle="modal"
-                                data-dismiss="modal"
-                                data-target="#createNewAccount"
-                                style={{
-                                  width: "fit-content",
-                                  height: "fit-content",
-                                }}
-                              >
-                                +
-                              </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary ml-1"
+                              data-toggle="modal"
+                              data-dismiss="modal"
+                              data-target="#createNewAccount"
+                              style={{
+                                width: "fit-content",
+                                height: "fit-content",
+                              }}
+                            >
+                              +
+                            </button>
                           </div>
                         </div>
                         <div className="col-md-6 mt-3">
@@ -4621,4 +4988,4 @@ function EditDeliveryChallan() {
   );
 }
 
-export default EditDeliveryChallan;
+export default EditInvoice;

@@ -223,4 +223,11 @@ urlpatterns = [
     path('share_challan_email/',Fin_shareChallanToEmail),
     path('update_delivery_challan/',Fin_updateChallan),
     path('convert_challan_to_invoice/',Fin_convertChallanToInvoice),
+
+    #Recurring Invoice
+    path('fetch_rec_invoices/<int:id>/',Fin_fetchRecInvoices),
+    path('fetch_rec_invoice_data/<int:id>/',Fin_fetchRecInvoiceData),
+    path('check_rec_invoice_no/',Fin_checkRecInvoiceNo),
+    path('create_new_repeat_type/',Fin_createNewRepeatType),
+    path('create_new_rec_invoice/',Fin_createRecInvoice),
 ]
