@@ -101,6 +101,11 @@ import EditDeliveryChallan from './components/company/deliverychallan/EditDelive
 import ConvertChallanToInvoice from './components/company/deliverychallan/ConvertChallanToInvoice';
 import RecInvoice from './components/company/recurringinvoice/RecInvoice';
 import AddRecInvoice from './components/company/recurringinvoice/AddRecInvoice';
+import ViewRecInvoice from './components/company/recurringinvoice/ViewRecInvoice';
+import RecInvoiceHistory from './components/company/recurringinvoice/RecInvoiceHistory';
+import EditRecInvoice from './components/company/recurringinvoice/EditRecInvoice';
+import RetInvoice from './components/company/retainerinvoice/RetInvoice';
+import AddRetInvoice from './components/company/retainerinvoice/AddRetInvoice';
 
 function App() {
   return (
@@ -238,9 +243,16 @@ function App() {
             {/* Recurring Invoice */}
             <Route path="/rec_invoice" element={<RecInvoice />}></Route>
             <Route path="/add_rec_invoice" element={<AddRecInvoice />}></Route>
-            {/* <Route path="/view_invoice/:invoiceId/" element={<ViewInvoice />}></Route>
-            <Route path="/invoice_history/:invoiceId/" element={<InvoiceHistory />}></Route>
-            <Route path="/edit_invoice/:invoiceId/" element={<EditInvoice />}></Route> */}
+            <Route path="/view_rec_invoice/:invoiceId/" element={<ViewRecInvoice />}></Route>
+            <Route path="/rec_invoice_history/:invoiceId/" element={<RecInvoiceHistory />}></Route>
+            <Route path="/edit_rec_invoice/:invoiceId/" element={<EditRecInvoice />}></Route>
+
+            {/* Retainer Invoice */}
+            <Route path="/ret_invoice" element={<RetInvoice />}></Route>
+            <Route path="/add_ret_invoice" element={<AddRetInvoice />}></Route>
+            {/* <Route path="/view_rec_invoice/:invoiceId/" element={<ViewRecInvoice />}></Route>
+            <Route path="/rec_invoice_history/:invoiceId/" element={<RecInvoiceHistory />}></Route>
+            <Route path="/edit_rec_invoice/:invoiceId/" element={<EditRecInvoice />}></Route> */}
           </Route>
         </Routes>
       </BrowserRouter>

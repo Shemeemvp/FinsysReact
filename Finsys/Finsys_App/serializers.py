@@ -197,3 +197,14 @@ class RepeatEverySerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_CompanyRepeatEvery
         fields = '__all__'
+
+# Ret. Invoice
+class RetInvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Retainer_Invoice
+        fields = '__all__'
+
+class RetInvoiceCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Retainer_Invoice_Comments
+        fields = '__all__'

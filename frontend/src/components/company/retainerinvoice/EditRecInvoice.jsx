@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function AddRecInvoice() {
+function EditRecInvoice() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
+  const { invoiceId } = useParams();
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [terms, setTerms] = useState([]);
@@ -18,12 +19,13 @@ function AddRecInvoice() {
   const [companyRepeatEvery, setCompanyRepeatEvery] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
   const [cmpState, setCmpState] = useState("");
+  const [customerValue, setCustomerValue] = useState({});
 
-  const fetchRecInvoiceData = () => {
+  const fetchInvoiceData = () => {
     axios
       .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
       .then((res) => {
-        console.log("RINV Data==", res);
+        console.log("INV Data==", res);
         if (res.data.status) {
           let itms = res.data.items;
           let cust = res.data.customers;
@@ -32,6 +34,7 @@ function AddRecInvoice() {
           let lst = res.data.priceList;
           let clst = res.data.custPriceList;
           let rpt = res.data.repeat;
+
           setCmpState(res.data.state);
           setPriceLists([]);
           setCustomerPriceLists([]);
@@ -49,10 +52,6 @@ function AddRecInvoice() {
           trms.map((i) => {
             setTerms((prevState) => [...prevState, i]);
           });
-          setCompanyRepeatEvery([]);
-          rpt.map((r) => {
-            setCompanyRepeatEvery((prevState) => [...prevState, r]);
-          });
           setItems([]);
           const newOptions = itms.map((item) => ({
             label: item.name,
@@ -60,14 +59,17 @@ function AddRecInvoice() {
           }));
           setItems(newOptions);
 
+          setCompanyRepeatEvery([]);
+          rpt.map((r) => {
+            setCompanyRepeatEvery((prevState) => [...prevState, r]);
+          });
+
           setCustomers([]);
           const newCustOptions = cust.map((item) => ({
             label: item.first_name + " " + item.last_name,
             value: item.id,
           }));
           setCustomers(newCustOptions);
-          setRefNo(res.data.refNo);
-          setNextRecInvoiceNo(res.data.invNo);
         }
       })
       .catch((err) => {
@@ -84,23 +86,6 @@ function AddRecInvoice() {
           setTerms([]);
           trms.map((i) => {
             setTerms((prevState) => [...prevState, i]);
-          });
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }
-
-  function fetchRepeatTypes() {
-    axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
-      .then((res) => {
-        if (res.data.status) {
-          let rpt = res.data.repeat;
-          setCompanyRepeatEvery([]);
-          rpt.map((i) => {
-            setCompanyRepeatEvery((prevState) => [...prevState, i]);
           });
         }
       })
@@ -129,7 +114,7 @@ function AddRecInvoice() {
   }
 
   useEffect(() => {
-    fetchRecInvoiceData();
+    fetchInvoiceData();
   }, []);
 
   const customStyles = {
@@ -164,6 +149,101 @@ function AddRecInvoice() {
     }),
   };
 
+  const fetchInvoiceDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_rec_invoice_details/${invoiceId}/`)
+      .then((res) => {
+        console.log("INV DET=", res);
+        if (res.data.status) {
+          var invoice = res.data.invoice;
+          var itms = res.data.items;
+
+          var c = {
+            value: invoice.Customer,
+            label: res.data.otherDetails.customerName,
+          };
+          setCustomerValue(c);
+
+          setCustomer(invoice.Customer);
+          setEmail(invoice.customer_email);
+          setGstType(invoice.gst_type);
+          setGstIn(invoice.gstin);
+          setBillingAddress(invoice.billing_address);
+          setProfileName(invoice.profile_name);
+          setEntryType(invoice.entry_type);
+          setRefNo(invoice.reference_no);
+          setRecInvoiceNo(invoice.rec_invoice_no);
+          setSalesOrderNo(invoice.salesOrder_no);
+          setDate(invoice.start_date);
+          setPlaceOfSupply(invoice.place_of_supply);
+          setEndDate(invoice.end_date);
+          setTerm(invoice.payment_terms);
+          setRepeatEvery(invoice.repeat_every);
+          setPaymentMethod(invoice.payment_method);
+          setChequeNumber(invoice.cheque_no);
+          setUpiId(invoice.upi_no);
+          setAccountNumber(invoice.bank_acc_no);
+          setPriceList(invoice.price_list_applied);
+          setPriceListId(invoice.price_list);
+          setSubTotal(invoice.subtotal);
+          setIgst(invoice.igst);
+          setCgst(invoice.cgst);
+          setSgst(invoice.sgst);
+          setTaxAmount(invoice.tax_amount);
+          setAdjustment(invoice.adjustment);
+          setShippingCharge(invoice.shipping_charge);
+          setGrandTotal(invoice.grandtotal);
+          setPaid(invoice.paid_off);
+          setBalance(invoice.balance);
+          setDescription(invoice.note);
+          setInvoiceItems([]);
+          const invItems = itms.map((i) => {
+            if (i.item_type == "Goods") {
+              var hsnSac = i.hsn;
+            } else {
+              var hsnSac = i.sac;
+            }
+            return {
+              id: 1,
+              item: i.itemId,
+              hsnSac: hsnSac,
+              quantity: i.quantity,
+              available: i.avl,
+              initialQty: i.quantity,
+              price: i.sales_price,
+              priceListPrice: i.price,
+              taxGst: i.tax,
+              taxIgst: i.tax,
+              discount: i.discount,
+              total: i.total,
+              taxAmount: "",
+            };
+          });
+
+          setInvoiceItems(invItems);
+          refreshIndexes(invItems);
+
+          paymentMethodChange(invoice.payment_method);
+          checkTax(res.data.otherDetails.State, invoice.place_of_supply);
+          checkPL(invoice.price_list_applied);
+          // applyPriceList(sales.price_list)
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchInvoiceDetails();
+  }, []);
+
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
@@ -175,9 +255,9 @@ function AddRecInvoice() {
   const [refNo, setRefNo] = useState("");
   const [recInvoiceNo, setRecInvoiceNo] = useState("");
   const [salesOrderNo, setSalesOrderNo] = useState("");
+  const [nextRecInvoiceNo, setNextRecInvoiceNo] = useState("");
   const [profileName, setProfileName] = useState("");
   const [entryType, setEntryType] = useState("");
-  const [nextRecInvoiceNo, setNextRecInvoiceNo] = useState("");
   const [date, setDate] = useState(formattedDate);
   const [placeOfSupply, setPlaceOfSupply] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -202,7 +282,6 @@ function AddRecInvoice() {
   const [balance, setBalance] = useState(0.0);
 
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("");
   const [file, setFile] = useState(null);
 
   const [invoiceItems, setInvoiceItems] = useState([
@@ -211,6 +290,7 @@ function AddRecInvoice() {
       item: "",
       hsnSac: "",
       quantity: "",
+      initialQty: "",
       available: "",
       price: "",
       priceListPrice: "",
@@ -232,6 +312,10 @@ function AddRecInvoice() {
     // applyPriceList(val);
   }
 
+  function reCalcPriceList(val) {
+    applyPriceList(val);
+  }
+
   function checkForNull(val) {
     return val !== "" ? val : null;
   }
@@ -242,6 +326,48 @@ function AddRecInvoice() {
 
   function checkBalanceVal(val) {
     return val !== "" ? val : grandTotal;
+  }
+
+  function checkTax(cmp, plc) {
+    if (cmp == plc) {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "flex";
+      document.getElementById("taxamountSGST").style.display = "flex";
+      document.getElementById("taxamountIGST").style.display = "none";
+    } else {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "none";
+      document.getElementById("taxamountSGST").style.display = "none";
+      document.getElementById("taxamountIGST").style.display = "flex";
+    }
+  }
+
+  function checkPL(priceList) {
+    if (priceList) {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+    } else {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+    }
   }
 
   function checkPriceList(priceList) {
@@ -400,12 +526,41 @@ function AddRecInvoice() {
     }
   }
 
+  function calculate_total() {
+    var total = 0;
+    var totals = document.querySelectorAll(".total");
+    totals.forEach(function (element) {
+      total += parseFloat(element.value);
+    });
+
+    var taxamount = 0;
+    var taxAmounts = document.querySelectorAll(".itemTaxAmount");
+    taxAmounts.forEach(function (element) {
+      taxamount += parseFloat(element.value);
+    });
+
+    document.getElementById("sub_total").value = total.toFixed(2);
+    document.getElementById("tax_amount").value = taxamount.toFixed(2);
+
+    var ship = parseFloat(document.getElementById("ship").value);
+    var adj_val = parseFloat(document.getElementById("adj").value);
+    var gtot = taxamount + total + ship + adj_val;
+
+    document.getElementById("grandtotal").value = gtot.toFixed(2);
+
+    var adv_val = parseFloat(document.getElementById("advance").value);
+    var bal = gtot - adv_val;
+    document.getElementById("balance").value = bal.toFixed(2);
+
+    splitTax(taxamount, placeOfSupply);
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("status", status);
+    formData.append("inv_id", invoiceId);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
@@ -445,15 +600,15 @@ function AddRecInvoice() {
     }
 
     axios
-      .post(`${config.base_url}/create_new_rec_invoice/`, formData)
+      .put(`${config.base_url}/update_rec_invoice/`, formData)
       .then((res) => {
-        console.log("RINV RES=", res);
+        console.log("INV RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Rec Invoice Created",
+            title: "Rec. Invoice Updated",
           });
-          navigate("/rec_invoice");
+          navigate(`/view_rec_invoice/${invoiceId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -555,6 +710,7 @@ function AddRecInvoice() {
       item: "",
       hsnSac: "",
       quantity: "",
+      initialQty: "",
       price: "",
       priceListPrice: "",
       taxGst: "",
@@ -608,9 +764,9 @@ function AddRecInvoice() {
     }
   };
 
-  const handleQtyChange = (value, id) => {
+  const handleQtyChange = (value, id, initialValue) => {
     handleInvoiceItemsInputChange(id, "quantity", value);
-    changeItemQty(id, value);
+    changeItemQty(id, value, initialValue);
   };
 
   const itemExists = (itemToCheck) => {
@@ -622,21 +778,39 @@ function AddRecInvoice() {
     return false;
   };
 
-  function changeItemQty(id, value) {
+  function changeItemQty(id, value, initialValue) {
     var qty = value;
     var avl_val = document.getElementById(`avl${id}`).textContent;
-
-    if(value != ""){
+    
+    if (value != "" && initialValue != "") {
+      var crQty = parseInt(initialValue);
+      var diff = Math.abs(parseInt(qty) - crQty);
       if (parseInt(qty) > parseInt(avl_val)) {
         alert("Quantity Greater than Available Quantity");
         handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
-        document.getElementById(`qtyspan${id}`).textContent = "0"
+        document.getElementById(`qtyspan${id}`).textContent = "0";
       } else {
-        document.getElementById(`qtyspan${id}`).textContent =
-          parseInt(avl_val) - parseInt(qty);
+        if (crQty < parseInt(qty)) {
+          document.getElementById(`qtyspan${id}`).textContent =
+            parseInt(avl_val) - diff;
+        } else {
+          document.getElementById(`qtyspan${id}`).textContent =
+            parseInt(avl_val) + diff;
+        }
       }
-    }else{
-      document.getElementById(`qtyspan${id}`).textContent = avl_val
+    } else {
+      if (value != "") {
+        if (parseInt(qty) > parseInt(avl_val)) {
+          alert("Quantity Greater than Available Quantity");
+          handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
+          document.getElementById(`qtyspan${id}`).textContent = "0";
+        } else {
+          document.getElementById(`qtyspan${id}`).textContent =
+            parseInt(avl_val) - parseInt(qty);
+        }
+      } else {
+        document.getElementById(`qtyspan${id}`).textContent = avl_val;
+      }
     }
   }
 
@@ -768,10 +942,11 @@ function AddRecInvoice() {
     var paymentTerm = document.querySelector("#paymentTerm");
     var selectedOption = paymentTerm.options[paymentTerm.selectedIndex];
     var days = parseInt(selectedOption.getAttribute("text"));
-    var start_date = new Date(document.getElementById("startDate").value);
-
-    if (!isNaN(start_date.getTime())) {
-      const endDate = new Date(start_date);
+    var order_date = new Date(document.getElementById("startDate").value);
+    console.log(days);
+    console.log(order_date);
+    if (!isNaN(order_date.getTime())) {
+      const endDate = new Date(order_date);
       endDate.setDate(endDate.getDate() + days);
 
       const isoString = endDate.toISOString();
@@ -1007,48 +1182,6 @@ function AddRecInvoice() {
       }
     } else {
       setBalance(parseFloat(tot_val));
-    }
-  }
-
-  const [duration, setDuration] = useState("");
-  const [repeatType, setRepeatType] = useState("Month");
-  function handleRepeatModalSubmit(e) {
-    e.preventDefault();
-    var dr = duration;
-    var typ = repeatType;
-    if (dr != "" && typ != "") {
-      var u = {
-        Id: ID,
-        duration: duration,
-        repeat_type: repeatType,
-      };
-      axios
-        .post(`${config.base_url}/create_new_repeat_type/`, u)
-        .then((res) => {
-          if (res.data.status) {
-            Toast.fire({
-              icon: "success",
-              title: "Repeat Type Created",
-            });
-            fetchRepeatTypes();
-            setRepeatEvery(res.data.repeat.id);
-            setDuration("");
-            setRepeatType("");
-
-            document.getElementById("repeatModalDismiss").click();
-          }
-        })
-        .catch((err) => {
-          console.log("ERROR=", err);
-          if (!err.response.data.status) {
-            Swal.fire({
-              icon: "error",
-              title: `${err.response.data.message}`,
-            });
-          }
-        });
-    } else {
-      alert("Invalid");
     }
   }
 
@@ -1618,7 +1751,7 @@ function AddRecInvoice() {
             icon: "success",
             title: "Customer Created",
           });
-          fetchRecInvoiceData();
+          fetchInvoiceData();
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -2081,7 +2214,7 @@ function AddRecInvoice() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/invoice"}>
+          <Link to={`/view_rec_invoice/${invoiceId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2092,7 +2225,7 @@ function AddRecInvoice() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">NEW RECURRING INVOICE</h2>
+                <h2 className="mt-3">EDIT RECURRING INVOICE</h2>
               </center>
               <hr />
             </div>
@@ -2124,6 +2257,7 @@ function AddRecInvoice() {
                         name="customer"
                         className="w-100"
                         id="customer"
+                        value={customerValue || null}
                         required
                         onChange={(selectedOption) =>
                           handleCustomerChange(
@@ -2600,240 +2734,249 @@ function AddRecInvoice() {
                         </tr>
                       </thead>
                       <tbody id="items-table-body">
-                        {invoiceItems.map((row) => (
-                          <tr key={row.id} id={`tab_row${row.id}`}>
-                            <td
-                              className="nnum"
-                              style={{ textAlign: "center" }}
-                            >
-                              {row.id}
-                            </td>
-                            <td style={{ width: "20%" }}>
-                              <div className="d-flex align-items-center">
-                                <Select
-                                  options={items}
-                                  styles={customStyles}
-                                  name="item"
-                                  className="w-100"
-                                  id={`item${row.id}`}
-                                  required
-                                  defaultInputValue={row.item}
-                                  onChange={(selectedOption) =>
-                                    handleItemChange(
-                                      selectedOption
-                                        ? selectedOption.value
-                                        : "",
-                                      row.id
+                        {invoiceItems.map((row) => {
+                          const selectedOptionI = items.find(
+                            (option) => option.value === row.item
+                          );
+
+                          return (
+                            <tr key={row.id} id={`tab_row${row.id}`}>
+                              <td
+                                className="nnum"
+                                style={{ textAlign: "center" }}
+                              >
+                                {row.id}
+                              </td>
+                              <td style={{ width: "20%" }}>
+                                <div className="d-flex align-items-center">
+                                  <Select
+                                    options={items}
+                                    styles={customStyles}
+                                    name="item"
+                                    className="w-100"
+                                    id={`item${row.id}`}
+                                    required
+                                    value={selectedOptionI}
+                                    onChange={(selectedOption) =>
+                                      handleItemChange(
+                                        selectedOption
+                                          ? selectedOption.value
+                                          : "",
+                                        row.id
+                                      )
+                                    }
+                                    onBlur={refreshValues}
+                                    isClearable
+                                    isSearchable
+                                  />
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline-secondary ml-1"
+                                    data-target="#newItem"
+                                    data-toggle="modal"
+                                    style={{
+                                      width: "fit-content",
+                                      height: "fit-content",
+                                    }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </td>
+                              <td>
+                                <input
+                                  type="text"
+                                  name="hsnSac"
+                                  value={row.hsnSac}
+                                  id={`hsn${row.id}`}
+                                  placeholder="HSN/SAC Code"
+                                  className="form-control HSNCODE"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                  }}
+                                  readOnly
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  name="qty[]"
+                                  id={`qty${row.id}`}
+                                  className="form-control qty"
+                                  step="0"
+                                  min="1"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                    marginTop: "21px",
+                                  }}
+                                  value={row.quantity}
+                                  onChange={(e) =>
+                                    handleQtyChange(
+                                      e.target.value,
+                                      row.id,
+                                      row.initialQty
                                     )
                                   }
                                   onBlur={refreshValues}
-                                  isClearable
-                                  isSearchable
+                                  required
                                 />
+                                <span
+                                  id={`avl${row.id}`}
+                                  style={{ display: "none" }}
+                                >
+                                  {row.available}
+                                </span>
+                                <div class="d-flex">
+                                  <span>Available Qty :</span>
+                                  <span id={`qtyspan${row.id}`} class="">
+                                    {row.available}
+                                  </span>
+                                </div>
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  name="price"
+                                  id={`price${row.id}`}
+                                  className="form-control price"
+                                  step="0.00"
+                                  min="0"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                    display: "block",
+                                  }}
+                                  value={row.price}
+                                  readOnly
+                                />
+                                <input
+                                  type="number"
+                                  name="priceListPrice"
+                                  id={`priceListPrice${row.id}`}
+                                  className="form-control priceListPrice"
+                                  step="0.00"
+                                  min="0"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                    display: "none",
+                                  }}
+                                  value={row.priceListPrice}
+                                  readOnly
+                                />
+                              </td>
+
+                              <td style={{ width: "13%" }}>
+                                <select
+                                  name="taxGST"
+                                  id={`taxGST${row.id}`}
+                                  className="form-control tax_ref tax_ref_gst"
+                                  style={{ display: "block" }}
+                                  value={row.taxGst}
+                                  onChange={(e) =>
+                                    handleInvoiceItemsInputChange(
+                                      row.id,
+                                      "taxGst",
+                                      e.target.value
+                                    )
+                                  }
+                                  onBlur={refreshValues}
+                                >
+                                  <option value="">Select GST</option>
+                                  <option value="28">28.0% GST</option>
+                                  <option value="18">18.0% GST</option>
+                                  <option value="12">12.0% GST</option>
+                                  <option value="5">05.0% GST</option>
+                                  <option value="3">03.0% GST</option>
+                                  <option value="0">0.0% GST</option>
+                                </select>
+                                <select
+                                  name="taxIGST"
+                                  id={`taxIGST${row.id}`}
+                                  className="form-control tax_ref tax_ref_igst"
+                                  style={{ display: "none" }}
+                                  value={row.taxIgst}
+                                  onChange={(e) =>
+                                    handleInvoiceItemsInputChange(
+                                      row.id,
+                                      "taxIgst",
+                                      e.target.value
+                                    )
+                                  }
+                                  onBlur={refreshValues}
+                                >
+                                  <option value="">Select IGST</option>
+                                  <option value="28">28.0% IGST</option>
+                                  <option value="18">18.0% IGST</option>
+                                  <option value="12">12.0% IGST</option>
+                                  <option value="5">05.0% IGST</option>
+                                  <option value="3">03.0% IGST</option>
+                                  <option value="0">0.0% IGST</option>
+                                </select>
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  name="discount"
+                                  placeholder="Enter Discount"
+                                  id={`disc${row.id}`}
+                                  value={row.discount}
+                                  onChange={(e) =>
+                                    handleInvoiceItemsInputChange(
+                                      row.id,
+                                      "discount",
+                                      e.target.value
+                                    )
+                                  }
+                                  onBlur={refreshValues}
+                                  className="form-control disc"
+                                  step="0"
+                                  min="0"
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                  }}
+                                />
+                              </td>
+
+                              <td>
+                                <input
+                                  type="number"
+                                  name="total"
+                                  id={`total${row.id}`}
+                                  className="form-control total"
+                                  value={row.total}
+                                  readOnly
+                                  style={{
+                                    backgroundColor: "#43596c",
+                                    color: "white",
+                                  }}
+                                />
+                                <input
+                                  type="hidden"
+                                  id={`taxamount${row.id}`}
+                                  className="form-control itemTaxAmount"
+                                  value={row.taxAmount}
+                                />
+                              </td>
+                              <td>
                                 <button
                                   type="button"
-                                  className="btn btn-outline-secondary ml-1"
-                                  data-target="#newItem"
-                                  data-toggle="modal"
+                                  id={`${row.id}`}
                                   style={{
                                     width: "fit-content",
                                     height: "fit-content",
                                   }}
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </td>
-                            <td>
-                              <input
-                                type="text"
-                                name="hsnSac"
-                                value={row.hsnSac}
-                                id={`hsn${row.id}`}
-                                placeholder="HSN/SAC Code"
-                                className="form-control HSNCODE"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                }}
-                                readOnly
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                name="qty[]"
-                                id={`qty${row.id}`}
-                                className="form-control qty"
-                                step="0"
-                                min="1"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                  marginTop: "21px",
-                                }}
-                                value={row.quantity}
-                                onChange={(e) =>
-                                  handleQtyChange(
-                                    e.target.value,
-                                    row.id
-                                  )
-                                }
-                                onBlur={refreshValues}
-                                required
-                              />
-                              <span
-                                id={`avl${row.id}`}
-                                style={{ display: "none" }}
-                              >
-                                {row.available}
-                              </span>
-                              <div class="d-flex">
-                                <span>Available Qty :</span>
-                                <span id={`qtyspan${row.id}`} class="">{row.available}</span>
-                              </div>
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                name="price"
-                                id={`price${row.id}`}
-                                className="form-control price"
-                                step="0.00"
-                                min="0"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                  display: "block",
-                                }}
-                                value={row.price}
-                                readOnly
-                              />
-                              <input
-                                type="number"
-                                name="priceListPrice"
-                                id={`priceListPrice${row.id}`}
-                                className="form-control priceListPrice"
-                                step="0.00"
-                                min="0"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                  display: "none",
-                                }}
-                                value={row.priceListPrice}
-                                readOnly
-                              />
-                            </td>
-
-                            <td style={{ width: "13%" }}>
-                              <select
-                                name="taxGST"
-                                id={`taxGST${row.id}`}
-                                className="form-control tax_ref tax_ref_gst"
-                                style={{ display: "block" }}
-                                value={row.taxGst}
-                                onChange={(e) =>
-                                  handleInvoiceItemsInputChange(
-                                    row.id,
-                                    "taxGst",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={refreshValues}
-                              >
-                                <option value="">Select GST</option>
-                                <option value="28">28.0% GST</option>
-                                <option value="18">18.0% GST</option>
-                                <option value="12">12.0% GST</option>
-                                <option value="5">05.0% GST</option>
-                                <option value="3">03.0% GST</option>
-                                <option value="0">0.0% GST</option>
-                              </select>
-                              <select
-                                name="taxIGST"
-                                id={`taxIGST${row.id}`}
-                                className="form-control tax_ref tax_ref_igst"
-                                style={{ display: "none" }}
-                                value={row.taxIgst}
-                                onChange={(e) =>
-                                  handleInvoiceItemsInputChange(
-                                    row.id,
-                                    "taxIgst",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={refreshValues}
-                              >
-                                <option value="">Select IGST</option>
-                                <option value="28">28.0% IGST</option>
-                                <option value="18">18.0% IGST</option>
-                                <option value="12">12.0% IGST</option>
-                                <option value="5">05.0% IGST</option>
-                                <option value="3">03.0% IGST</option>
-                                <option value="0">0.0% IGST</option>
-                              </select>
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                name="discount"
-                                placeholder="Enter Discount"
-                                id={`disc${row.id}`}
-                                value={row.discount}
-                                onChange={(e) =>
-                                  handleInvoiceItemsInputChange(
-                                    row.id,
-                                    "discount",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={refreshValues}
-                                className="form-control disc"
-                                step="0"
-                                min="0"
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                }}
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                type="number"
-                                name="total"
-                                id={`total${row.id}`}
-                                className="form-control total"
-                                value={row.total}
-                                readOnly
-                                style={{
-                                  backgroundColor: "#43596c",
-                                  color: "white",
-                                }}
-                              />
-                              <input
-                                type="hidden"
-                                id={`taxamount${row.id}`}
-                                className="form-control itemTaxAmount"
-                                value={row.taxAmount}
-                              />
-                            </td>
-                            <td>
-                              <button
-                                type="button"
-                                id={`${row.id}`}
-                                style={{
-                                  width: "fit-content",
-                                  height: "fit-content",
-                                }}
-                                onClick={() => removeRow(row.id)}
-                                className="btn btn-danger remove_row px-2 py-1 mx-1 fa fa-close"
-                                title="Remove Row"
-                              ></button>
-                            </td>
-                          </tr>
-                        ))}
+                                  onClick={() => removeRow(row.id)}
+                                  className="btn btn-danger remove_row px-2 py-1 mx-1 fa fa-close"
+                                  title="Remove Row"
+                                ></button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                       <tr>
                         <td style={{ border: "none" }}>
@@ -3133,15 +3276,14 @@ function AddRecInvoice() {
                     <input
                       type="submit"
                       className="btn btn-outline-secondary w-50 text-light"
-                      onClick={() => setStatus("Draft")}
-                      value="Draft"
+                      value="Save"
                       style={{ height: "fit-content" }}
                     />
                     <input
-                      type="submit"
+                      type="reset"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => setStatus("Saved")}
-                      value="Save"
+                      onClick={() => navigate(`/view_rec_invoice/${invoiceId}/`)}
+                      value="Cancel"
                       style={{ height: "fit-content" }}
                     />
                   </div>
@@ -3160,78 +3302,6 @@ function AddRecInvoice() {
             </div>
           </div>
         </form>
-      </div>
-
-      {/* <!-- New Repeat Every Modal --> */}
-      <div className="modal fade" id="newRepeatEvery">
-        <div className="modal-dialog modal-lg">
-          <div className="modal-content" style={{ backgroundColor: "#213b52" }}>
-            <div className="modal-header">
-              <h5 className="m-3">New Repeat Type</h5>
-              <button
-                type="button"
-                className="close"
-                id="repeatModalDismiss"
-                data-dismiss="modal"
-                aria-label="Close"
-              >
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div className="modal-body w-100">
-              <div className="card p-3">
-                <form
-                  method="post"
-                  id="newTermForm"
-                  onSubmit={handleRepeatModalSubmit}
-                >
-                  <div className="row mt-2 w-100">
-                    <div className="col-6">
-                      <label for="name">Duration</label>
-                      <input
-                        type="number"
-                        name="duration"
-                        id="duration"
-                        min="0"
-                        step="any"
-                        value={duration}
-                        onChange={(e) => setDuration(e.target.value)}
-                        className="form-control w-100"
-                      />
-                    </div>
-                    <div className="col-6">
-                      <label for="name">Type</label>
-                      <select
-                        type="number"
-                        name="type"
-                        id="repeatType"
-                        value={repeatType}
-                        onChange={(e) => setRepeatType(e.target.value)}
-                        className="form-control w-100"
-                      >
-                        <option value="Month">Month</option>
-                        <option value="Year">Year</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="row mt-4 w-100">
-                    <div className="col-4"></div>
-                    <div className="col-4 d-flex justify-content-center">
-                      <button
-                        className="btn btn-outline-secondary text-grey w-75"
-                        type="submit"
-                        id="saveRepeatEvery"
-                      >
-                        Save
-                      </button>
-                    </div>
-                    <div className="col-4"></div>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* <!-- New Payment Term Modal --> */}
@@ -4999,4 +5069,4 @@ function AddRecInvoice() {
   );
 }
 
-export default AddRecInvoice;
+export default EditRecInvoice;

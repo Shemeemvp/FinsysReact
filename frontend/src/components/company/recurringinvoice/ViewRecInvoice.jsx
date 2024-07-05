@@ -8,7 +8,7 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import "../../styles/SalesOrder.css";
 
-function ViewInvoice() {
+function ViewRecInvoice() {
   const ID = Cookies.get("Login_id");
   const { invoiceId } = useParams();
   const [invoiceDetails, setInvoiceDetails] = useState({});
@@ -23,9 +23,9 @@ function ViewInvoice() {
 
   const [fileUrl, setFileUrl] = useState(null);
 
-  const fetchInvoiceDetails = () => {
+  const fetchRecInvoiceDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_invoice_details/${invoiceId}/`)
+      .get(`${config.base_url}/fetch_rec_invoice_details/${invoiceId}/`)
       .then((res) => {
         console.log("INV DATA=", res);
         if (res.data.status) {
@@ -66,7 +66,7 @@ function ViewInvoice() {
   };
 
   useEffect(() => {
-    fetchInvoiceDetails();
+    fetchRecInvoiceDetails();
   }, []);
 
   const currentUrl = window.location.href;
@@ -78,7 +78,7 @@ function ViewInvoice() {
 
   function handleConvertInvoice() {
     Swal.fire({
-      title: `Convert Invoice - ${invoiceDetails.invoice_no}?`,
+      title: `Convert Recurring Invoice - ${invoiceDetails.rec_invoice_no}?`,
       text: "Are you sure you want to convert this.!",
       icon: "warning",
       showCancelButton: true,
@@ -91,14 +91,14 @@ function ViewInvoice() {
           id: invoiceId,
         };
         axios
-          .post(`${config.base_url}/change_invoice_status/`, st)
+          .post(`${config.base_url}/change_rec_invoice_status/`, st)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
                 icon: "success",
                 title: "Converted",
               });
-              fetchInvoiceDetails();
+              fetchRecInvoiceDetails();
             }
           })
           .catch((err) => {
@@ -113,11 +113,11 @@ function ViewInvoice() {
     e.preventDefault();
     var cmt = {
       Id: ID,
-      Invoice: invoiceId,
+      RecInvoice: invoiceId,
       comments: comment,
     };
     axios
-      .post(`${config.base_url}/add_invoice_comment/`, cmt)
+      .post(`${config.base_url}/add_rec_invoice_comment/`, cmt)
       .then((res) => {
         console.log(res);
         if (res.data.status) {
@@ -126,7 +126,7 @@ function ViewInvoice() {
             title: "Comment Added",
           });
           setComment("");
-          fetchInvoiceDetails();
+          fetchRecInvoiceDetails();
         }
       })
       .catch((err) => {
@@ -140,9 +140,9 @@ function ViewInvoice() {
       });
   };
 
-  function handleDeleteInvoice(id) {
+  function handleDeleteRecInvoice(id) {
     Swal.fire({
-      title: `Delete Invoice - ${invoiceDetails.invoice_no}?`,
+      title: `Delete Recurring Invoice - ${invoiceDetails.rec_invoice_no}?`,
       text: "Data cannot be restored.!",
       icon: "warning",
       showCancelButton: true,
@@ -152,15 +152,15 @@ function ViewInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_invoice/${id}/`)
+          .delete(`${config.base_url}/delete_rec_invoice/${id}/`)
           .then((res) => {
             console.log(res);
 
             Toast.fire({
               icon: "success",
-              title: "Invoice Deleted.",
+              title: "Rec. Invoice Deleted.",
             });
-            navigate("/invoice");
+            navigate("/rec_invoice");
           })
           .catch((err) => {
             console.log(err);
@@ -181,7 +181,7 @@ function ViewInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_invoice_comment/${id}/`)
+          .delete(`${config.base_url}/delete_rec_invoice_comment/${id}/`)
           .then((res) => {
             console.log(res);
 
@@ -189,7 +189,7 @@ function ViewInvoice() {
               icon: "success",
               title: "Comment Deleted",
             });
-            fetchInvoiceDetails();
+            fetchRecInvoiceDetails();
           })
           .catch((err) => {
             console.log(err);
@@ -404,11 +404,11 @@ p {
   setInterval(updateDateTime, 1000);
 
   function slipPdf() {
-    var invoiceNo = `${invoiceDetails.invoice_no}`;
+    var invoiceNo = `${invoiceDetails.rec_invoice_no}`;
     var element = document.getElementById("slip");
     var opt = {
       margin: 1,
-      filename: "Invoice_Slip_" + invoiceNo + ".pdf",
+      filename: "RecurringInvoiceSlip_" + invoiceNo + ".pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
@@ -438,7 +438,7 @@ p {
       inv_id: invoiceId,
     };
     axios
-      .get(`${config.base_url}/invoice_pdf/`, {
+      .get(`${config.base_url}/rec_invoice_pdf/`, {
         responseType: "blob",
         params: data,
       })
@@ -449,7 +449,7 @@ p {
         const fileURL = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = fileURL;
-        a.download = `Invoice_${invoiceDetails.invoice_no}.pdf`;
+        a.download = `RecurringInvoice_${invoiceDetails.rec_invoice_no}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -502,7 +502,7 @@ p {
           email_message: emailMessage,
         };
         axios
-          .post(`${config.base_url}/share_invoice_email/`, em)
+          .post(`${config.base_url}/share_rec_invoice_email/`, em)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
@@ -542,7 +542,7 @@ p {
     }
 
     axios
-      .post(`${config.base_url}/add_invoice_attachment/`, formData)
+      .post(`${config.base_url}/add_rec_invoice_attachment/`, formData)
       .then((res) => {
         console.log("FILE RES==", res);
         if (res.data.status) {
@@ -552,7 +552,7 @@ p {
           });
           setFile(null);
           document.getElementById("fileModalDismiss").click();
-          fetchInvoiceDetails();
+          fetchRecInvoiceDetails();
         }
       })
       .catch((err) => {
@@ -577,7 +577,7 @@ p {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to="/invoice"
+          to="/rec_invoice"
         >
           <i
             className="fa fa-times-circle text-white"
@@ -744,7 +744,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/edit_invoice/${invoiceId}/`}
+                      to={`/edit_rec_invoice/${invoiceId}/`}
                       className="ml-2 fa fa-pencil btn btn-outline-secondary text-grey"
                       id="editBtn"
                       role="button"
@@ -757,7 +757,7 @@ p {
                       id="deleteBtn"
                       role="button"
                       onClick={() =>
-                        handleDeleteInvoice(`${invoiceDetails.id}`)
+                        handleDeleteRecInvoice(invoiceId)
                       }
                       style={{ height: "fit-content", width: "fit-content" }}
                     >
@@ -819,7 +819,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/invoice_history/${invoiceId}/`}
+                      to={`/rec_invoice_history/${invoiceId}/`}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-history"
                       id="historyBtn"
                       role="button"
@@ -835,7 +835,7 @@ p {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  INVOICE OVERVIEW
+                  RECURRING INVOICE OVERVIEW
                 </h3>
               </center>
             </div>
@@ -887,7 +887,7 @@ p {
                         <div className="row">
                           <div className="col mt-3">
                             <h2 className="mb-0">
-                              # {invoiceDetails.invoice_no}
+                              # {invoiceDetails.rec_invoice_no}
                             </h2>
                           </div>
                         </div>
@@ -958,18 +958,18 @@ p {
                               width: "fit-content",
                             }}
                           >
-                            Invoice Details
+                            Recurring Invoice Details
                           </h5>
                         </div>
                         <div className="col-md-4 mt-3"></div>
                         <div className="col-md-4 mt-3"></div>
 
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Invoice No,</h6>
+                          <h6 className="mb-0">Rec. Invoice No,</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.invoice_no}
+                            {invoiceDetails.rec_invoice_no}
                           </p>
                         </div>
 
@@ -984,29 +984,29 @@ p {
                       </div>
                       <div className="row mb-4 d-flex justify-content-between align-items-center">
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Invoice Date</h6>
+                          <h6 className="mb-0">Rec. Invoice Date</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.invoice_date}
+                            {invoiceDetails.start_date}
                           </p>
                         </div>
 
                         <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">Shipment Date</h6>
+                          <h6 className="mb-0">End Date</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.duedate}
+                            {invoiceDetails.end_date}
                           </p>
                         </div>
                       </div>
                       <div className="row mb-4 d-flex justify-content-start align-items-center">
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Address</h6>
+                          <h6 className="mb-0">Repeat Every</h6>
                         </div>
                         <div className="col-md-3 mt-3 vr">
-                          <p className="mb-0">{invoiceDetails.billing_address}</p>
+                          <p className="mb-0">{otherDetails.repeatType}</p>
                         </div>
                         <div className="col-md-3 mt-3 vl">
                           <h6 className="mb-0">Payment Method</h6>
@@ -1016,6 +1016,45 @@ p {
                             {invoiceDetails.payment_method}
                           </p>
                         </div>
+                      </div>
+                      <div className="row mb-4 d-flex justify-content-start align-items-center">
+                        {invoiceDetails.profile_name ? (
+                          <>
+                            <div className="col-md-3 mt-3">
+                              <h6 className="mb-0">Profile Name</h6>
+                            </div>
+                            <div className="col-md-3 mt-3 vr">
+                              <p className="mb-0">
+                                {invoiceDetails.profile_name}
+                              </p>
+                            </div>
+                          </>
+                        ) : null}
+
+                        {invoiceDetails.entry_type ? (
+                          <>
+                            <div className="col-md-3 mt-3 vl">
+                              <h6 className="mb-0">Entry Type</h6>
+                            </div>
+                            <div className="col-md-3 mt-3">
+                              <p className="mb-0 text-right">
+                                {invoiceDetails.entry_type}
+                              </p>
+                            </div>
+                          </>
+                        ) : null}
+                      </div>
+                      <div className="row mb-4 d-flex justify-content-start align-items-center">
+                        <div className="col-md-3 mt-3">
+                          <h6 className="mb-0">Address</h6>
+                        </div>
+                        <div className="col-md-3 mt-3 vr">
+                          <p className="mb-0">
+                            {invoiceDetails.billing_address}
+                          </p>
+                        </div>
+                        <div className="col-md-3 mt-3 vl"></div>
+                        <div className="col-md-3 mt-3"></div>
                       </div>
 
                       <hr />
@@ -1195,7 +1234,7 @@ p {
                 >
                   <div className="px-3 py-4">
                     <h4 className="fw-bold mb-2 mt-4 pt-1">
-                      Invoice Tax Details
+                      Recurring Invoice Tax Details
                     </h4>
                     <hr className="my-4" />
                     <div className="d-flex justify-content-between mb-4">
@@ -1276,27 +1315,30 @@ p {
                           {invoiceDetails.status}
                         </div>
                       </div>
-                      <section className="top-content bb d-flex justify-content-between">
+                      <section className="top-content bb d-flex justify-content-between p-0">
                         <div className="logo">
                           {/* <!-- <img src="logo.png" alt="" className="img-fluid"> --> */}
                         </div>
                         <div className="top-left">
                           <div className="graphic-path">
-                            <p>Invoice</p>
+                            <p>Rec. Invoice</p>
                           </div>
                           <div className="position-relative">
                             <p>
-                              Invoice No.
-                              <span>{invoiceDetails.invoice_no}</span>
+                              Rec. Invoice No.
+                              <span>{invoiceDetails.rec_invoice_no}</span>
                             </p>
-                            {invoiceDetails.salesOrder_no != ""? (
-                              <p>Order No. <span>{invoiceDetails.salesOrder_no}</span></p>
-                            ):null}
+                            {invoiceDetails.salesOrder_no != "" ? (
+                              <p>
+                                Order No.{" "}
+                                <span>{invoiceDetails.salesOrder_no}</span>
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       </section>
 
-                      <section className="store-user mt-5">
+                      <section className="store-user mt-5 p-0">
                         <div className="col-12">
                           <div className="row bb pb-3">
                             <div className="col-7">
@@ -1327,25 +1369,24 @@ p {
                           <div className="row extra-info pt-3">
                             <div className="col-6">
                               <p>
-                                Invoice Date:{" "}
-                                <span>{invoiceDetails.invoice_date}</span>
+                                Rec. Invoice Date:{" "}
+                                <span>{invoiceDetails.start_date}</span>
                               </p>
-                              {/* <p>
-                                Payment Method:{" "}
-                                <span>{invoiceDetails.payment_method}</span>
-                              </p> */}
                             </div>
                             <div className="col-6">
                               <p>
-                                Expected Shipment Date :{" "}
-                                <span>{invoiceDetails.duedate}</span>
+                                End Date :<span>{invoiceDetails.end_date}</span>
+                              </p>
+                              <p>
+                                Payment Method:
+                                <span>{invoiceDetails.payment_method}</span>
                               </p>
                             </div>
                           </div>
                         </div>
                       </section>
 
-                      <section className="product-area mt-4">
+                      <section className="product-area mt-4 p-0">
                         <table
                           className=" table table-hover table-bordered "
                           id="table1"
@@ -1422,7 +1463,7 @@ p {
                         <br />
                       </section>
 
-                      <section className="balance-info">
+                      <section className="balance-info p-0">
                         <div className="row">
                           <div className="col-md-8"></div>
                           <div className="col-md-4">
@@ -1573,23 +1614,25 @@ p {
                         </div>
                         <div className="col-md-4 d-flex justify-content-center">
                           <center className="h3 text-white">
-                            <b>Invoice</b>
+                            <b>Recurring Invoice</b>
                           </center>
                         </div>
                         <div className="col-md-4 d-flex justify-content-end">
                           <div className="text-white">
                             <p className="mb-0 mt-2">
-                              Invoice No:{" "}
-                              <b>{invoiceDetails.invoice_no}</b>
+                              Rec. Invoice No:{" "}
+                              <b>{invoiceDetails.rec_invoice_no}</b>
                             </p>
-                            {invoiceDetails.salesOrder_no != ""? (
-                              <p>Order No. <b>{invoiceDetails.salesOrder_no}</b></p>
-                            ):null}
+                            {invoiceDetails.salesOrder_no != "" ? (
+                              <p>
+                                Order No. <b>{invoiceDetails.salesOrder_no}</b>
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       </div>
                       <div className="px-5 py-1">
-                        <section className="store-user">
+                        <section className="store-user p-0">
                           <br />
                           <br />
                           <div className="col-12">
@@ -1651,10 +1694,26 @@ p {
                                 </p>
                               </div>
                             </div>
+                            <div className="row my-3">
+                              <div className="col-12">
+                                <p>
+                                  Start Date:{" "}
+                                  <span>{invoiceDetails.start_date}</span>
+                                </p>
+                                <p>
+                                  End Date:{" "}
+                                  <span>{invoiceDetails.end_date}</span>
+                                </p>
+                                <p>
+                                  Payment Method:{" "}
+                                  <span>{invoiceDetails.payment_method}</span>
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         </section>
 
-                        <section className="product-area mt-2">
+                        <section className="product-area mt-2 p-0">
                           <table
                             className="table table-hover table-bordered  template2table"
                             id="table2"
@@ -1759,7 +1818,7 @@ p {
                           </table>
                         </section>
 
-                        <section className="balance-info">
+                        <section className="balance-info p-0">
                           <div className="row mt-3">
                             <div className="col-4">
                               <table className="table table-borderless">
@@ -1940,7 +1999,7 @@ p {
                           }}
                         >
                           <p style={{ fontSize: "4vh", textAlign: "center" }}>
-                            INVOICE
+                            RECURRING INVOICE
                           </p>
                           <p style={{ textAlign: "center" }}>
                             {" "}
@@ -1982,14 +2041,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Invoice No.
+                                    Rec. Invoice No.
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.invoice_no}
+                                    {invoiceDetails.rec_invoice_no}
                                   </td>
                                 </tr>
 
@@ -2000,7 +2059,7 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Invoice Date
+                                    Rec. Invoice Date
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
@@ -2018,14 +2077,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Shipment Date
+                                    End Date
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.duedate}
+                                    {invoiceDetails.end_date}
                                   </td>
                                 </tr>
                                 <tr>
@@ -2156,7 +2215,7 @@ p {
                           </table>
                         </div>
                       </div>
-                      <section className="balance-info">
+                      <section className="balance-info p-0">
                         <div className="row">
                           <div className="col-md-7"></div>
                           <div className="col-md-4">
@@ -2336,7 +2395,7 @@ p {
                     <div className="row">
                       <div className="col-md-6 text-left">Invoice No:</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.invoice_no}
+                        {invoiceDetails.rec_invoice_no}
                       </div>
                     </div>
                     <div className="row">
@@ -2346,17 +2405,15 @@ p {
                       </div>
                     </div>
                     <div className="row">
-                      <div className="col-md-6 text-left">
-                        Invoice Date :
-                      </div>
+                      <div className="col-md-6 text-left">Rec. Invoice Date :</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.invoice_date}
+                        {invoiceDetails.start_date}
                       </div>
                     </div>
                     <div className="row">
-                      <div className="col-md-6 text-left">Shipment Date:</div>
+                      <div className="col-md-6 text-left">End Date:</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.duedate}
+                        {invoiceDetails.end_date}
                       </div>
                     </div>
                   </div>
@@ -2636,7 +2693,7 @@ p {
                       rows="4"
                       value={emailMessage}
                       onChange={(e) => setEmailMessage(e.target.value)}
-                      placeholder="This message will be sent along with Invoice details."
+                      placeholder="This message will be sent along with Recurring Invoice details."
                     />
                   </div>
                 </div>
@@ -2813,4 +2870,4 @@ p {
   );
 }
 
-export default ViewInvoice;
+export default ViewRecInvoice;

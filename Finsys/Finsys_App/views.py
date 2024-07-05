@@ -9773,3 +9773,995 @@ def Fin_checkRecInvoiceNo(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+@api_view(("GET",))
+def Fin_fetchRecInvoiceDetails(request, id):
+    try:
+        invoice = Fin_Recurring_Invoice.objects.get(id=id)
+        cmp = invoice.Company
+        hist = Fin_Recurring_Invoice_History.objects.filter(RecInvoice=invoice).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_Recurring_Invoice_Comments.objects.filter(RecInvoice=invoice)
+        itms = Fin_Recurring_Invoice_Items.objects.filter(RecInvoice=invoice)
+        try:
+            created = Fin_Recurring_Invoice_History.objects.get(RecInvoice = invoice, action = 'Created')
+        except:
+            created = None
+        otherDet = {
+            "Company_name": cmp.Company_name,
+            "Email": cmp.Email,
+            "Mobile": cmp.Contact,
+            "Address": cmp.Address,
+            "City": cmp.City,
+            "State": cmp.State,
+            "Pincode": cmp.Pincode,
+            "customerName": invoice.Customer.first_name+' '+invoice.Customer.last_name,
+            "customerEmail": invoice.Customer.email,
+            "repeatType": invoice.repeat_every.repeat_every,
+            "createdBy": created.LoginDetails.First_name if created else ""
+        }
+        items = []
+        for i in itms:
+            obj = {
+                "id":i.id,
+                "itemId": i.Item.id,
+                "sales_price": i.Item.selling_price,
+                'name': i.Item.name,
+                "item_type": i.Item.item_type,
+                "hsn": i.hsn,
+                "sac": i.sac,
+                "quantity": i.quantity,
+                "avl": i.Item.current_stock,
+                "price": i.price,
+                "tax": i.tax,
+                "discount": i.discount,
+                "total": i.total
+            }
+            items.append(obj)
+        invSerializer = RecInvoiceSerializer(invoice)
+        commentsSerializer = RecInvoiceCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "invoice": invSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": items,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeRecInvoiceStatus(request):
+    try:
+        invId = request.data["id"]
+        data = Fin_Recurring_Invoice.objects.get(id=invId)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addRecInvoiceComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = RecInvoiceCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteRecInvoiceComment(request, id):
+    try:
+        cmt = Fin_Recurring_Invoice_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchRecInvoiceHistory(request, id):
+    try:
+        invoice = Fin_Recurring_Invoice.objects.get(id=id)
+        hist = Fin_Recurring_Invoice_History.objects.filter(RecInvoice=invoice)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        invSerializer = RecInvoiceSerializer(invoice)
+        return Response(
+            {"status": True, "invoice": invSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteRecInvoice(request, id):
+    try:
+        inv = Fin_Recurring_Invoice.objects.get(id=id)
+        com = inv.Company
+
+        for i in Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv):
+            item = Fin_Items.objects.get(id = i.Item.id)
+            item.current_stock += i.quantity
+            item.save()
+        
+        Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv).delete()
+
+        # Storing ref number to deleted table
+        # if entry exists and lesser than the current, update and save => Only one entry per company
+        if Fin_Recurring_Invoice_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_Recurring_Invoice_Reference.objects.get(Company = com)
+            if int(inv.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = inv.reference_no
+                deleted.save()
+        else:
+            Fin_Recurring_Invoice_Reference.objects.create(Company = com, reference_no = inv.reference_no)
+        
+        inv.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addRecInvoiceAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        invId = request.data['inv_id']
+        inv = Fin_Recurring_Invoice.objects.get(id=invId)
+        if request.data['file']:
+            inv.file = request.data['file']
+        inv.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_recInvoicePdf(request):
+    try:
+        id = request.GET['Id']
+        invId = request.GET['inv_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        inv = Fin_Recurring_Invoice.objects.get(id = invId)
+        itms = Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv)
+    
+        context = {'recInvoice':inv, 'recInvItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_RecInvoice_Pdf.html'
+        fname = 'RecurringInvoice_'+inv.rec_invoice_no
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("POST",))
+def Fin_shareRecInvoiceToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        invId = request.data["inv_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        inv = Fin_Recurring_Invoice.objects.get(id = invId)
+        itms = Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv)
+        context = {'recInvoice':inv, 'recInvItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_RecInvoice_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'RecurringInvoice_{inv.rec_invoice_no}.pdf'
+        subject = f"RecurringInvoice_{inv.rec_invoice_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - RECURRING INVOICE-{inv.rec_invoice_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_updateRecInvoice(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        invoice = Fin_Recurring_Invoice.objects.get(id= request.data['inv_id'])
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        try:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%d-%m-%Y').date()
+        except:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%Y-%m-%d').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+        mutable_data["repeat_every"] = None if request.data["repeat_every"] == '' else request.data["repeat_every"]
+
+        # Parse stock_items from JSON
+        invItems = json.loads(request.data['invoiceItems'])
+        INVNum = request.data['rec_invoice_no']
+        if invoice.rec_invoice_no != INVNum and Fin_Recurring_Invoice.objects.filter(Company = com, rec_invoice_no__iexact = INVNum).exists():
+            return Response({'status':False, 'message': f"Rec. Invoice Number '{INVNum}' already exists, try another!"})
+        else:
+            serializer = RecInvoiceSerializer(invoice, data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                inv = Fin_Recurring_Invoice.objects.get(id=serializer.data['id'])
+                for i in Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv):
+                    item = Fin_Items.objects.get(id = i.Item.id)
+                    item.current_stock += i.quantity
+                    item.save()
+                
+                Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv).delete()
+
+                for ele in invItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if inv.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Recurring_Invoice_Items.objects.create(RecInvoice = inv, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+
+                Fin_Recurring_Invoice_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    RecInvoice = inv,
+                    action = 'Edited'
+                )
+                
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+# Retainer Invoice
+
+@api_view(("GET",))
+def Fin_fetchRetInvoices(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        invoice = Fin_Retainer_Invoice.objects.filter(Company = com)
+        inv = []
+        for i in invoice:
+            obj = {
+                "id": i.id,
+                "ret_invoice_no": i.ret_invoice_no,
+                "ret_invoice_date": i.ret_invoice_date,
+                "customer_name": i.Customer.first_name+" "+i.Customer.last_name,
+                "customer_email":i. customer_email,
+                "grandtotal": i.grandtotal,
+                "status": i.status,
+                "balance": i.balance,
+            }
+            inv.append(obj)
+        return Response(
+            {"status": True, "retInvoice": inv}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchRetInvoiceData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        items = Fin_Items.objects.filter(Company = cmp, status = 'Active')
+        cust = Fin_Customers.objects.filter(Company=cmp)
+        trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        bnk = Fin_Banking.objects.filter(company = cmp)
+        lst = Fin_Price_List.objects.filter(Company = cmp, status = 'Active')
+        units = Fin_Units.objects.filter(Company = cmp)
+        acc = Fin_Chart_Of_Account.objects.filter(Q(account_type='Expense') | Q(account_type='Other Expense') | Q(account_type='Cost Of Goods Sold'), Company=cmp).order_by('account_name')
+        custLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='sales', status = 'Active')
+        
+        itemSerializer = ItemSerializer(items, many=True)
+        custSerializer = CustomerSerializer(cust, many=True)
+        pTermSerializer = CompanyPaymentTermsSerializer(trms, many=True)
+        bankSerializer = BankSerializer(bnk, many=True)
+        lstSerializer = PriceListSerializer(lst, many=True)
+        clSerializer = PriceListSerializer(custLists, many=True)
+        unitSerializer = ItemUnitSerializer(units, many=True)
+        accSerializer = AccountsSerializer(acc, many=True)
+
+        # Fetching last ret invoice and assigning upcoming ref no as current + 1
+        # Also check for if any bill is deleted and ref no is continuos w r t the deleted ret invoice
+        latest_inv = Fin_Retainer_Invoice.objects.filter(Company = cmp).order_by('-id').first()
+
+        new_number = int(latest_inv.reference_no) + 1 if latest_inv else 1
+
+        if Fin_Retainer_Invoice_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_Retainer_Invoice_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+        # Finding next INV number w r t last INV number if exists.
+        nxtInv = ""
+        lastINV = Fin_Retainer_Invoice.objects.filter(Company = cmp).last()
+        if lastINV:
+            invoice_no = str(lastINV.ret_invoice_no)
+            numbers = []
+            stri = []
+            for word in invoice_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            inv_num = int(num)+1
+
+            if num[0] == '0':
+                if inv_num <10:
+                    nxtInv = st+'0'+ str(inv_num)
+                else:
+                    nxtInv = st+ str(inv_num)
+            else:
+                nxtInv = st+ str(inv_num)
+
+        return Response(
+            {
+                "status": True,
+                "items": itemSerializer.data,
+                "customers":custSerializer.data,
+                "paymentTerms":pTermSerializer.data,
+                "banks":bankSerializer.data,
+                "priceList":lstSerializer.data,
+                "custPriceList":clSerializer.data,
+                "units":unitSerializer.data,
+                "accounts":accSerializer.data,
+                "refNo": new_number,
+                "invNo": nxtInv,
+                "state": cmp.State
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_createRetInvoice(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+
+        # Parse stock_items from JSON
+        invItems = json.loads(request.data['invoiceItems'])
+        INVNum = request.data['ret_invoice_no']
+        if Fin_Retainer_Invoice.objects.filter(Company = com, ret_invoice_no__iexact = INVNum).exists():
+            return Response({'status':False, 'message': f"Ret.Invoice Number '{INVNum}' already exists, try another!"})
+        else:
+            serializer = RetInvoiceSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                inv = Fin_Retainer_Invoice.objects.get(id=serializer.data['id'])
+
+                for ele in invItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if inv.price_list_applied else ele.get('price')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Retainer_Invoice_Items.objects.create(RetInvoice = inv, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), description = ele.get('description'), discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                Fin_Retainer_Invoice_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    RetInvoice = inv,
+                    action = 'Created'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkRetInvoiceNo(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        INVno = request.GET['INVNum']
+
+        nxtInv = ""
+        lastINV = Fin_Retainer_Invoice.objects.filter(Company = com).last()
+        if lastINV:
+            invoice_no = str(lastINV.ret_invoice_no)
+            numbers = []
+            stri = []
+            for word in invoice_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            inv_num = int(num)+1
+
+            if num[0] == '0':
+                if inv_num <10:
+                    nxtInv = st+'0'+ str(inv_num)
+                else:
+                    nxtInv = st+ str(inv_num)
+            else:
+                nxtInv = st+ str(inv_num)
+
+        if Fin_Retainer_Invoice.objects.filter(Company = com, ret_invoice_no__iexact = INVno).exists():
+            return Response({'status':False, 'message':'Ret.Invoice No. already Exists.!'})
+        elif nxtInv != "" and INVno != nxtInv:
+            return Response({'status':False, 'message':'Ret.Invoice No. is not continuous.!'})
+        else:
+            return Response({'status':True, 'message':'Number is okay.!'})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchRecInvoiceDetails(request, id):
+    try:
+        invoice = Fin_Recurring_Invoice.objects.get(id=id)
+        cmp = invoice.Company
+        hist = Fin_Recurring_Invoice_History.objects.filter(RecInvoice=invoice).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_Recurring_Invoice_Comments.objects.filter(RecInvoice=invoice)
+        itms = Fin_Recurring_Invoice_Items.objects.filter(RecInvoice=invoice)
+        try:
+            created = Fin_Recurring_Invoice_History.objects.get(RecInvoice = invoice, action = 'Created')
+        except:
+            created = None
+        otherDet = {
+            "Company_name": cmp.Company_name,
+            "Email": cmp.Email,
+            "Mobile": cmp.Contact,
+            "Address": cmp.Address,
+            "City": cmp.City,
+            "State": cmp.State,
+            "Pincode": cmp.Pincode,
+            "customerName": invoice.Customer.first_name+' '+invoice.Customer.last_name,
+            "customerEmail": invoice.Customer.email,
+            "repeatType": invoice.repeat_every.repeat_every,
+            "createdBy": created.LoginDetails.First_name if created else ""
+        }
+        items = []
+        for i in itms:
+            obj = {
+                "id":i.id,
+                "itemId": i.Item.id,
+                "sales_price": i.Item.selling_price,
+                'name': i.Item.name,
+                "item_type": i.Item.item_type,
+                "hsn": i.hsn,
+                "sac": i.sac,
+                "quantity": i.quantity,
+                "avl": i.Item.current_stock,
+                "price": i.price,
+                "tax": i.tax,
+                "discount": i.discount,
+                "total": i.total
+            }
+            items.append(obj)
+        invSerializer = RecInvoiceSerializer(invoice)
+        commentsSerializer = RecInvoiceCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "invoice": invSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": items,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeRecInvoiceStatus(request):
+    try:
+        invId = request.data["id"]
+        data = Fin_Recurring_Invoice.objects.get(id=invId)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addRecInvoiceComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = RecInvoiceCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteRecInvoiceComment(request, id):
+    try:
+        cmt = Fin_Recurring_Invoice_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchRecInvoiceHistory(request, id):
+    try:
+        invoice = Fin_Recurring_Invoice.objects.get(id=id)
+        hist = Fin_Recurring_Invoice_History.objects.filter(RecInvoice=invoice)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        invSerializer = RecInvoiceSerializer(invoice)
+        return Response(
+            {"status": True, "invoice": invSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteRecInvoice(request, id):
+    try:
+        inv = Fin_Recurring_Invoice.objects.get(id=id)
+        com = inv.Company
+
+        for i in Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv):
+            item = Fin_Items.objects.get(id = i.Item.id)
+            item.current_stock += i.quantity
+            item.save()
+        
+        Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv).delete()
+
+        # Storing ref number to deleted table
+        # if entry exists and lesser than the current, update and save => Only one entry per company
+        if Fin_Recurring_Invoice_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_Recurring_Invoice_Reference.objects.get(Company = com)
+            if int(inv.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = inv.reference_no
+                deleted.save()
+        else:
+            Fin_Recurring_Invoice_Reference.objects.create(Company = com, reference_no = inv.reference_no)
+        
+        inv.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addRecInvoiceAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        invId = request.data['inv_id']
+        inv = Fin_Recurring_Invoice.objects.get(id=invId)
+        if request.data['file']:
+            inv.file = request.data['file']
+        inv.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_recInvoicePdf(request):
+    try:
+        id = request.GET['Id']
+        invId = request.GET['inv_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        inv = Fin_Recurring_Invoice.objects.get(id = invId)
+        itms = Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv)
+    
+        context = {'recInvoice':inv, 'recInvItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_RecInvoice_Pdf.html'
+        fname = 'RecurringInvoice_'+inv.rec_invoice_no
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("POST",))
+def Fin_shareRecInvoiceToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        invId = request.data["inv_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        inv = Fin_Recurring_Invoice.objects.get(id = invId)
+        itms = Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv)
+        context = {'recInvoice':inv, 'recInvItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_RecInvoice_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'RecurringInvoice_{inv.rec_invoice_no}.pdf'
+        subject = f"RecurringInvoice_{inv.rec_invoice_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - RECURRING INVOICE-{inv.rec_invoice_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_updateRecInvoice(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        invoice = Fin_Recurring_Invoice.objects.get(id= request.data['inv_id'])
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        try:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%d-%m-%Y').date()
+        except:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%Y-%m-%d').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+        mutable_data["repeat_every"] = None if request.data["repeat_every"] == '' else request.data["repeat_every"]
+
+        # Parse stock_items from JSON
+        invItems = json.loads(request.data['invoiceItems'])
+        INVNum = request.data['rec_invoice_no']
+        if invoice.rec_invoice_no != INVNum and Fin_Recurring_Invoice.objects.filter(Company = com, rec_invoice_no__iexact = INVNum).exists():
+            return Response({'status':False, 'message': f"Rec. Invoice Number '{INVNum}' already exists, try another!"})
+        else:
+            serializer = RecInvoiceSerializer(invoice, data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                inv = Fin_Recurring_Invoice.objects.get(id=serializer.data['id'])
+                for i in Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv):
+                    item = Fin_Items.objects.get(id = i.Item.id)
+                    item.current_stock += i.quantity
+                    item.save()
+                
+                Fin_Recurring_Invoice_Items.objects.filter(RecInvoice = inv).delete()
+
+                for ele in invItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if inv.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Recurring_Invoice_Items.objects.create(RecInvoice = inv, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+
+                Fin_Recurring_Invoice_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    RecInvoice = inv,
+                    action = 'Edited'
+                )
+                
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

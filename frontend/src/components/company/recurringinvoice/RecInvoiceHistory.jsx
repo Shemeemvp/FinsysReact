@@ -6,15 +6,15 @@ import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 
-function InvoiceHistory() {
+function RecInvoiceHistory() {
   const ID = Cookies.get("Login_id");
   const { invoiceId } = useParams();
   const [history, setHistory] = useState([]);
   const [invoice, setInvoice] = useState({});
 
-  const fetchInvoiceHistory = () => {
+  const fetchRecInvoiceHistory = () => {
     axios
-      .get(`${config.base_url}/fetch_invoice_history/${invoiceId}/`)
+      .get(`${config.base_url}/fetch_rec_invoice_history/${invoiceId}/`)
       .then((res) => {
         console.log("INV HIST=", res);
         if (res.data.status) {
@@ -39,7 +39,7 @@ function InvoiceHistory() {
   };
 
   useEffect(() => {
-    fetchInvoiceHistory();
+    fetchRecInvoiceHistory();
   }, []);
 
   return (
@@ -52,7 +52,7 @@ function InvoiceHistory() {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to={`/view_invoice/${invoiceId}/`}
+          to={`/view_rec_invoice/${invoiceId}/`}
         >
           <i
             className="fa fa-times-circle text-white"
@@ -67,7 +67,7 @@ function InvoiceHistory() {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  INVOICE TRANSACTIONS
+                  RECURRING INVOICE TRANSACTIONS
                 </h3>
                 {invoice.status == "Draft" ? (
                   <h6
@@ -100,7 +100,7 @@ function InvoiceHistory() {
             <div id="history">
               <center>
                 <h3 className="mt-3 text-uppercase">
-                  #{invoice.invoice_no} - TRANSACTIONS
+                  #{invoice.rec_invoice_no} - TRANSACTIONS
                 </h3>
               </center>
               <div className="table-responsive px-2">
@@ -142,4 +142,4 @@ function InvoiceHistory() {
   );
 }
 
-export default InvoiceHistory;
+export default RecInvoiceHistory;

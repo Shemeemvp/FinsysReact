@@ -1295,7 +1295,7 @@ function FinBase() {
 
           
                   {/* {% if allmodules.Retainer_Invoice == 1 %} */}
-                  <li id="retainerinvoices"><a href="{%url 'Fin_RET_INV_Listout'%}"><i className="bx bx-right-arrow-alt"></i>Retainer Invoices</a>
+                  <li id="retainerinvoices"><Link to="/ret_invoice"><i className="bx bx-right-arrow-alt"></i>Retainer Invoices</Link>
                   </li>
                   {/* {% endif %} */}
 
