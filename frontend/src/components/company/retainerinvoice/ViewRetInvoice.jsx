@@ -8,7 +8,7 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import "../../styles/SalesOrder.css";
 
-function ViewRecInvoice() {
+function ViewRetInvoice() {
   const ID = Cookies.get("Login_id");
   const { invoiceId } = useParams();
   const [invoiceDetails, setInvoiceDetails] = useState({});
@@ -23,9 +23,9 @@ function ViewRecInvoice() {
 
   const [fileUrl, setFileUrl] = useState(null);
 
-  const fetchRecInvoiceDetails = () => {
+  const fetchRetInvoiceDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_details/${invoiceId}/`)
+      .get(`${config.base_url}/fetch_ret_invoice_details/${invoiceId}/`)
       .then((res) => {
         console.log("INV DATA=", res);
         if (res.data.status) {
@@ -66,7 +66,7 @@ function ViewRecInvoice() {
   };
 
   useEffect(() => {
-    fetchRecInvoiceDetails();
+    fetchRetInvoiceDetails();
   }, []);
 
   const currentUrl = window.location.href;
@@ -78,7 +78,7 @@ function ViewRecInvoice() {
 
   function handleConvertInvoice() {
     Swal.fire({
-      title: `Convert Recurring Invoice - ${invoiceDetails.rec_invoice_no}?`,
+      title: `Convert Retainer Invoice - ${invoiceDetails.ret_invoice_no}?`,
       text: "Are you sure you want to convert this.!",
       icon: "warning",
       showCancelButton: true,
@@ -91,14 +91,14 @@ function ViewRecInvoice() {
           id: invoiceId,
         };
         axios
-          .post(`${config.base_url}/change_rec_invoice_status/`, st)
+          .post(`${config.base_url}/change_ret_invoice_status/`, st)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
                 icon: "success",
                 title: "Converted",
               });
-              fetchRecInvoiceDetails();
+              fetchRetInvoiceDetails();
             }
           })
           .catch((err) => {
@@ -113,11 +113,11 @@ function ViewRecInvoice() {
     e.preventDefault();
     var cmt = {
       Id: ID,
-      RecInvoice: invoiceId,
+      RetInvoice: invoiceId,
       comments: comment,
     };
     axios
-      .post(`${config.base_url}/add_rec_invoice_comment/`, cmt)
+      .post(`${config.base_url}/add_ret_invoice_comment/`, cmt)
       .then((res) => {
         console.log(res);
         if (res.data.status) {
@@ -126,7 +126,7 @@ function ViewRecInvoice() {
             title: "Comment Added",
           });
           setComment("");
-          fetchRecInvoiceDetails();
+          fetchRetInvoiceDetails();
         }
       })
       .catch((err) => {
@@ -140,9 +140,9 @@ function ViewRecInvoice() {
       });
   };
 
-  function handleDeleteRecInvoice(id) {
+  function handleDeleteRetInvoice(id) {
     Swal.fire({
-      title: `Delete Recurring Invoice - ${invoiceDetails.rec_invoice_no}?`,
+      title: `Delete Retainer Invoice - ${invoiceDetails.ret_invoice_no}?`,
       text: "Data cannot be restored.!",
       icon: "warning",
       showCancelButton: true,
@@ -152,15 +152,15 @@ function ViewRecInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_rec_invoice/${id}/`)
+          .delete(`${config.base_url}/delete_ret_invoice/${id}/`)
           .then((res) => {
             console.log(res);
 
             Toast.fire({
               icon: "success",
-              title: "Rec. Invoice Deleted.",
+              title: "Ret. Invoice Deleted.",
             });
-            navigate("/rec_invoice");
+            navigate("/ret_invoice");
           })
           .catch((err) => {
             console.log(err);
@@ -181,7 +181,7 @@ function ViewRecInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_rec_invoice_comment/${id}/`)
+          .delete(`${config.base_url}/delete_ret_invoice_comment/${id}/`)
           .then((res) => {
             console.log(res);
 
@@ -189,7 +189,7 @@ function ViewRecInvoice() {
               icon: "success",
               title: "Comment Deleted",
             });
-            fetchRecInvoiceDetails();
+            fetchRetInvoiceDetails();
           })
           .catch((err) => {
             console.log(err);
@@ -404,11 +404,11 @@ p {
   setInterval(updateDateTime, 1000);
 
   function slipPdf() {
-    var invoiceNo = `${invoiceDetails.rec_invoice_no}`;
+    var invoiceNo = `${invoiceDetails.ret_invoice_no}`;
     var element = document.getElementById("slip");
     var opt = {
       margin: 1,
-      filename: "RecurringInvoiceSlip_" + invoiceNo + ".pdf",
+      filename: "RetainerInvoiceSlip_" + invoiceNo + ".pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
@@ -438,7 +438,7 @@ p {
       inv_id: invoiceId,
     };
     axios
-      .get(`${config.base_url}/rec_invoice_pdf/`, {
+      .get(`${config.base_url}/ret_invoice_pdf/`, {
         responseType: "blob",
         params: data,
       })
@@ -449,7 +449,7 @@ p {
         const fileURL = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = fileURL;
-        a.download = `RecurringInvoice_${invoiceDetails.rec_invoice_no}.pdf`;
+        a.download = `RetainerInvoice_${invoiceDetails.ret_invoice_no}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -502,7 +502,7 @@ p {
           email_message: emailMessage,
         };
         axios
-          .post(`${config.base_url}/share_rec_invoice_email/`, em)
+          .post(`${config.base_url}/share_ret_invoice_email/`, em)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
@@ -542,7 +542,7 @@ p {
     }
 
     axios
-      .post(`${config.base_url}/add_rec_invoice_attachment/`, formData)
+      .post(`${config.base_url}/add_ret_invoice_attachment/`, formData)
       .then((res) => {
         console.log("FILE RES==", res);
         if (res.data.status) {
@@ -552,7 +552,7 @@ p {
           });
           setFile(null);
           document.getElementById("fileModalDismiss").click();
-          fetchRecInvoiceDetails();
+          fetchRetInvoiceDetails();
         }
       })
       .catch((err) => {
@@ -577,7 +577,7 @@ p {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to="/rec_invoice"
+          to="/ret_invoice"
         >
           <i
             className="fa fa-times-circle text-white"
@@ -744,7 +744,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/edit_rec_invoice/${invoiceId}/`}
+                      to={`/edit_ret_invoice/${invoiceId}/`}
                       className="ml-2 fa fa-pencil btn btn-outline-secondary text-grey"
                       id="editBtn"
                       role="button"
@@ -756,9 +756,7 @@ p {
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-trash"
                       id="deleteBtn"
                       role="button"
-                      onClick={() =>
-                        handleDeleteRecInvoice(invoiceId)
-                      }
+                      onClick={() => handleDeleteRetInvoice(invoiceId)}
                       style={{ height: "fit-content", width: "fit-content" }}
                     >
                       &nbsp;Delete
@@ -819,7 +817,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/rec_invoice_history/${invoiceId}/`}
+                      to={`/ret_invoice_history/${invoiceId}/`}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-history"
                       id="historyBtn"
                       role="button"
@@ -835,7 +833,7 @@ p {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  RECURRING INVOICE OVERVIEW
+                  RETAINER INVOICE OVERVIEW
                 </h3>
               </center>
             </div>
@@ -887,7 +885,7 @@ p {
                         <div className="row">
                           <div className="col mt-3">
                             <h2 className="mb-0">
-                              # {invoiceDetails.rec_invoice_no}
+                              # {invoiceDetails.ret_invoice_no}
                             </h2>
                           </div>
                         </div>
@@ -958,18 +956,18 @@ p {
                               width: "fit-content",
                             }}
                           >
-                            Recurring Invoice Details
+                            Retainer Invoice Details
                           </h5>
                         </div>
                         <div className="col-md-4 mt-3"></div>
                         <div className="col-md-4 mt-3"></div>
 
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Rec. Invoice No,</h6>
+                          <h6 className="mb-0">Ret. Invoice No,</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.rec_invoice_no}
+                            {invoiceDetails.ret_invoice_no}
                           </p>
                         </div>
 
@@ -984,30 +982,14 @@ p {
                       </div>
                       <div className="row mb-4 d-flex justify-content-between align-items-center">
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Rec. Invoice Date</h6>
+                          <h6 className="mb-0">Ret. Invoice Date</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.start_date}
+                            {invoiceDetails.ret_invoice_date}
                           </p>
                         </div>
 
-                        <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">End Date</h6>
-                        </div>
-                        <div className="col-md-3 mt-3">
-                          <p className="mb-0 text-right">
-                            {invoiceDetails.end_date}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="row mb-4 d-flex justify-content-start align-items-center">
-                        <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Repeat Every</h6>
-                        </div>
-                        <div className="col-md-3 mt-3 vr">
-                          <p className="mb-0">{otherDetails.repeatType}</p>
-                        </div>
                         <div className="col-md-3 mt-3 vl">
                           <h6 className="mb-0">Payment Method</h6>
                         </div>
@@ -1018,33 +1000,6 @@ p {
                         </div>
                       </div>
                       <div className="row mb-4 d-flex justify-content-start align-items-center">
-                        {invoiceDetails.profile_name ? (
-                          <>
-                            <div className="col-md-3 mt-3">
-                              <h6 className="mb-0">Profile Name</h6>
-                            </div>
-                            <div className="col-md-3 mt-3 vr">
-                              <p className="mb-0">
-                                {invoiceDetails.profile_name}
-                              </p>
-                            </div>
-                          </>
-                        ) : null}
-
-                        {invoiceDetails.entry_type ? (
-                          <>
-                            <div className="col-md-3 mt-3 vl">
-                              <h6 className="mb-0">Entry Type</h6>
-                            </div>
-                            <div className="col-md-3 mt-3">
-                              <p className="mb-0 text-right">
-                                {invoiceDetails.entry_type}
-                              </p>
-                            </div>
-                          </>
-                        ) : null}
-                      </div>
-                      <div className="row mb-4 d-flex justify-content-start align-items-center">
                         <div className="col-md-3 mt-3">
                           <h6 className="mb-0">Address</h6>
                         </div>
@@ -1053,8 +1008,42 @@ p {
                             {invoiceDetails.billing_address}
                           </p>
                         </div>
-                        <div className="col-md-3 mt-3 vl"></div>
-                        <div className="col-md-3 mt-3"></div>
+                        {invoiceDetails.cheque_no != 'null' ? (
+                          <>
+                            <div className="col-md-3 mt-3 vl">
+                              <h6 className="mb-0">Cheque #</h6>
+                            </div>
+                            <div className="col-md-3 mt-3">
+                              <p className="mb-0 text-right">
+                                {invoiceDetails.cheque_no}
+                              </p>
+                            </div>
+                          </>
+                        ) : null}
+                        {invoiceDetails.upi_no != 'null' ? (
+                          <>
+                            <div className="col-md-3 mt-3 vl">
+                              <h6 className="mb-0">UPI ID</h6>
+                            </div>
+                            <div className="col-md-3 mt-3">
+                              <p className="mb-0 text-right">
+                                {invoiceDetails.upi_no}
+                              </p>
+                            </div>
+                          </>
+                        ) : null}
+                        {invoiceDetails.bank_acc_no != 'null' ? (
+                          <>
+                            <div className="col-md-3 mt-3 vl">
+                              <h6 className="mb-0">Account #</h6>
+                            </div>
+                            <div className="col-md-3 mt-3">
+                              <p className="mb-0 text-right">
+                                {invoiceDetails.bank_acc_no}
+                              </p>
+                            </div>
+                          </>
+                        ) : null}
                       </div>
 
                       <hr />
@@ -1183,14 +1172,6 @@ p {
                                 </div>
                                 <div className="row mb-4 d-flex justify-content-start align-items-center">
                                   <div className="col-md-3 mt-3">
-                                    <h6 className="mb-0">Tax Amount</h6>
-                                  </div>
-                                  <div className="col-md-3 mt-3">
-                                    <p className="mb-0 text-right">
-                                      {itm.tax} %
-                                    </p>
-                                  </div>
-                                  <div className="col-md-3 mt-3 vl">
                                     <h6 className="mb-0">Discount</h6>
                                   </div>
                                   <div className="col-md-3 mt-3">
@@ -1198,14 +1179,22 @@ p {
                                       {itm.discount}
                                     </p>
                                   </div>
-                                </div>
-                                <div className="row mb-4 d-flex justify-content-start align-items-center">
-                                  <div className="col-md-3 mt-3">
+                                  <div className="col-md-3 mt-3 vl">
                                     <h6 className="mb-0">Total</h6>
                                   </div>
                                   <div className="col-md-3 mt-3">
                                     <p className="mb-0 text-right">
                                       {itm.total}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="row mb-4 d-flex justify-content-start align-items-center">
+                                <div className="col-md-3 mt-3">
+                                    <h6 className="mb-0">Description</h6>
+                                  </div>
+                                  <div className="col-md-3 mt-3">
+                                    <p className="mb-0 text-right">
+                                      {itm.description}
                                     </p>
                                   </div>
                                   <div className="col-md-6 mt-3 vl">
@@ -1234,7 +1223,7 @@ p {
                 >
                   <div className="px-3 py-4">
                     <h4 className="fw-bold mb-2 mt-4 pt-1">
-                      Recurring Invoice Tax Details
+                      Retainer Invoice Tax Details
                     </h4>
                     <hr className="my-4" />
                     <div className="d-flex justify-content-between mb-4">
@@ -1245,7 +1234,7 @@ p {
                         </span>
                       ) : (
                         <span className="text-success h5 font-weight-bold">
-                          SAVED
+                          SENT
                         </span>
                       )}
                     </div>
@@ -1253,36 +1242,6 @@ p {
                       <h6 className="">Sub Total</h6>
                       {invoiceDetails.subtotal}
                     </div>
-                    <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">Tax Amount</h6>
-                      {invoiceDetails.tax_amount}
-                    </div>
-                    {invoiceDetails.igst != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">IGST</h6>
-                        {invoiceDetails.igst}
-                      </div>
-                    ) : null}
-                    {invoiceDetails.cgst != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">CGST</h6>
-                        {invoiceDetails.cgst}
-                      </div>
-                    ) : null}
-                    {invoiceDetails.sgst != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">SGST</h6>
-                        {invoiceDetails.sgst}
-                      </div>
-                    ) : null}
-
-                    {invoiceDetails.shipping_charge != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">Shipping Charge</h6>
-                        {invoiceDetails.shipping_charge}
-                      </div>
-                    ) : null}
-
                     {invoiceDetails.adjustment != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">Adjustment</h6>
@@ -1296,6 +1255,20 @@ p {
                         {invoiceDetails.grandtotal}
                       </span>
                     </div>
+                    <hr className="mt-2"/>
+
+                    {invoiceDetails.paid_off != 0 ? (
+                      <div className="d-flex justify-content-between mb-4">
+                        <h6 className="">Paid</h6>
+                        {invoiceDetails.paid_off}
+                      </div>
+                    ) : null}
+                    {invoiceDetails.balance != 0 ? (
+                      <div className="d-flex justify-content-between mb-4">
+                        <h6 className="">Balance</h6>
+                        {invoiceDetails.balance}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -1321,19 +1294,13 @@ p {
                         </div>
                         <div className="top-left">
                           <div className="graphic-path">
-                            <p>Rec. Invoice</p>
+                            <p>Ret. Invoice</p>
                           </div>
                           <div className="position-relative">
                             <p>
-                              Rec. Invoice No.
-                              <span>{invoiceDetails.rec_invoice_no}</span>
+                              Ret. Invoice No.
+                              <span>{invoiceDetails.ret_invoice_no}</span>
                             </p>
-                            {invoiceDetails.salesOrder_no != "" ? (
-                              <p>
-                                Order No.{" "}
-                                <span>{invoiceDetails.salesOrder_no}</span>
-                              </p>
-                            ) : null}
                           </div>
                         </div>
                       </section>
@@ -1369,14 +1336,11 @@ p {
                           <div className="row extra-info pt-3">
                             <div className="col-6">
                               <p>
-                                Rec. Invoice Date:{" "}
-                                <span>{invoiceDetails.start_date}</span>
+                                Ret. Invoice Date:{" "}
+                                <span>{invoiceDetails.ret_invoice_date}</span>
                               </p>
                             </div>
                             <div className="col-6">
-                              <p>
-                                End Date :<span>{invoiceDetails.end_date}</span>
-                              </p>
                               <p>
                                 Payment Method:
                                 <span>{invoiceDetails.payment_method}</span>
@@ -1420,11 +1384,6 @@ p {
                               <td
                                 style={{ fontWeight: "bold", color: "black" }}
                               >
-                                Tax
-                              </td>
-                              <td
-                                style={{ fontWeight: "bold", color: "black" }}
-                              >
                                 Discount
                               </td>
                               <td
@@ -1450,7 +1409,6 @@ p {
                                 </td>
                                 <td style={{ color: "black" }}>{j.price}</td>
                                 <td style={{ color: "black" }}>{j.quantity}</td>
-                                <td style={{ color: "black" }}>{j.tax} %</td>
                                 <td style={{ color: "black" }}>
                                   {j.discount}{" "}
                                 </td>
@@ -1481,71 +1439,6 @@ p {
                                   </td>
                                 </tr>
 
-                                {invoiceDetails.igst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>IGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.igst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.cgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>CGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.cgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.sgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>SGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.sgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                <tr>
-                                  <td style={{ color: "#000" }}>Tax Amount</td>
-                                  <td style={{ color: "#000" }}>:</td>
-                                  <td
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {invoiceDetails.tax_amount}
-                                  </td>
-                                </tr>
-                                {invoiceDetails.shipping_charge != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Shipping Charge
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.shipping_charge}
-                                    </td>
-                                  </tr>
-                                ) : null}
                                 {invoiceDetails.adjustment != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
@@ -1561,20 +1454,44 @@ p {
                                     </td>
                                   </tr>
                                 ) : null}
+                                <tr>
+                                  <td style={{ color: "#000" }}>
+                                    Grand Total
+                                  </td>
+                                  <td style={{ color: "#000" }}>:</td>
+                                  <td
+                                    className="text-right"
+                                    style={{ color: "#000" }}
+                                  >
+                                    <span>&#8377; </span>
+                                    {invoiceDetails.grandtotal}
+                                  </td>
+                                </tr>
                               </tbody>
                             </table>
                             <hr style={{ backgroundColor: "#000000" }} />
                             <table className="table table-borderless">
                               <tbody>
                                 <tr>
-                                  <th style={{ color: "#000" }}>Grand Total</th>
+                                  <th style={{ color: "#000" }}>Paid</th>
                                   <th style={{ color: "#000" }}>:</th>
                                   <th
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.grandtotal}
+                                    {invoiceDetails.paid_off}
+                                  </th>
+                                </tr>
+                                <tr>
+                                  <th style={{ color: "#000" }}>Balance</th>
+                                  <th style={{ color: "#000" }}>:</th>
+                                  <th
+                                    className="text-right"
+                                    style={{ color: "#000" }}
+                                  >
+                                    <span>&#8377; </span>
+                                    {invoiceDetails.balance}
                                   </th>
                                 </tr>
                               </tbody>
@@ -1614,20 +1531,15 @@ p {
                         </div>
                         <div className="col-md-4 d-flex justify-content-center">
                           <center className="h3 text-white">
-                            <b>Recurring Invoice</b>
+                            <b>Retainer Invoice</b>
                           </center>
                         </div>
                         <div className="col-md-4 d-flex justify-content-end">
                           <div className="text-white">
                             <p className="mb-0 mt-2">
-                              Rec. Invoice No:{" "}
-                              <b>{invoiceDetails.rec_invoice_no}</b>
+                              Ret. Invoice No:{" "}
+                              <b>{invoiceDetails.ret_invoice_no}</b>
                             </p>
-                            {invoiceDetails.salesOrder_no != "" ? (
-                              <p>
-                                Order No. <b>{invoiceDetails.salesOrder_no}</b>
-                              </p>
-                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -1697,16 +1609,8 @@ p {
                             <div className="row my-3">
                               <div className="col-12">
                                 <p>
-                                  Start Date:{" "}
-                                  <span>{invoiceDetails.start_date}</span>
-                                </p>
-                                <p>
-                                  End Date:{" "}
-                                  <span>{invoiceDetails.end_date}</span>
-                                </p>
-                                <p>
-                                  Payment Method:{" "}
-                                  <span>{invoiceDetails.payment_method}</span>
+                                  Ret. Invoice Date:{" "}
+                                  <span>{invoiceDetails.ret_invoice_date}</span>
                                 </p>
                               </div>
                             </div>
@@ -1743,12 +1647,6 @@ p {
                                   style={{ color: "black" }}
                                 >
                                   Rate
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Tax
                                 </th>
                                 <th
                                   className="text-center bg-dark"
@@ -1793,12 +1691,6 @@ p {
                                     style={{ color: "black" }}
                                   >
                                     {j.quantity}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.tax} %
                                   </td>
                                   <td
                                     className="text-center"
@@ -1860,60 +1752,22 @@ p {
                               <br />
                               <table className="table table-borderless">
                                 <tbody>
-                                  <tr>
-                                    <td style={{ color: "#000" }}>Sub Total</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.subtotal}
-                                    </td>
-                                  </tr>
+                                <tr>
+                                  <td style={{ color: "#000" }}>Sub Total</td>
+                                  <td style={{ color: "#000" }}>:</td>
+                                  <td
+                                    className="text-right"
+                                    style={{ color: "#000" }}
+                                  >
+                                    <span>&#8377; </span>
+                                    {invoiceDetails.subtotal}
+                                  </td>
+                                </tr>
 
-                                  {invoiceDetails.igst != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>IGST</td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.igst}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  {invoiceDetails.cgst != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>CGST</td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.cgst}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  {invoiceDetails.sgst != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>SGST</td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.sgst}
-                                      </td>
-                                    </tr>
-                                  ) : null}
+                                {invoiceDetails.adjustment != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
-                                      Tax Amount
+                                      Adjustment
                                     </td>
                                     <td style={{ color: "#000" }}>:</td>
                                     <td
@@ -1921,57 +1775,50 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.tax_amount}
+                                      {invoiceDetails.adjustment}
                                     </td>
                                   </tr>
-                                  {invoiceDetails.shipping_charge != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>
-                                        Shipping Charge
-                                      </td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.shipping_charge}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  {invoiceDetails.adjustment != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>
-                                        Adjustment
-                                      </td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.adjustment}
-                                      </td>
-                                    </tr>
-                                  ) : null}
+                                ) : null}
+                                <tr>
+                                  <td style={{ color: "#000" }}>
+                                    Grand Total
+                                  </td>
+                                  <td style={{ color: "#000" }}>:</td>
+                                  <td
+                                    className="text-right"
+                                    style={{ color: "#000" }}
+                                  >
+                                    <span>&#8377; </span>
+                                    {invoiceDetails.grandtotal}
+                                  </td>
+                                </tr>
                                 </tbody>
                               </table>
                               <hr style={{ backgroundColor: "#000000" }} />
                               <table className="table table-borderless">
                                 <tbody>
-                                  <tr>
-                                    <th style={{ color: "#000" }}>
-                                      Grand Total
-                                    </th>
-                                    <th style={{ color: "#000" }}>:</th>
-                                    <th
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.grandtotal}
-                                    </th>
-                                  </tr>
+                                <tr>
+                                  <th style={{ color: "#000" }}>Paid</th>
+                                  <th style={{ color: "#000" }}>:</th>
+                                  <th
+                                    className="text-right"
+                                    style={{ color: "#000" }}
+                                  >
+                                    <span>&#8377; </span>
+                                    {invoiceDetails.paid_off}
+                                  </th>
+                                </tr>
+                                <tr>
+                                  <th style={{ color: "#000" }}>Balance</th>
+                                  <th style={{ color: "#000" }}>:</th>
+                                  <th
+                                    className="text-right"
+                                    style={{ color: "#000" }}
+                                  >
+                                    <span>&#8377; </span>
+                                    {invoiceDetails.balance}
+                                  </th>
+                                </tr>
                                 </tbody>
                               </table>
                             </div>
@@ -1999,7 +1846,7 @@ p {
                           }}
                         >
                           <p style={{ fontSize: "4vh", textAlign: "center" }}>
-                            RECURRING INVOICE
+                            RETAINER INVOICE
                           </p>
                           <p style={{ textAlign: "center" }}>
                             {" "}
@@ -2041,14 +1888,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Rec. Invoice No.
+                                    Ret. Invoice No.
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.rec_invoice_no}
+                                    {invoiceDetails.ret_invoice_no}
                                   </td>
                                 </tr>
 
@@ -2059,34 +1906,17 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Rec. Invoice Date
+                                    Ret. Invoice Date
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.invoice_date}
+                                    {invoiceDetails.ret_invoice_date}
                                   </td>
                                 </tr>
 
-                                <tr>
-                                  <td
-                                    style={{
-                                      color: "#000",
-                                      fontWeight: "bold",
-                                    }}
-                                  >
-                                    End Date
-                                  </td>
-                                  <td style={{ color: "#000" }}>:</td>
-                                  <td
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    {invoiceDetails.end_date}
-                                  </td>
-                                </tr>
                                 <tr>
                                   <td
                                     style={{
@@ -2145,12 +1975,6 @@ p {
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Tax
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
                                   Discount
                                 </th>
                                 <th
@@ -2195,12 +2019,6 @@ p {
                                     className="text-center"
                                     style={{ color: "black" }}
                                   >
-                                    {j.tax} %
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
                                     {j.discount}{" "}
                                   </td>
                                   <td
@@ -2222,7 +2040,7 @@ p {
                             <br />
                             <table className="table table-borderless">
                               <tbody>
-                                <tr>
+                              <tr>
                                   <td style={{ color: "#000" }}>Sub Total</td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
@@ -2234,71 +2052,6 @@ p {
                                   </td>
                                 </tr>
 
-                                {invoiceDetails.igst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>IGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.igst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.cgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>CGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.cgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.sgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>SGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.sgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                <tr>
-                                  <td style={{ color: "#000" }}>Tax Amount</td>
-                                  <td style={{ color: "#000" }}>:</td>
-                                  <td
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {invoiceDetails.tax_amount}
-                                  </td>
-                                </tr>
-                                {invoiceDetails.shipping_charge != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Shipping Charge
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.shipping_charge}
-                                    </td>
-                                  </tr>
-                                ) : null}
                                 {invoiceDetails.adjustment != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
@@ -2314,20 +2067,44 @@ p {
                                     </td>
                                   </tr>
                                 ) : null}
+                                <tr>
+                                  <td style={{ color: "#000" }}>
+                                    Grand Total
+                                  </td>
+                                  <td style={{ color: "#000" }}>:</td>
+                                  <td
+                                    className="text-right"
+                                    style={{ color: "#000" }}
+                                  >
+                                    <span>&#8377; </span>
+                                    {invoiceDetails.grandtotal}
+                                  </td>
+                                </tr>
                               </tbody>
                             </table>
                             <hr style={{ backgroundColor: "#000000" }} />
                             <table className="table table-borderless">
                               <tbody>
-                                <tr>
-                                  <th style={{ color: "#000" }}>Grand Total</th>
+                              <tr>
+                                  <th style={{ color: "#000" }}>Paid</th>
                                   <th style={{ color: "#000" }}>:</th>
                                   <th
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.grandtotal}
+                                    {invoiceDetails.paid_off}
+                                  </th>
+                                </tr>
+                                <tr>
+                                  <th style={{ color: "#000" }}>Balance</th>
+                                  <th style={{ color: "#000" }}>:</th>
+                                  <th
+                                    className="text-right"
+                                    style={{ color: "#000" }}
+                                  >
+                                    <span>&#8377; </span>
+                                    {invoiceDetails.balance}
                                   </th>
                                 </tr>
                               </tbody>
@@ -2393,9 +2170,9 @@ p {
 
                   <div className="ml-4 mt-2" style={{ color: "black" }}>
                     <div className="row">
-                      <div className="col-md-6 text-left">Invoice No:</div>
+                      <div className="col-md-6 text-left">Ret .Invoice No:</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.rec_invoice_no}
+                        {invoiceDetails.ret_invoice_no}
                       </div>
                     </div>
                     <div className="row">
@@ -2405,15 +2182,11 @@ p {
                       </div>
                     </div>
                     <div className="row">
-                      <div className="col-md-6 text-left">Rec. Invoice Date :</div>
-                      <div className="col-md-5 text-right">
-                        {invoiceDetails.start_date}
+                      <div className="col-md-6 text-left">
+                        Ret. Invoice Date :
                       </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6 text-left">End Date:</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.end_date}
+                        {invoiceDetails.ret_invoice_date}
                       </div>
                     </div>
                   </div>
@@ -2483,20 +2256,6 @@ p {
                       className="equal-length-item"
                       style={{ textAlign: "center" }}
                     >
-                      Tax
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "60%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
                       Total
                       <hr
                         style={{
@@ -2546,12 +2305,6 @@ p {
                         className="equal-length-item"
                         style={{ textAlign: "center" }}
                       >
-                        {i.tax}%
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center" }}
-                      >
                         {i.total}
                       </div>
                     </div>
@@ -2565,40 +2318,6 @@ p {
                         {invoiceDetails.subtotal}
                       </span>
                     </div>
-                    <div className="subtot-item d-flex justify-content-between">
-                      <span>Tax Amount</span>
-                      <span>
-                        <span>&#8377; </span>
-                        {invoiceDetails.tax_amount}
-                      </span>
-                    </div>
-
-                    {invoiceDetails.igst == 0 ? (
-                      <>
-                        <div className="subtot-item d-flex justify-content-between">
-                          <span>CGST</span>
-                          <span>
-                            <span>&#8377; </span>
-                            {invoiceDetails.cgst}
-                          </span>
-                        </div>
-                        <div className="subtot-item d-flex justify-content-between">
-                          <span>SGST</span>
-                          <span>
-                            <span>&#8377; </span>
-                            {invoiceDetails.sgst}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="subtot-item d-flex justify-content-between">
-                        <span>IGST</span>
-                        <span>
-                          <span>&#8377; </span>
-                          {invoiceDetails.igst}
-                        </span>
-                      </div>
-                    )}
 
                     {invoiceDetails.adjustment != 0 ? (
                       <div className="subtot-item d-flex justify-content-between">
@@ -2609,6 +2328,7 @@ p {
                         </span>
                       </div>
                     ) : null}
+
                   </div>
                   <div className="divider"></div>
                   <div className="grandtot fw-bold d-flex justify-content-between">
@@ -2623,6 +2343,14 @@ p {
                     </span>
                   </div>
                   <div className="divider"></div>
+                  <div className="paid-by d-flex justify-content-between">
+                    <span>Paid Amount:</span>
+                    <span>{invoiceDetails.paid_off}</span>
+                  </div>
+                  <div className="paid-by d-flex justify-content-between">
+                    <span>Balance:</span>
+                    <span>{invoiceDetails.balance}</span>
+                  </div>
                   <div className="paid-by mb-4 d-flex justify-content-between">
                     <span>Paid By:</span>
                     <span>{invoiceDetails.payment_method}</span>
@@ -2693,7 +2421,7 @@ p {
                       rows="4"
                       value={emailMessage}
                       onChange={(e) => setEmailMessage(e.target.value)}
-                      placeholder="This message will be sent along with Recurring Invoice details."
+                      placeholder="This message will be sent along with Retainer Invoice details."
                     />
                   </div>
                 </div>
@@ -2870,4 +2598,4 @@ p {
   );
 }
 
-export default ViewRecInvoice;
+export default ViewRetInvoice;

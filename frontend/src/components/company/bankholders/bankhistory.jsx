@@ -6,21 +6,21 @@ import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 
-function RecInvoiceHistory() {
+function BankHistory() {
   const ID = Cookies.get("Login_id");
-  const { invoiceId } = useParams();
+  const { holderId } = useParams();
   const [history, setHistory] = useState([]);
-  const [invoice, setInvoice] = useState({});
+  const [holder, setHolder] = useState({});
 
-  const fetchRecInvoiceHistory = () => {
+  const fetchHolderHistory = () => {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_history/${invoiceId}/`)
+      .get(`${config.base_url}/fetch_holder_history/${holderId}/`)
       .then((res) => {
-        console.log("INV HIST=", res);
+        console.log("HOLDER HIST=", res);
         if (res.data.status) {
-          var sls = res.data.invoice;
+          var hldr = res.data.holder;
           var hist = res.data.history;
-          setInvoice(sls);
+          setHolder(hldr);
           setHistory([]);
           hist.map((i) => {
             setHistory((prevState) => [...prevState, i]);
@@ -39,7 +39,7 @@ function RecInvoiceHistory() {
   };
 
   useEffect(() => {
-    fetchRecInvoiceHistory();
+    fetchHolderHistory();
   }, []);
 
   return (
@@ -52,7 +52,7 @@ function RecInvoiceHistory() {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to={`/view_rec_invoice/${invoiceId}/`}
+          to={`/viewholder/${holderId}/`}
         >
           <i
             className="fa fa-times-circle text-white"
@@ -67,14 +67,14 @@ function RecInvoiceHistory() {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  RECURRING INVOICE TRANSACTIONS
+                  {holder.Holder_name}
                 </h3>
-                {invoice.status == "Draft" ? (
+                {holder.status == "Inactive" ? (
                   <h6
                     className="blinking-text"
                     style={{ color: "red", width: "140px", fontWeight: "bold" }}
                   >
-                    Draft
+                    INACTIVE
                   </h6>
                 ) : (
                   <h6
@@ -84,7 +84,7 @@ function RecInvoiceHistory() {
                       fontWeight: "bold",
                     }}
                   >
-                    Saved
+                    ACTIVE
                   </h6>
                 )}
               </center>
@@ -100,7 +100,7 @@ function RecInvoiceHistory() {
             <div id="history">
               <center>
                 <h3 className="mt-3 text-uppercase">
-                  #{invoice.rec_invoice_no} - TRANSACTIONS
+                  {holder.Holder_name} - HISTORY
                 </h3>
               </center>
               <div className="table-responsive px-2">
@@ -142,4 +142,4 @@ function RecInvoiceHistory() {
   );
 }
 
-export default RecInvoiceHistory;
+export default BankHistory;

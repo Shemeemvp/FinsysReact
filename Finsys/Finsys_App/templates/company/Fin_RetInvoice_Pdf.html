@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinsYs</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<style>
+    table {
+    border-collapse: collapse;
+    width: 100%;
+    }
+
+    th, td {
+    border: 1px solid #dddddd;
+    padding: 5px 2px;
+    /* text-align: left; */
+    }
+
+    th {
+    background-color: #f2f2f2;
+    }
+
+    body {
+        font-size: 14px;
+    }
+
+    .invoice_data {
+        font-size: 1.2rem;
+    }
+
+    .data_row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .data_1, .data_2 {
+        font-weight: bold;
+    }
+
+    .data_value {
+        flex: 1;
+        text-align: right;
+    }
+
+    .balance_info{
+        display: flex;
+        justify-content: start;
+        align-items: center;
+    }
+    .balance_info .bal_head{
+        width: 48%;
+    }
+
+    .bal_value{
+        width: 48%;
+        flex: 1;
+        text-align: right;
+    }
+
+
+
+
+
+</style>
+
+<body>
+    <div class="my-5 page" size="A4">
+        <div class="p-5">
+            <div id="ember2512" class="row tooltip-container ember-view text-ellipsis" style="display: flex; justify-content: space-between;">
+                <div class="col-md-4"></div>
+                <div class="col-md-4">
+                    <center style="color: black;">
+                        <b>
+                            <p style="font-size: 1.3rem;">RETAINER_INVOICE</p>
+                        </b>
+                        <p> {{cmp.Company_name}}<br>
+                            {{cmp.Address}} <br>
+                            {{cmp.City}},
+                            {{cmp.State}}<br>
+                            {{cmp.Email}}
+                        </p>
+                    </center>
+                </div>
+                <hr>
+                <div style="width: 100%;">
+                    <div class="invoice_data">
+                        <div class="data_row">
+                            <div class="data_1">Retainer Invoice No: {{retInvoice.ret_invoice_no}}</div>
+                            <div class="data_2 data_value">Retainer Invoice Date: {{retInvoice.ret_invoice_date}}</div>
+                        </div>
+                        
+                        <div class="data_row">
+                            <div class="data_1">Customer:<br><b>{{retInvoice.Customer.title}} {{retInvoice.Customer.first_name}} {{retInvoice.Customer.last_name}}</b><br>{{retInvoice.billing_address|linebreaksbr}}</div>
+                            <div class="data_2 data_value"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <section class="mt-4">
+                <table class="table2">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center; text-transform:uppercase;">Item</th>
+                            <th style="text-align: center; text-transform:uppercase;">HSN</th>
+                            <th style="text-align: center; text-transform:uppercase;">Price</th>
+                            <th style="text-align: center; text-transform:uppercase;">Discount</th>
+                            <th style="text-align: center; text-transform:uppercase;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for itm in retInvItems %}
+                        <tr>
+                            <td style="text-align: center;">{{itm.Item.name}}</td>
+                            <td style="text-align: center;">{%if itm.Item.item_type == "Goods"%}{{itm.hsn}}{%else%}{{itm.sac}}{%endif%}</td>
+                            <td style="text-align: center;">{{itm.price}}</td>
+                            <td style="text-align: center;">{{itm.discount}}</td>
+                            <td style="text-align: center;">{{itm.total}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+            <hr>
+            <section style="margin-top: 1rem; display: flex; justify-content: right;">
+                <div style="width: 50%;" >
+                    <div class="invoice_data">
+                        <div class="data_row">
+                            <div class="data_1 data_value">Sub Total &nbsp;&nbsp;&nbsp;: {{retInvoice.subtotal}}</div>
+                            
+                        </div>
+                       
+                          
+                        <div class="data_row">
+                            {% if retInvoice.adjustment != 0 %}
+                            <div class="data_1 data_value">Adjustment&nbsp;&nbsp;&nbsp;: {{retInvoice.adjustment}}</div>
+                            {% endif %}
+                           
+                        </div>
+                        <br>
+                        <div class="data_row">
+                            <div class="data_1 data_value"><b>GRAND TOTAL</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {{retInvoice.grandtotal}}</div>
+                        </div>
+                        <br>
+                        <div class="data_row">
+                            {% if retInvoice.paid_off != 0 %}
+                            <div class="data_1 data_value">Paid Amount&nbsp;&nbsp;&nbsp;: {{retInvoice.paid_off}}</div>
+                            {% endif %}
+                           
+                        </div>
+                        <br>
+                        <div class="data_row">
+                            <div class="data_1 data_value"><b>Balance</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {{retInvoice.balance}}</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</body>
+
+</html>

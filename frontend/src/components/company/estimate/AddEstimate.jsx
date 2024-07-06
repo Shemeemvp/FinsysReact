@@ -1,31 +1,28 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function EditRecInvoice() {
+function AddEstimate() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
-  const { invoiceId } = useParams();
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [terms, setTerms] = useState([]);
   const [banks, setBanks] = useState([]);
   const [priceLists, setPriceLists] = useState([]);
-  const [companyRepeatEvery, setCompanyRepeatEvery] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
   const [cmpState, setCmpState] = useState("");
-  const [customerValue, setCustomerValue] = useState({});
 
-  const fetchInvoiceData = () => {
+  const fetchEstimateData = () => {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_estimatedata/${ID}/`)
       .then((res) => {
-        console.log("INV Data==", res);
+        console.log("SO Data==", res);
         if (res.data.status) {
           let itms = res.data.items;
           let cust = res.data.customers;
@@ -33,8 +30,6 @@ function EditRecInvoice() {
           let bnks = res.data.banks;
           let lst = res.data.priceList;
           let clst = res.data.custPriceList;
-          let rpt = res.data.repeat;
-
           setCmpState(res.data.state);
           setPriceLists([]);
           setCustomerPriceLists([]);
@@ -59,17 +54,14 @@ function EditRecInvoice() {
           }));
           setItems(newOptions);
 
-          setCompanyRepeatEvery([]);
-          rpt.map((r) => {
-            setCompanyRepeatEvery((prevState) => [...prevState, r]);
-          });
-
           setCustomers([]);
           const newCustOptions = cust.map((item) => ({
             label: item.first_name + " " + item.last_name,
             value: item.id,
           }));
           setCustomers(newCustOptions);
+          setRefNo(res.data.refNo);
+          setNextEstimateNo(res.data.esNo);
         }
       })
       .catch((err) => {
@@ -79,7 +71,7 @@ function EditRecInvoice() {
 
   function fetchPaymentTerms() {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_estimatedata/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let trms = res.data.paymentTerms;
@@ -96,7 +88,7 @@ function EditRecInvoice() {
 
   function fetchItems() {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_estimatedata/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let items = res.data.items;
@@ -114,7 +106,7 @@ function EditRecInvoice() {
   }
 
   useEffect(() => {
-    fetchInvoiceData();
+    fetchEstimateData();
   }, []);
 
   const customStyles = {
@@ -149,101 +141,6 @@ function EditRecInvoice() {
     }),
   };
 
-  const fetchInvoiceDetails = () => {
-    axios
-      .get(`${config.base_url}/fetch_rec_invoice_details/${invoiceId}/`)
-      .then((res) => {
-        console.log("INV DET=", res);
-        if (res.data.status) {
-          var invoice = res.data.invoice;
-          var itms = res.data.items;
-
-          var c = {
-            value: invoice.Customer,
-            label: res.data.otherDetails.customerName,
-          };
-          setCustomerValue(c);
-
-          setCustomer(invoice.Customer);
-          setEmail(invoice.customer_email);
-          setGstType(invoice.gst_type);
-          setGstIn(invoice.gstin);
-          setBillingAddress(invoice.billing_address);
-          setProfileName(invoice.profile_name);
-          setEntryType(invoice.entry_type);
-          setRefNo(invoice.reference_no);
-          setRecInvoiceNo(invoice.rec_invoice_no);
-          setSalesOrderNo(invoice.salesOrder_no);
-          setDate(invoice.start_date);
-          setPlaceOfSupply(invoice.place_of_supply);
-          setEndDate(invoice.end_date);
-          setTerm(invoice.payment_terms);
-          setRepeatEvery(invoice.repeat_every);
-          setPaymentMethod(invoice.payment_method);
-          setChequeNumber(invoice.cheque_no);
-          setUpiId(invoice.upi_no);
-          setAccountNumber(invoice.bank_acc_no);
-          setPriceList(invoice.price_list_applied);
-          setPriceListId(invoice.price_list);
-          setSubTotal(invoice.subtotal);
-          setIgst(invoice.igst);
-          setCgst(invoice.cgst);
-          setSgst(invoice.sgst);
-          setTaxAmount(invoice.tax_amount);
-          setAdjustment(invoice.adjustment);
-          setShippingCharge(invoice.shipping_charge);
-          setGrandTotal(invoice.grandtotal);
-          setPaid(invoice.paid_off);
-          setBalance(invoice.balance);
-          setDescription(invoice.note);
-          setInvoiceItems([]);
-          const invItems = itms.map((i) => {
-            if (i.item_type == "Goods") {
-              var hsnSac = i.hsn;
-            } else {
-              var hsnSac = i.sac;
-            }
-            return {
-              id: 1,
-              item: i.itemId,
-              hsnSac: hsnSac,
-              quantity: i.quantity,
-              available: i.avl,
-              initialQty: i.quantity,
-              price: i.sales_price,
-              priceListPrice: i.price,
-              taxGst: i.tax,
-              taxIgst: i.tax,
-              discount: i.discount,
-              total: i.total,
-              taxAmount: "",
-            };
-          });
-
-          setInvoiceItems(invItems);
-          refreshIndexes(invItems);
-
-          paymentMethodChange(invoice.payment_method);
-          checkTax(res.data.otherDetails.State, invoice.place_of_supply);
-          checkPL(invoice.price_list_applied);
-          // applyPriceList(sales.price_list)
-        }
-      })
-      .catch((err) => {
-        console.log("ERROR=", err);
-        if (!err.response.data.status) {
-          Swal.fire({
-            icon: "error",
-            title: `${err.response.data.message}`,
-          });
-        }
-      });
-  };
-
-  useEffect(() => {
-    fetchInvoiceDetails();
-  }, []);
-
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
@@ -253,16 +150,12 @@ function EditRecInvoice() {
   const [gstIn, setGstIn] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [refNo, setRefNo] = useState("");
-  const [recInvoiceNo, setRecInvoiceNo] = useState("");
-  const [salesOrderNo, setSalesOrderNo] = useState("");
-  const [nextRecInvoiceNo, setNextRecInvoiceNo] = useState("");
-  const [profileName, setProfileName] = useState("");
-  const [entryType, setEntryType] = useState("");
+  const [EstimateNo, setEstimateNo] = useState("");
+  const [nextEstimateNo, setNextEstimateNo] = useState("");
   const [date, setDate] = useState(formattedDate);
   const [placeOfSupply, setPlaceOfSupply] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [shipmentDate, setShipmentDate] = useState("");
   const [term, setTerm] = useState("");
-  const [repeatEvery, setRepeatEvery] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
   const [upiId, setUpiId] = useState("");
@@ -282,16 +175,15 @@ function EditRecInvoice() {
   const [balance, setBalance] = useState(0.0);
 
   const [description, setDescription] = useState("");
+  const [status, setStatus] = useState("");
   const [file, setFile] = useState(null);
 
-  const [invoiceItems, setInvoiceItems] = useState([
+  const [EstimateItems, setEstimateItems] = useState([
     {
       id: 1,
       item: "",
       hsnSac: "",
       quantity: "",
-      initialQty: "",
-      available: "",
       price: "",
       priceListPrice: "",
       taxGst: "",
@@ -326,48 +218,6 @@ function EditRecInvoice() {
 
   function checkBalanceVal(val) {
     return val !== "" ? val : grandTotal;
-  }
-
-  function checkTax(cmp, plc) {
-    if (cmp == plc) {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "flex";
-      document.getElementById("taxamountSGST").style.display = "flex";
-      document.getElementById("taxamountIGST").style.display = "none";
-    } else {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "none";
-      document.getElementById("taxamountSGST").style.display = "none";
-      document.getElementById("taxamountIGST").style.display = "flex";
-    }
-  }
-
-  function checkPL(priceList) {
-    if (priceList) {
-      document.querySelectorAll(".price").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-    } else {
-      document.querySelectorAll(".price").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-    }
   }
 
   function checkPriceList(priceList) {
@@ -445,14 +295,14 @@ function EditRecInvoice() {
       setPriceListId("");
       document.getElementById("custPriceListName").style.display = "none";
       document.getElementById("custPriceListName").innerText = "";
-      const updatedItems = invoiceItems.map((item) => {
+      const updatedItems = EstimateItems.map((item) => {
         return {
           ...item,
           priceListPrice: "",
         };
       });
-      setInvoiceItems(updatedItems);
-      refreshIndexes(updatedItems);
+      setEstimateItems(updatedItems);
+      refreshIndexes(updatedItems)
     }
   }
 
@@ -464,10 +314,10 @@ function EditRecInvoice() {
       document.getElementById("custPriceListName").innerText = "";
       setPriceList(false);
       checkPriceList2();
-      calc3(invoiceItems);
+      calc3(EstimateItems);
     } else {
       let updatedItems = await Promise.all(
-        invoiceItems.map(async (pItem) => {
+        EstimateItems.map(async (pItem) => {
           var itemId = pItem.item;
           var plc = placeOfSupply;
           var PLId = priceListId;
@@ -518,12 +368,44 @@ function EditRecInvoice() {
         })
       );
 
-      setInvoiceItems(updatedItems);
-      refreshIndexes(updatedItems);
+      setEstimateItems(updatedItems);
+      refreshIndexes(updatedItems)
       checkPriceList2();
       refreshTax(placeOfSupply);
       calc3(updatedItems);
     }
+  }
+
+  function calculate() {
+    var rows = document.querySelectorAll("#EstimateItemsTable tbody tr");
+    rows.forEach(function (row) {
+      var html = row.innerHTML;
+      if (html != "") {
+        var qty = row.querySelector(".qty").value;
+        var price;
+        if (document.getElementById("applyPriceList").checked) {
+          price = row.querySelector(".priceListPrice").value;
+        } else {
+          price = row.querySelector(".price").value;
+        }
+        var dis = row.querySelector(".disc").value;
+        var bc = document.getElementById("placeOfSupply").value;
+        var compstate = cmpState;
+
+        var tax;
+        if (bc == compstate) {
+          tax = row.querySelector(".tax_ref_gst").value;
+        } else {
+          tax = row.querySelector(".tax_ref_igst").value;
+        }
+
+        row.querySelector(".total").value =
+          parseFloat(qty) * parseFloat(price) - parseFloat(dis);
+        row.querySelector(".itemTaxAmount").value =
+          (qty * price - dis) * (tax / 100);
+        calculate_total();
+      }
+    });
   }
 
   function calculate_total() {
@@ -560,24 +442,20 @@ function EditRecInvoice() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("inv_id", invoiceId);
+    formData.append("status", status);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
     formData.append("gst_type", gstType);
     formData.append("gstin", gstIn);
     formData.append("place_of_supply", placeOfSupply);
-    formData.append("entry_type", entryType);
-    formData.append("profile_name", profileName);
     formData.append("reference_no", refNo);
-    formData.append("rec_invoice_no", recInvoiceNo);
-    formData.append("salesOrder_no", salesOrderNo);
+    formData.append("estimate_no", EstimateNo);
     formData.append("payment_terms", term);
-    formData.append("repeat_every", repeatEvery);
-    formData.append("start_date", date);
-    formData.append("end_date", endDate);
-    formData.append("price_list_applied", priceList);
-    formData.append("price_list", checkForNull(priceListId));
+    formData.append("estimate_date", date);
+    formData.append("exp_date", shipmentDate);
+    // formData.append("price_list_applied", priceList);
+    // formData.append("price_list", checkForNull(priceListId));
     formData.append("payment_method", checkForNull(paymentMethod));
     formData.append("cheque_no", checkForNull(chequeNumber));
     formData.append("upi_no", checkForNull(upiId));
@@ -593,22 +471,22 @@ function EditRecInvoice() {
     formData.append("paid_off", checkForZero(paid));
     formData.append("balance", checkBalanceVal(balance));
     formData.append("note", description);
-    formData.append("invoiceItems", JSON.stringify(invoiceItems));
+    formData.append("EstimateItems", JSON.stringify(EstimateItems));
 
     if (file) {
       formData.append("file", file);
     }
 
     axios
-      .put(`${config.base_url}/update_rec_invoice/`, formData)
+      .post(`${config.base_url}/create_new_estimate/`, formData)
       .then((res) => {
-        console.log("INV RES=", res);
+        console.log("Sales RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Rec. Invoice Updated",
+            title: "Estimate Created",
           });
-          navigate(`/view_rec_invoice/${invoiceId}/`);
+          navigate("/Estimate");
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -640,7 +518,7 @@ function EditRecInvoice() {
 
     if (customer != "") {
       axios
-        .get(`${config.base_url}/get_customer_data/`, { params: cst })
+        .get(`${config.base_url}/get_estcustomer_data/`, { params: cst })
         .then((res) => {
           if (res.data.status) {
             setEmail("");
@@ -670,27 +548,27 @@ function EditRecInvoice() {
     }
   }
 
-  function handleInvoiceNoChange(val) {
-    setRecInvoiceNo(val);
-    checkInvoiceNo(val);
+  function handleEstimateNoChange(val) {
+    setEstimateNo(val);
+    checkEstimateNo(val);
   }
 
-  function checkInvoiceNo(val) {
-    document.getElementById("INVNoErr").innerText = "";
-    var inv_num = val;
-    if (inv_num != "") {
+  function checkEstimateNo(val) {
+    document.getElementById("ESNoErr").innerText = "";
+    var so_num = val;
+    if (so_num != "") {
       var s = {
         Id: ID,
-        INVNum: inv_num,
+        SONum: so_num,
       };
       axios
-        .get(`${config.base_url}/check_rec_invoice_no/`, { params: s })
+        .get(`${config.base_url}/check_estimate_no/`, { params: s })
         .then((res) => {
-          console.log("INV NUM Res=", res);
+          console.log("ES NUM Res=", res);
           if (!res.data.status) {
-            document.getElementById("INVNoErr").innerText = res.data.message;
+            document.getElementById("ESNoErr").innerText = res.data.message;
           } else {
-            document.getElementById("INVNoErr").innerText = "";
+            document.getElementById("ESNoErr").innerText = "";
           }
         })
         .catch((err) => {
@@ -710,7 +588,6 @@ function EditRecInvoice() {
       item: "",
       hsnSac: "",
       quantity: "",
-      initialQty: "",
       price: "",
       priceListPrice: "",
       taxGst: "",
@@ -719,7 +596,7 @@ function EditRecInvoice() {
       total: "",
       taxAmount: "",
     };
-    setInvoiceItems((prevItems) => {
+    setEstimateItems((prevItems) => {
       const updatedItems = [...prevItems, newItem];
 
       return updatedItems.map((item, index) => ({
@@ -730,7 +607,7 @@ function EditRecInvoice() {
   };
 
   const removeRow = (id) => {
-    setInvoiceItems((prevItems) => {
+    setEstimateItems((prevItems) => {
       const updatedItems = prevItems.filter((item) => item.id !== id);
 
       return updatedItems.map((item, index) => ({
@@ -740,8 +617,8 @@ function EditRecInvoice() {
     });
   };
 
-  const handleInvoiceItemsInputChange = (id, field, value) => {
-    setInvoiceItems((prevItems) =>
+  const handleEstimateItemsInputChange = (id, field, value) => {
+    setEstimateItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item
       )
@@ -752,67 +629,26 @@ function EditRecInvoice() {
     var exists = itemExists(value);
     if (!exists) {
       if (placeOfSupply != "") {
-        handleInvoiceItemsInputChange(id, "item", value);
+        handleEstimateItemsInputChange(id, "item", value);
         getItemData(value, id);
       } else {
         alert("Select Place of Supply.!");
       }
     } else {
       alert(
-        "Item already exists in the Invoice, choose another or change quantity.!"
+        "Item already exists in the Estimate, choose another or change quantity.!"
       );
     }
   };
 
-  const handleQtyChange = (value, id, initialValue) => {
-    handleInvoiceItemsInputChange(id, "quantity", value);
-    changeItemQty(id, value, initialValue);
-  };
-
   const itemExists = (itemToCheck) => {
-    for (const item of invoiceItems) {
+    for (const item of EstimateItems) {
       if (item.item === itemToCheck) {
         return true;
       }
     }
     return false;
   };
-
-  function changeItemQty(id, value, initialValue) {
-    var qty = value;
-    var avl_val = document.getElementById(`avl${id}`).textContent;
-    
-    if (value != "" && initialValue != "") {
-      var crQty = parseInt(initialValue);
-      var diff = Math.abs(parseInt(qty) - crQty);
-      if (parseInt(qty) > parseInt(avl_val)) {
-        alert("Quantity Greater than Available Quantity");
-        handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
-        document.getElementById(`qtyspan${id}`).textContent = "0";
-      } else {
-        if (crQty < parseInt(qty)) {
-          document.getElementById(`qtyspan${id}`).textContent =
-            parseInt(avl_val) - diff;
-        } else {
-          document.getElementById(`qtyspan${id}`).textContent =
-            parseInt(avl_val) + diff;
-        }
-      }
-    } else {
-      if (value != "") {
-        if (parseInt(qty) > parseInt(avl_val)) {
-          alert("Quantity Greater than Available Quantity");
-          handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
-          document.getElementById(`qtyspan${id}`).textContent = "0";
-        } else {
-          document.getElementById(`qtyspan${id}`).textContent =
-            parseInt(avl_val) - parseInt(qty);
-        }
-      } else {
-        document.getElementById(`qtyspan${id}`).textContent = avl_val;
-      }
-    }
-  }
 
   function getItemData(item, id) {
     var exists = itemExists(item);
@@ -822,7 +658,7 @@ function EditRecInvoice() {
     if (!exists) {
       if (plc != "") {
         if (priceList && PLId == "") {
-          handleInvoiceItemsInputChange(id, "item", "");
+          handleEstimateItemsInputChange(id, "item", "");
           alert("Select a Price List from the dropdown..!");
         } else {
           var itm = {
@@ -832,13 +668,13 @@ function EditRecInvoice() {
           };
 
           axios
-            .get(`${config.base_url}/get_table_item_data/`, { params: itm })
+            .get(`${config.base_url}/get_estitem_data/`, { params: itm })
             .then((res) => {
               console.log("ITEM DATA==", res);
               if (res.data.status) {
                 var itemData = res.data.itemData;
 
-                setInvoiceItems((prevItems) =>
+                setEstimateItems((prevItems) =>
                   prevItems.map((item) =>
                     item.id === id
                       ? {
@@ -848,7 +684,6 @@ function EditRecInvoice() {
                           taxGst: itemData.gst,
                           taxIgst: itemData.igst,
                           hsnSac: itemData.hsnSac,
-                          available: itemData.avl,
                         }
                       : item
                   )
@@ -867,7 +702,7 @@ function EditRecInvoice() {
       }
     } else {
       alert(
-        "Item already exists in the Invoice, choose another or change quantity.!"
+        "Item already exists in the Estimate, choose another or change quantity.!"
       );
     }
   }
@@ -876,6 +711,12 @@ function EditRecInvoice() {
     checkPriceList(priceList);
     refreshTax2();
     calc();
+  }
+
+  function resetItem(id) {
+    setEstimateItems((prevItems) =>
+      prevItems.map((item) => (item.id === id ? { ...item, item: "" } : item))
+    );
   }
 
   function refreshTax(plc) {
@@ -928,7 +769,7 @@ function EditRecInvoice() {
     }
   }
 
-  function handleStartDateChange(date) {
+  function handleOrderDateChange(date) {
     setDate(date);
     findShipmentDate();
   }
@@ -942,7 +783,7 @@ function EditRecInvoice() {
     var paymentTerm = document.querySelector("#paymentTerm");
     var selectedOption = paymentTerm.options[paymentTerm.selectedIndex];
     var days = parseInt(selectedOption.getAttribute("text"));
-    var order_date = new Date(document.getElementById("startDate").value);
+    var order_date = new Date(document.getElementById("estimateDate").value);
     console.log(days);
     console.log(order_date);
     if (!isNaN(order_date.getTime())) {
@@ -955,14 +796,14 @@ function EditRecInvoice() {
       const year = isoString.slice(0, 4);
 
       const formattedDate = `${day}-${month}-${year}`;
-      setEndDate(formattedDate);
+      setShipmentDate(formattedDate);
     } else {
       alert("Please enter a valid date.");
       setTerm("");
     }
   }
-  const calc3 = (invoiceItems) => {
-    const updatedItems = invoiceItems.map((item) => {
+  const calc3 = (EstimateItems) => {
+    const updatedItems = EstimateItems.map((item) => {
       console.log("CALC3==", item);
 
       let qty = parseInt(item.quantity || 0);
@@ -981,8 +822,8 @@ function EditRecInvoice() {
 
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total,
+        taxAmount: taxAmt,
       };
     });
 
@@ -990,7 +831,7 @@ function EditRecInvoice() {
   };
 
   function calc2(placeOfSupply) {
-    const updatedItems = invoiceItems.map((item) => {
+    const updatedItems = EstimateItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -1008,18 +849,18 @@ function EditRecInvoice() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total,
+        taxAmount: taxAmt,
       };
     });
 
-    setInvoiceItems(updatedItems);
-    refreshIndexes(updatedItems);
+    setEstimateItems(updatedItems);
+    refreshIndexes(updatedItems)
     calc_total2(updatedItems, placeOfSupply);
   }
 
   const calc = () => {
-    const updatedItems = invoiceItems.map((item) => {
+    const updatedItems = EstimateItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -1037,23 +878,23 @@ function EditRecInvoice() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total,
+        taxAmount: taxAmt,
       };
     });
 
-    setInvoiceItems(updatedItems);
+    setEstimateItems(updatedItems);
     refreshIndexes(updatedItems);
     calc_total(updatedItems);
   };
 
-  function calc_total(invoiceItems) {
+  function calc_total(EstimateItems) {
     var total = 0;
     var taxamount = 0;
-    invoiceItems.map((item) => {
+    EstimateItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    invoiceItems.map((item) => {
+    EstimateItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -1085,13 +926,13 @@ function EditRecInvoice() {
     }
   }
 
-  function calc_total2(invoiceItems, placeOfSupply) {
+  function calc_total2(EstimateItems, placeOfSupply) {
     var total = 0;
     var taxamount = 0;
-    invoiceItems.map((item) => {
+    EstimateItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    invoiceItems.map((item) => {
+    EstimateItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -1198,7 +1039,7 @@ function EditRecInvoice() {
         days: newTermDays,
       };
       axios
-        .post(`${config.base_url}/create_new_payment_term/`, u)
+        .post(`${config.base_url}/create_new_estpayment_term/`, u)
         .then((res) => {
           console.log("NTrm RES=", res);
           if (res.data.status) {
@@ -1234,13 +1075,13 @@ function EditRecInvoice() {
     paymentMethodChange(val);
   }
 
-  function refreshIndexes(items) {
+  function refreshIndexes(items){
     const itms = items.map((item, index) => ({
       ...item,
       id: index + 1,
     }));
 
-    setInvoiceItems(itms);
+    setEstimateItems(itms)
   }
 
   function paymentMethodChange(val) {
@@ -1275,7 +1116,7 @@ function EditRecInvoice() {
       var bank_id = parseInt(selectedOption.getAttribute("text"));
 
       axios
-        .get(`${config.base_url}/get_bank_account_data/${bank_id}/`)
+        .get(`${config.base_url}/get_estbank_account_data/${bank_id}/`)
         .then((res) => {
           if (res.data.status) {
             setChequeNumber("");
@@ -1751,7 +1592,7 @@ function EditRecInvoice() {
             icon: "success",
             title: "Customer Created",
           });
-          fetchInvoiceData();
+          fetchEstimateData();
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -2214,7 +2055,7 @@ function EditRecInvoice() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={`/view_rec_invoice/${invoiceId}/`}>
+          <Link to={"/Estimate"}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2225,7 +2066,7 @@ function EditRecInvoice() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">EDIT RECURRING INVOICE</h2>
+                <h2 className="mt-3">NEW ESTIMATE</h2>
               </center>
               <hr />
             </div>
@@ -2237,9 +2078,9 @@ function EditRecInvoice() {
           encType="multipart/form-data"
           onSubmit={handleSubmit}
         >
-          <div className="card radius-15" style={{ minWidth: "100%" }}>
+          <div className="card radius-15">
             <div className="card-body">
-              <div id="salesOrder">
+              <div id="estimate">
                 <div className="row">
                   <div className="col-md-4 mt-3">
                     <label className="">Select Customer</label>
@@ -2257,7 +2098,6 @@ function EditRecInvoice() {
                         name="customer"
                         className="w-100"
                         id="customer"
-                        value={customerValue || null}
                         required
                         onChange={(selectedOption) =>
                           handleCustomerChange(
@@ -2339,34 +2179,35 @@ function EditRecInvoice() {
 
                 <div className="row">
                   <div className="col-md-4 mt-3">
-                    <label className="">Profile Name</label>
+                    <div className="d-flex">
+                      <label className="">Estimate No.</label>
+                      <span className="text-danger ml-3" id="ESNoErr"></span>
+                    </div>
                     <input
                       type="text"
                       className="form-control"
-                      name="profile_name"
-                      id="profileName"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
+                      name="estimate_no"
+                      id="estimateNumber"
+                      value={EstimateNo}
+                      onChange={(e) => handleEstimateNoChange(e.target.value)}
                       style={{ backgroundColor: "#43596c" }}
+                      placeholder={nextEstimateNo}
+                      required
                     />
                   </div>
                   <div className="col-md-4 mt-3">
-                    <label className="">Entry Type</label>
-                    <select
+                    <label className="">Reference Number</label>
+                    <input
                       type="text"
                       className="form-control"
-                      id="entryType"
-                      name="entry_type"
-                      value={entryType}
-                      onChange={(e) => setEntryType(e.target.value)}
-                      style={{ backgroundColor: "#43596c", color: "white" }}
-                    >
-                      <option value="" selected disabled>Select Entry Type</option>
-                      <option value="Invoice">Invoice</option>
-                      <option value="Bill Of Supply">Bill Of Supply</option>
-                    </select>
+                      name="reference_number"
+                      value={refNo}
+                      style={{ backgroundColor: "#43596c" }}
+                      readOnly
+                    />
                   </div>
                   <div className="col-md-4 mt-3">
+                    <input hidden value="{{cmp.State}}" id="cmpstate" />
                     <label className="">Place of supply</label>
                     <select
                       type="text"
@@ -2433,56 +2274,26 @@ function EditRecInvoice() {
 
                 <div className="row">
                   <div className="col-md-4 mt-3">
-                    <div className="d-flex">
-                      <label className="">Rec. Invoice No.</label>
-                      <span className="text-danger ml-3" id="INVNoErr"></span>
-                    </div>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="rec_invoice_no"
-                      id="recInvoiceNumber"
-                      value={recInvoiceNo}
-                      onChange={(e) => handleInvoiceNoChange(e.target.value)}
-                      style={{ backgroundColor: "#43596c" }}
-                      placeholder={nextRecInvoiceNo}
-                      required
-                    />
-                  </div>
-                  <div className="col-md-4 mt-3">
-                    <label className="">Reference Number</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="reference_number"
-                      value={refNo}
-                      style={{ backgroundColor: "#43596c" }}
-                      readOnly
-                    />
-                  </div>
-
-                  <div className="col-md-4 mt-3">
-                    <label className="">Start Date:</label>
+                    <label className="">Estimate Date:</label>
                     <input
                       type="date"
                       className="form-control"
-                      name="start_date"
-                      id="startDate"
+                      name="estimate_date"
+                      id="estimateDate"
                       style={{ backgroundColor: "#43596c", color: "white" }}
                       value={date}
-                      onChange={(e) => handleStartDateChange(e.target.value)}
+                      onChange={(e) => handleOrderDateChange(e.target.value)}
                     />
                   </div>
-
                   <div className="col-md-4 mt-3">
-                    <label className="">End Date:</label>
+                    <label className="">Expected Shipment Date:</label>
                     <input
                       type="text"
                       id="shipmentDate"
                       className="form-control"
                       name="shipment_date"
                       style={{ backgroundColor: "#43596c", color: "white" }}
-                      value={endDate}
+                      value={shipmentDate}
                       readOnly
                     />
                   </div>
@@ -2521,55 +2332,6 @@ function EditRecInvoice() {
                         +
                       </a>
                     </div>
-                  </div>
-
-                  <div className="col-md-4 mt-3">
-                    <label className="">Repeat Every</label>
-                    <div className="d-flex align-items-center">
-                      <select
-                        className="form-control"
-                        name="repeat_every"
-                        value={repeatEvery}
-                        onChange={(e) =>
-                          setRepeatEvery(e.target.value)
-                        }
-                        style={{ backgroundColor: "#43596c", color: "white" }}
-                        id="paymentTerm"
-                        required
-                      >
-                        <option value="" selected disabled>
-                          Select Repeat Duration
-                        </option>
-                        {companyRepeatEvery &&
-                          companyRepeatEvery.map((repeat) => (
-                            <option value={repeat.id}>
-                              {repeat.repeat_every}
-                            </option>
-                          ))}
-                      </select>
-                      <a
-                        className="btn btn-outline-secondary ml-1"
-                        role="button"
-                        data-target="#newRepeatEvery"
-                        data-toggle="modal"
-                        style={{ width: "fit-content", height: "fit-content" }}
-                        id="repeatadd"
-                      >
-                        +
-                      </a>
-                    </div>
-                  </div>
-                  <div className="col-md-4 mt-3">
-                    <label className="">Order No.</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="sales_order_no"
-                      id="salesOrderNumber"
-                      value={salesOrderNo}
-                      onChange={(e) => setSalesOrderNo(e.target.value)}
-                      style={{ backgroundColor: "#43596c" }}
-                    />
                   </div>
 
                   <div className="col-md-4 mt-3">
@@ -2648,10 +2410,12 @@ function EditRecInvoice() {
                   </div>
                 </div>
 
+
+
                 <div
                   className="row"
                   id="applyPriceListSection"
-                  style={{ display: "block" }}
+                  style={{ display: "none" }}
                 >
                   <div className="col-md-3 mt-3">
                     <div className="form-group form-check">
@@ -2712,6 +2476,9 @@ function EditRecInvoice() {
                     </div>
                   </div>
 
+
+
+
                   <div className="col-md-3 mt-3"></div>
                 </div>
 
@@ -2719,7 +2486,7 @@ function EditRecInvoice() {
                   <div className="col-md-12 table-responsive-md mt-3">
                     <table
                       className="table table-bordered table-hover mt-3"
-                      id="invoiceItemsTable"
+                      id="EstimateItemsTable"
                     >
                       <thead>
                         <tr>
@@ -2734,249 +2501,230 @@ function EditRecInvoice() {
                         </tr>
                       </thead>
                       <tbody id="items-table-body">
-                        {invoiceItems.map((row) => {
-                          const selectedOptionI = items.find(
-                            (option) => option.value === row.item
-                          );
-
-                          return (
-                            <tr key={row.id} id={`tab_row${row.id}`}>
-                              <td
-                                className="nnum"
-                                style={{ textAlign: "center" }}
-                              >
-                                {row.id}
-                              </td>
-                              <td style={{ width: "20%" }}>
-                                <div className="d-flex align-items-center">
-                                  <Select
-                                    options={items}
-                                    styles={customStyles}
-                                    name="item"
-                                    className="w-100"
-                                    id={`item${row.id}`}
-                                    required
-                                    value={selectedOptionI}
-                                    onChange={(selectedOption) =>
-                                      handleItemChange(
-                                        selectedOption
-                                          ? selectedOption.value
-                                          : "",
-                                        row.id
-                                      )
-                                    }
-                                    onBlur={refreshValues}
-                                    isClearable
-                                    isSearchable
-                                  />
-                                  <button
-                                    type="button"
-                                    className="btn btn-outline-secondary ml-1"
-                                    data-target="#newItem"
-                                    data-toggle="modal"
-                                    style={{
-                                      width: "fit-content",
-                                      height: "fit-content",
-                                    }}
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              </td>
-                              <td>
-                                <input
-                                  type="text"
-                                  name="hsnSac"
-                                  value={row.hsnSac}
-                                  id={`hsn${row.id}`}
-                                  placeholder="HSN/SAC Code"
-                                  className="form-control HSNCODE"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                  }}
-                                  readOnly
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  name="qty[]"
-                                  id={`qty${row.id}`}
-                                  className="form-control qty"
-                                  step="0"
-                                  min="1"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                    marginTop: "21px",
-                                  }}
-                                  value={row.quantity}
-                                  onChange={(e) =>
-                                    handleQtyChange(
-                                      e.target.value,
-                                      row.id,
-                                      row.initialQty
-                                    )
-                                  }
-                                  onBlur={refreshValues}
+                        {EstimateItems.map((row) => (
+                          <tr key={row.id} id={`tab_row${row.id}`}>
+                            <td
+                              className="nnum"
+                              style={{ textAlign: "center" }}
+                            >
+                              {row.id}
+                            </td>
+                            <td style={{ width: "20%" }}>
+                              <div className="d-flex align-items-center">
+                                <Select
+                                  options={items}
+                                  styles={customStyles}
+                                  name="item"
+                                  className="w-100"
+                                  id={`item${row.id}`}
                                   required
-                                />
-                                <span
-                                  id={`avl${row.id}`}
-                                  style={{ display: "none" }}
-                                >
-                                  {row.available}
-                                </span>
-                                <div class="d-flex">
-                                  <span>Available Qty :</span>
-                                  <span id={`qtyspan${row.id}`} class="">
-                                    {row.available}
-                                  </span>
-                                </div>
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  name="price"
-                                  id={`price${row.id}`}
-                                  className="form-control price"
-                                  step="0.00"
-                                  min="0"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                    display: "block",
-                                  }}
-                                  value={row.price}
-                                  readOnly
-                                />
-                                <input
-                                  type="number"
-                                  name="priceListPrice"
-                                  id={`priceListPrice${row.id}`}
-                                  className="form-control priceListPrice"
-                                  step="0.00"
-                                  min="0"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                    display: "none",
-                                  }}
-                                  value={row.priceListPrice}
-                                  readOnly
-                                />
-                              </td>
-
-                              <td style={{ width: "13%" }}>
-                                <select
-                                  name="taxGST"
-                                  id={`taxGST${row.id}`}
-                                  className="form-control tax_ref tax_ref_gst"
-                                  style={{ display: "block" }}
-                                  value={row.taxGst}
-                                  onChange={(e) =>
-                                    handleInvoiceItemsInputChange(
-                                      row.id,
-                                      "taxGst",
-                                      e.target.value
+                                  defaultInputValue={row.item}
+                                  onChange={(selectedOption) =>
+                                    handleItemChange(
+                                      selectedOption
+                                        ? selectedOption.value
+                                        : "",
+                                      row.id
                                     )
                                   }
                                   onBlur={refreshValues}
-                                >
-                                  <option value="">Select GST</option>
-                                  <option value="28">28.0% GST</option>
-                                  <option value="18">18.0% GST</option>
-                                  <option value="12">12.0% GST</option>
-                                  <option value="5">05.0% GST</option>
-                                  <option value="3">03.0% GST</option>
-                                  <option value="0">0.0% GST</option>
-                                </select>
-                                <select
-                                  name="taxIGST"
-                                  id={`taxIGST${row.id}`}
-                                  className="form-control tax_ref tax_ref_igst"
-                                  style={{ display: "none" }}
-                                  value={row.taxIgst}
-                                  onChange={(e) =>
-                                    handleInvoiceItemsInputChange(
-                                      row.id,
-                                      "taxIgst",
-                                      e.target.value
-                                    )
-                                  }
-                                  onBlur={refreshValues}
-                                >
-                                  <option value="">Select IGST</option>
-                                  <option value="28">28.0% IGST</option>
-                                  <option value="18">18.0% IGST</option>
-                                  <option value="12">12.0% IGST</option>
-                                  <option value="5">05.0% IGST</option>
-                                  <option value="3">03.0% IGST</option>
-                                  <option value="0">0.0% IGST</option>
-                                </select>
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  name="discount"
-                                  placeholder="Enter Discount"
-                                  id={`disc${row.id}`}
-                                  value={row.discount}
-                                  onChange={(e) =>
-                                    handleInvoiceItemsInputChange(
-                                      row.id,
-                                      "discount",
-                                      e.target.value
-                                    )
-                                  }
-                                  onBlur={refreshValues}
-                                  className="form-control disc"
-                                  step="0"
-                                  min="0"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                  }}
+                                  isClearable
+                                  isSearchable
                                 />
-                              </td>
-
-                              <td>
-                                <input
-                                  type="number"
-                                  name="total"
-                                  id={`total${row.id}`}
-                                  className="form-control total"
-                                  value={row.total}
-                                  readOnly
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                  }}
-                                />
-                                <input
-                                  type="hidden"
-                                  id={`taxamount${row.id}`}
-                                  className="form-control itemTaxAmount"
-                                  value={row.taxAmount}
-                                />
-                              </td>
-                              <td>
                                 <button
                                   type="button"
-                                  id={`${row.id}`}
+                                  className="btn btn-outline-secondary ml-1"
+                                  data-target="#newItem"
+                                  data-toggle="modal"
                                   style={{
                                     width: "fit-content",
                                     height: "fit-content",
                                   }}
-                                  onClick={() => removeRow(row.id)}
-                                  className="btn btn-danger remove_row px-2 py-1 mx-1 fa fa-close"
-                                  title="Remove Row"
-                                ></button>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                name="hsnSac"
+                                value={row.hsnSac}
+                                id={`hsn${row.id}`}
+                                placeholder="HSN/SAC Code"
+                                className="form-control HSNCODE"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                }}
+                                readOnly
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                name="qty[]"
+                                id={`qty${row.id}`}
+                                className="form-control qty"
+                                step="0"
+                                min="1"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                }}
+                                value={row.quantity}
+                                onChange={(e) =>
+                                  handleEstimateItemsInputChange(
+                                    row.id,
+                                    "quantity",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={refreshValues}
+                                required
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                name="price"
+                                id={`price${row.id}`}
+                                className="form-control price"
+                                step="0.00"
+                                min="0"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                  display: "block",
+                                }}
+                                value={row.price}
+                                readOnly
+                              />
+                              <input
+                                type="number"
+                                name="priceListPrice"
+                                id={`priceListPrice${row.id}`}
+                                className="form-control priceListPrice"
+                                step="0.00"
+                                min="0"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                  display: "none",
+                                }}
+                                value={row.priceListPrice}
+                                readOnly
+                              />
+                            </td>
+
+                            <td style={{ width: "13%" }}>
+                              <select
+                                name="taxGST"
+                                id={`taxGST${row.id}`}
+                                className="form-control tax_ref tax_ref_gst"
+                                style={{ display: "block" }}
+                                value={row.taxGst}
+                                onChange={(e) =>
+                                  handleEstimateItemsInputChange(
+                                    row.id,
+                                    "taxGst",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={refreshValues}
+                              >
+                                <option value="">Select GST</option>
+                                <option value="28">28.0% GST</option>
+                                <option value="18">18.0% GST</option>
+                                <option value="12">12.0% GST</option>
+                                <option value="5">05.0% GST</option>
+                                <option value="3">03.0% GST</option>
+                                <option value="0">0.0% GST</option>
+                              </select>
+                              <select
+                                name="taxIGST"
+                                id={`taxIGST${row.id}`}
+                                className="form-control tax_ref tax_ref_igst"
+                                style={{ display: "none" }}
+                                value={row.taxIgst}
+                                onChange={(e) =>
+                                  handleEstimateItemsInputChange(
+                                    row.id,
+                                    "taxIgst",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={refreshValues}
+                              >
+                                <option value="">Select IGST</option>
+                                <option value="28">28.0% IGST</option>
+                                <option value="18">18.0% IGST</option>
+                                <option value="12">12.0% IGST</option>
+                                <option value="5">05.0% IGST</option>
+                                <option value="3">03.0% IGST</option>
+                                <option value="0">0.0% IGST</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                name="discount"
+                                placeholder="Enter Discount"
+                                id={`disc${row.id}`}
+                                value={row.discount}
+                                onChange={(e) =>
+                                  handleEstimateItemsInputChange(
+                                    row.id,
+                                    "discount",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={refreshValues}
+                                className="form-control disc"
+                                step="0"
+                                min="0"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                }}
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                type="number"
+                                name="total"
+                                id={`total${row.id}`}
+                                className="form-control total"
+                                value={row.total}
+                                readOnly
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                }}
+                              />
+                              <input
+                                type="hidden"
+                                id={`taxamount${row.id}`}
+                                className="form-control itemTaxAmount"
+                                value={row.taxAmount}
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                id={`${row.id}`}
+                                style={{
+                                  width: "fit-content",
+                                  height: "fit-content",
+                                }}
+                                onClick={() => removeRow(row.id)}
+                                className="btn btn-danger remove_row px-2 py-1 mx-1 fa fa-close"
+                                title="Remove Row"
+                              ></button>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                       <tr>
                         <td style={{ border: "none" }}>
@@ -3018,7 +2766,7 @@ function EditRecInvoice() {
                   <div className="col-md-1"></div>
                   <div
                     className="col-md-5 table-responsive-md mt-3 "
-                    id="invoiceItemsTableTotal"
+                    id="EstimateItemsTableTotal"
                     style={{
                       backgroundColor: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(128, 128, 128, 0.6)",
@@ -3199,11 +2947,14 @@ function EditRecInvoice() {
                     </div>
                   </div>
                 </div>
-                <div className="row">
+
+
+
+                <div className="row" style={{ display: "none" }}>
                   <div className="col-md-7"></div>
                   <div
                     className="col-md-5 table-responsive-md mt-3 "
-                    id="invoiceItemsTablePaid"
+                    id="EstimateItemsTablePaid"
                     style={{
                       backgroundColor: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(128, 128, 128, 0.6)",
@@ -3253,6 +3004,8 @@ function EditRecInvoice() {
                   </div>
                 </div>
 
+
+                
                 <div className="row">
                   <div className="col-md-7 mt-3">
                     <div className="form-check">
@@ -3276,15 +3029,14 @@ function EditRecInvoice() {
                     <input
                       type="submit"
                       className="btn btn-outline-secondary w-50 text-light"
-                      value="Save"
-                      style={{ height: "fit-content" }}
+                      onClick={() => setStatus("Draft")}
+                      value="Draft"
                     />
                     <input
-                      type="reset"
+                      type="submit"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => navigate(`/view_rec_invoice/${invoiceId}/`)}
-                      value="Cancel"
-                      style={{ height: "fit-content" }}
+                      onClick={() => setStatus("Saved")}
+                      value="Save"
                     />
                   </div>
                 </div>
@@ -3295,7 +3047,7 @@ function EditRecInvoice() {
                   </div>
                 </div>
                 <span className="text-muted">
-                  Invoice was created on a computer and is valid without the
+                  Estimate was created on a computer and is valid without the
                   signature and seal.
                 </span>
               </div>
@@ -4334,10 +4086,7 @@ function EditRecInvoice() {
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-            <div
-              className="modal-body w-100"
-              style={{ maxHeight: "75vh", overflowY: "auto" }}
-            >
+            <div className="modal-body w-100" style={{maxHeight:"75vh", overflowY:"auto"}}>
               <div className="card p-3 w-100">
                 <form id="newAccountForm" className="px-1">
                   <div className="row mt-2 mb-2 w-100">
@@ -4612,19 +4361,19 @@ function EditRecInvoice() {
                                   </option>
                                 ))}
                             </select>
-                            <button
-                              type="button"
-                              className="btn btn-outline-secondary ml-1"
-                              data-toggle="modal"
-                              data-dismiss="modal"
-                              data-target="#createNewUnit"
-                              style={{
-                                width: "fit-content",
-                                height: "fit-content",
-                              }}
-                            >
-                              +
-                            </button>
+                              <button
+                                type="button"
+                                className="btn btn-outline-secondary ml-1"
+                                data-toggle="modal"
+                                data-dismiss="modal"
+                                data-target="#createNewUnit"
+                                style={{
+                                  width: "fit-content",
+                                  height: "fit-content",
+                                }}
+                              >
+                                +
+                              </button>
                           </div>
                         </div>
                         <div className="col-md-6 mt-3" id="hsnDiv">
@@ -4865,19 +4614,19 @@ function EditRecInvoice() {
                                   </option>
                                 ))}
                             </select>
-                            <button
-                              type="button"
-                              className="btn btn-outline-secondary ml-1"
-                              data-toggle="modal"
-                              data-dismiss="modal"
-                              data-target="#createNewAccount"
-                              style={{
-                                width: "fit-content",
-                                height: "fit-content",
-                              }}
-                            >
-                              +
-                            </button>
+                              <button
+                                type="button"
+                                className="btn btn-outline-secondary ml-1"
+                                data-toggle="modal"
+                                data-dismiss="modal"
+                                data-target="#createNewAccount"
+                                style={{
+                                  width: "fit-content",
+                                  height: "fit-content",
+                                }}
+                              >
+                                +
+                              </button>
                           </div>
                         </div>
                         <div className="col-md-6 mt-3">
@@ -5069,4 +4818,4 @@ function EditRecInvoice() {
   );
 }
 
-export default EditRecInvoice;
+export default AddEstimate;

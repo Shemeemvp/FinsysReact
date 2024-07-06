@@ -88,6 +88,16 @@ import AddSalesOrder from './components/company/salesorder/AddSalesOrder';
 import ViewSalesOrder from './components/company/salesorder/ViewSalesOrder';
 import SalesOrderHistory from './components/company/salesorder/SalesOrderHistory';
 import EditSalesOrder from './components/company/salesorder/EditSalesOrder';
+import Vendors from './components/company/vendors/Allvendors';
+import Addvendor from './components/company/vendors/Addvendor';
+import View_vendor from './components/company/vendors/view_vendor';
+import Edit_vendor from './components/company/vendors/Edit_vendor';
+import Vendorhistory from './components/company/vendors/vendorhistory';
+import Banklist from './components/company/bankholders/banklist';
+import Addbankholder from './components/company/bankholders/add_bankholder';
+import Viewholder from './components/company/bankholders/viewholder';
+import BankHistory from './components/company/bankholders/bankhistory';
+import Editholder from './components/company/bankholders/editholder';
 import Invoice from './components/company/invoice/Invoice';
 import AddInvoice from './components/company/invoice/AddInvoice';
 import ViewInvoice from './components/company/invoice/ViewInvoice';
@@ -99,6 +109,11 @@ import ViewChallan from './components/company/deliverychallan/ViewChallan';
 import ChallanHistory from './components/company/deliverychallan/ChallanHistory';
 import EditDeliveryChallan from './components/company/deliverychallan/EditDeliveryChallan';
 import ConvertChallanToInvoice from './components/company/deliverychallan/ConvertChallanToInvoice';
+import Estimate from './components/company/estimate/Estimate';
+import AddEstimate from './components/company/estimate/AddEstimate';
+import ViewEstimate from './components/company/estimate/ViewEstimate';
+import EstimateHistory from './components/company/estimate/EstimateHistory';
+import EditEstimate from './components/company/estimate/EditEstimate';
 import RecInvoice from './components/company/recurringinvoice/RecInvoice';
 import AddRecInvoice from './components/company/recurringinvoice/AddRecInvoice';
 import ViewRecInvoice from './components/company/recurringinvoice/ViewRecInvoice';
@@ -106,6 +121,10 @@ import RecInvoiceHistory from './components/company/recurringinvoice/RecInvoiceH
 import EditRecInvoice from './components/company/recurringinvoice/EditRecInvoice';
 import RetInvoice from './components/company/retainerinvoice/RetInvoice';
 import AddRetInvoice from './components/company/retainerinvoice/AddRetInvoice';
+import ViewRetInvoice from './components/company/retainerinvoice/ViewRetInvoice';
+import RetInvoiceHistory from './components/company/retainerinvoice/RetInvoiceHistory';
+import EditRetInvoice from './components/company/retainerinvoice/EditRetInvoice';
+
 
 function App() {
   return (
@@ -224,7 +243,21 @@ function App() {
             <Route path="/view_sales_order/:salesId/" element={<ViewSalesOrder />}></Route>
             <Route path="/sales_order_history/:salesId/" element={<SalesOrderHistory />}></Route>
             <Route path="/edit_sales_order/:salesId/" element={<EditSalesOrder />}></Route>
-            
+
+            {/* Vendors */}
+            <Route path="/vendors" element={<Vendors />} />
+            <Route path="/add_vendor" element={<Addvendor/>} />
+            <Route path="/view_vendor/:id/" element={<View_vendor />} />
+            <Route path="/edit_vendor/:id/" element={<Edit_vendor />} />
+            <Route path="/vendor_history/:id/" element={<Vendorhistory />} />
+
+            {/* Bank holders */}
+            <Route path="/banklist" element={<Banklist />}></Route>
+            <Route path="/add_bankholder" element={<Addbankholder />}></Route>
+            <Route path="/viewholder/:holderId/" element={<Viewholder />}></Route>
+            <Route path="/bankhistory/:holderId/" element={<BankHistory />}></Route>
+            <Route path="/editholder/:holderId/" element={<Editholder />}></Route>
+
             {/* Invoice */}
             <Route path="/invoice" element={<Invoice />}></Route>
             <Route path="/add_invoice" element={<AddInvoice />}></Route>
@@ -240,6 +273,13 @@ function App() {
             <Route path="/edit_delivery_challan/:challanId/" element={<EditDeliveryChallan />}></Route>
             <Route path="/convert_challan_to_invoice/:challanId/" element={<ConvertChallanToInvoice />}></Route>
 
+            {/* Estimate */}
+            <Route path="/Estimate" element={<Estimate />}></Route>
+            <Route path="/AddEstimate" element={<AddEstimate />}></Route>
+            <Route path="/ViewEstimate/:estimateId/" element={<ViewEstimate />}></Route>
+            <Route path="/EstimateHistory/:estimateId/" element={<EstimateHistory />}></Route>
+            <Route path="/EditEstimate/:estimateId/" element={<EditEstimate />}></Route>
+
             {/* Recurring Invoice */}
             <Route path="/rec_invoice" element={<RecInvoice />}></Route>
             <Route path="/add_rec_invoice" element={<AddRecInvoice />}></Route>
@@ -250,9 +290,10 @@ function App() {
             {/* Retainer Invoice */}
             <Route path="/ret_invoice" element={<RetInvoice />}></Route>
             <Route path="/add_ret_invoice" element={<AddRetInvoice />}></Route>
-            {/* <Route path="/view_rec_invoice/:invoiceId/" element={<ViewRecInvoice />}></Route>
-            <Route path="/rec_invoice_history/:invoiceId/" element={<RecInvoiceHistory />}></Route>
-            <Route path="/edit_rec_invoice/:invoiceId/" element={<EditRecInvoice />}></Route> */}
+            <Route path="/view_ret_invoice/:invoiceId/" element={<ViewRetInvoice />}></Route>
+            <Route path="/ret_invoice_history/:invoiceId/" element={<RetInvoiceHistory />}></Route>
+            <Route path="/edit_ret_invoice/:invoiceId/" element={<EditRetInvoice />}></Route>
+            
           </Route>
         </Routes>
       </BrowserRouter>

@@ -1266,7 +1266,7 @@ function FinBase() {
 
                   {/* {% if allmodules.Estimate == 1 %} */}
 
-                  <li id="estimate"><a href="{% url 'Fin_estimates' %}"><i className="bx bx-right-arrow-alt"></i>Estimate</a>
+                  <li id="estimate"><Link to="/Estimate"><i className="bx bx-right-arrow-alt"></i>Estimate</Link>
                   </li>
                   {/* {% endif %} */}
 

@@ -6,19 +6,19 @@ import Cookies from 'js-cookie';
 import axios from "axios";
 import config from "../../../functions/config";
 
-function RetInvoice() {
+function Estimate() {
   const navigate = useNavigate();
   function exportToExcel() {
-    const Table = document.getElementById("retInvoiceTable");
+    const Table = document.getElementById("estimateTableExport");
     const ws = XLSX.utils.table_to_sheet(Table);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-    XLSX.writeFile(wb, "Retainer_Invoices.xlsx");
+    XLSX.writeFile(wb, "estimate.xlsx");
   }
 
   function sortTable(columnIndex) {
     var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementById("retInvoiceTable");
+    table = document.getElementById("estimateTable");
     switching = true;
 
     while (switching) {
@@ -48,7 +48,7 @@ function RetInvoice() {
   }
 
   function filterTable(row,filterValue) {
-    var table1 = document.getElementById("retInvoiceTable");
+    var table1 = document.getElementById("estimateTable");
     var rows1 = table1.getElementsByTagName("tr");
 
     for (var i = 1; i < rows1.length; i++) {
@@ -60,10 +60,44 @@ function RetInvoice() {
         rows1[i].style.display = "none";
       }
     }
+
+    var table2 = document.getElementById("estimateTableExport");
+    var rows2 = table2.getElementsByTagName("tr");
+
+    for (var i = 1; i < rows2.length; i++) {
+      var statusCell = rows2[i].getElementsByTagName("td")[row];
+
+      if (filterValue == "all" || statusCell.textContent.toLowerCase() == filterValue) {
+        rows2[i].style.display = "";
+      } else {
+        rows2[i].style.display = "none";
+      }
+    }
+  }
+
+  function sortHsnAscending() {
+    var table = document.getElementById("estimateTable");
+    var rows = Array.from(table.rows).slice(1);
+
+    rows.sort(function (a, b) {
+      var hsnA = parseInt(a.cells[2].textContent);
+      var hsnB = parseInt(b.cells[2].textContent);
+      return hsnA - hsnB;
+    });
+
+    // Remove existing rows from the table
+    for (var i = table.rows.length - 1; i > 0; i--) {
+      table.deleteRow(i);
+    }
+
+    // Append the sorted rows back to the table
+    rows.forEach(function (row) {
+      table.tBodies[0].appendChild(row);
+    });
   }
 
   function searchTable(){
-    var rows = document.querySelectorAll('#retInvoiceTable tbody tr');
+    var rows = document.querySelectorAll('#estimateTable tbody tr');
     var val = document.getElementById('search').value.trim().replace(/ +/g, ' ').toLowerCase();
     rows.forEach(function(row) {
       var text = row.textContent.replace(/\s+/g, ' ').toLowerCase();
@@ -72,16 +106,16 @@ function RetInvoice() {
   }
 
   const ID = Cookies.get('Login_id');
-  const [retInvoice, setRetInvoice] = useState([]);
+  const [estimate, setestimate] = useState([]);
 
-  const fetchRetInvoice = () =>{
-    axios.get(`${config.base_url}/fetch_ret_invoices/${ID}/`).then((res)=>{
-      console.log("RTINV RES=",res)
+  const fetchestimate = () =>{
+    axios.get(`${config.base_url}/fetch_estimate/${ID}/`).then((res)=>{
+      console.log("ES RES=",res)
       if(res.data.status){
-        var inv = res.data.retInvoice;
-        setRetInvoice([])
-        inv.map((i)=>{
-          setRetInvoice((prevState)=>[
+        var sls = res.data.estimate;
+        setestimate([])
+        sls.map((i)=>{
+          setestimate((prevState)=>[
             ...prevState, i
           ])
         })
@@ -92,12 +126,12 @@ function RetInvoice() {
   }
 
   useEffect(()=>{
-    fetchRetInvoice();
+    fetchestimate();
   },[])
   
   function refreshAll(){
-    setRetInvoice([])
-    fetchRetInvoice();
+    setestimate([])
+    fetchestimate();
   }
   return (
     <>
@@ -110,7 +144,7 @@ function RetInvoice() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">RETAINER INVOICES</h2>
+                <h2 className="mt-3">Estimate</h2>
               </center>
               <hr />
             </div>
@@ -166,7 +200,7 @@ function RetInvoice() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(3)}
+                          onClick={()=>sortTable(2)}
                         >
                           Customer Name
                         </a>
@@ -178,9 +212,9 @@ function RetInvoice() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(2)}
+                          onClick={()=>sortTable(1)}
                         >
-                          Ret. Invoice No.
+                          Estimate No.
                         </a>
                       </div>
                     </div>
@@ -218,7 +252,7 @@ function RetInvoice() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'all')}
+                        onClick={()=>filterTable(5,'all')}
                       >
                         All
                       </a>
@@ -230,9 +264,9 @@ function RetInvoice() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'sent')}
+                        onClick={()=>filterTable(5,'saved')}
                       >
-                        Sent
+                        Saved
                       </a>
                       <a
                         className="dropdown-item"
@@ -242,19 +276,19 @@ function RetInvoice() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'draft')}
+                        onClick={()=>filterTable(5,'draft')}
                       >
                         Draft
                       </a>
                     </div>
                   </div>
-                  <Link to="/add_ret_invoice" className="ml-1">
+                  <Link to="/AddEstimate" className="ml-1">
                     <button
                       type="button"
                       style={{ width: "fit-content", height: "fit-content" }}
                       className="btn btn-outline-secondary text-grey"
                     >
-                      <i className="fa fa-plus font-weight-light"></i> Ret. Invoice
+                      <i className="fa fa-plus font-weight-light"></i> Estimate
                     </button>
                   </Link>
                 </div>
@@ -264,36 +298,47 @@ function RetInvoice() {
           <div className="table-responsive">
             <table
               className="table table-responsive-md table-hover mt-4"
-              id="retInvoiceTable"
+              id="estimateTable"
               style={{ textAlign: "center" }}
             >
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>DATE</th>
-                  <th>RET. INVOICE NO.</th>
+                  <th>ESTIMATE NO.</th>
                   <th>CUSTOMER NAME</th>
                   <th>MAIL ID</th>
                   <th>AMOUNT</th>
                   <th>STATUS</th>
                   <th>BALANCE</th>
+                  <th>ACTION</th>
                 </tr>
               </thead>
               <tbody>
-                {retInvoice &&retInvoice.map((i,index)=>(
+                {estimate &&estimate.map((i,index)=>(
                   <tr
                     className="clickable-row"
-                    onClick={()=>navigate(`/view_ret_invoice/${i.id}/`)}
+                    onDoubleClick={()=>navigate(`/ViewEstimate/${i.id}/`)}
                     style={{ cursor: "pointer" }}
                   >
                     <td>{index+1}</td>
-                    <td>{i.ret_invoice_date}</td>
-                    <td>{i.ret_invoice_no}</td>
+                    <td>{i.estimate_no}</td>
                     <td>{i.customer_name}</td>
                     <td>{i.customer_email}</td>
                     <td>{i.grandtotal}</td>
                     <td>{i.status}</td>
                     <td>{i.balance}</td>
+                    <td>
+                      <div className="btn-group">
+                        <button type="button" className="btn btn-secondary dropdown-toggle" style={{width:'fit-content', height: 'fit-content'}} data-toggle="dropdown" aria-expanded="false">
+                            Convert
+                        </button>
+                        <ul className="dropdown-menu">
+                          <li><button type="button" className="dropdown-item fw-bold" onclick="window.location.href=`{% url 'Fin_convertestimateToSalesOrder' a.id %}`">To Sales Order</button></li>
+                          <li><button type="button" className="dropdown-item fw-bold" onclick="window.location.href=`{% url 'Fin_convertestimateToInvoice' a.id %}`">To Invoice</button></li>
+                          <li><button type="button" className="dropdown-item fw-bold" onclick="window.location.href=`{% url 'Fin_convertestimateToRecInvoice' a.id %}`">To Recurring Invoice</button></li>
+                        </ul>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -301,8 +346,34 @@ function RetInvoice() {
           </div>
         </div>
       </div>
+      <table className="estimateTable" id="estimateTableExport" hidden>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>ESTIMATE NO NO.</th>
+          <th>CUSTOMER NAME</th>
+          <th>MAIL ID</th>
+          <th>AMOUNT</th>
+          <th>STATUS</th>
+          <th>BALANCE</th>
+        </tr>
+      </thead>
+      <tbody>
+        {estimate && estimate.map((i,index)=>(
+          <tr>
+            <td>{index+1}</td>
+            <td>{i.estimate_no}</td>
+            <td>{i.customer_name}</td>
+            <td>{i.customer_email}</td>
+            <td>{i.grandtotal}</td>
+            <td>{i.status}</td>
+            <td>{i.balance}</td>
+          </tr>
+        ))}
+      </tbody>
+      </table>
     </>
   );
 }
 
-export default RetInvoice;
+export default Estimate;

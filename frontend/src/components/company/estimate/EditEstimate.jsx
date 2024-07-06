@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function AddRecInvoice() {
+function EditEstimate() {
+  const { estimateId } = useParams();
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
@@ -15,15 +16,15 @@ function AddRecInvoice() {
   const [terms, setTerms] = useState([]);
   const [banks, setBanks] = useState([]);
   const [priceLists, setPriceLists] = useState([]);
-  const [companyRepeatEvery, setCompanyRepeatEvery] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
   const [cmpState, setCmpState] = useState("");
+  const [customerValue, setCustomerValue] = useState({});
 
-  const fetchRecInvoiceData = () => {
+  const fetchEstimateData = () => {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_estimatedata/${ID}/`)
       .then((res) => {
-        console.log("RINV Data==", res);
+        console.log("ES Data==", res);
         if (res.data.status) {
           let itms = res.data.items;
           let cust = res.data.customers;
@@ -31,7 +32,6 @@ function AddRecInvoice() {
           let bnks = res.data.banks;
           let lst = res.data.priceList;
           let clst = res.data.custPriceList;
-          let rpt = res.data.repeat;
           setCmpState(res.data.state);
           setPriceLists([]);
           setCustomerPriceLists([]);
@@ -49,10 +49,6 @@ function AddRecInvoice() {
           trms.map((i) => {
             setTerms((prevState) => [...prevState, i]);
           });
-          setCompanyRepeatEvery([]);
-          rpt.map((r) => {
-            setCompanyRepeatEvery((prevState) => [...prevState, r]);
-          });
           setItems([]);
           const newOptions = itms.map((item) => ({
             label: item.name,
@@ -66,8 +62,6 @@ function AddRecInvoice() {
             value: item.id,
           }));
           setCustomers(newCustOptions);
-          setRefNo(res.data.refNo);
-          setNextRecInvoiceNo(res.data.invNo);
         }
       })
       .catch((err) => {
@@ -77,7 +71,7 @@ function AddRecInvoice() {
 
   function fetchPaymentTerms() {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_estimatedata/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let trms = res.data.paymentTerms;
@@ -92,26 +86,9 @@ function AddRecInvoice() {
       });
   }
 
-  function fetchRepeatTypes() {
-    axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
-      .then((res) => {
-        if (res.data.status) {
-          let rpt = res.data.repeat;
-          setCompanyRepeatEvery([]);
-          rpt.map((i) => {
-            setCompanyRepeatEvery((prevState) => [...prevState, i]);
-          });
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }
-
   function fetchItems() {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_estimatedata/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let items = res.data.items;
@@ -129,7 +106,7 @@ function AddRecInvoice() {
   }
 
   useEffect(() => {
-    fetchRecInvoiceData();
+    fetchEstimateData();
   }, []);
 
   const customStyles = {
@@ -164,6 +141,104 @@ function AddRecInvoice() {
     }),
   };
 
+  const fetchEstimateDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_estimate_details/${estimateId}/`)
+      .then((res) => {
+        console.log("ES DET=", res);
+        if (res.data.status) {
+          var est = res.data.est;
+          var itms = res.data.items;
+
+          var c = {
+            value: est.Customer,
+            label: res.data.otherDetails.customerName
+          }
+          setCustomerValue(c)
+
+          setCustomer(est.Customer);
+          setEmail(est.customer_email);
+          setGstType(est.gst_type);
+          setGstIn(est.gstin);
+          setBillingAddress(est.billing_address);
+          setRefNo(est.reference_no);
+          setestimateNo(est.estimate_no);
+          setDate(est.estimate_date);
+          setPlaceOfSupply(est.place_of_supply);
+          setShipmentDate(est.exp_date);
+          setTerm(est.payment_terms);
+          setPaymentMethod(est.payment_method);
+          setChequeNumber(est.cheque_no);
+          setUpiId(est.upi_no);
+          setAccountNumber(est.bank_acc_no);
+          // setPriceList(est.price_list_applied);
+          // setPriceListId(est.price_list);
+          setSubTotal(est.subtotal);
+          setIgst(est.igst);
+          setCgst(est.cgst);
+          setSgst(est.sgst);
+          setTaxAmount(est.tax_amount);
+          setShippingCharge(est.adjustment);
+          setAdjustment(est.shipping_charge);
+          setGrandTotal(est.grandtotal);
+          setPaid(est.paid_off);
+          setBalance(est.balance);
+          setDescription(est.note);
+          setEstimateItems([])
+          const salesItems = itms.map((i)=>{
+            if(i.item_type == "Goods"){
+              var hsnSac = i.hsn
+            }else{
+              var hsnSac = i.sac
+            }
+            return {
+              id: 1,
+              item: i.itemId,
+              hsnSac: hsnSac,
+              quantity: i.quantity,
+              price: i.sales_price,
+              priceListPrice: i.price,
+              taxGst: i.tax,
+              taxIgst: i.tax,
+              discount: i.discount,
+              total: i.total,
+              taxAmount: "",
+            }
+          })
+
+          setEstimateItems(salesItems);
+          refreshIndexes(salesItems);
+
+          paymentMethodChange(est.payment_method);
+          checkTax(res.data.otherDetails.State,est.place_of_supply);
+          checkPL(est.price_list_applied);
+          // applyPriceList(est.price_list)
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchEstimateDetails();
+  }, []);
+
+  function refreshIndexes(items){
+    const itms = items.map((item, index) => ({
+      ...item,
+      id: index + 1,
+    }));
+
+    setEstimateItems(itms)
+  }
+
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
@@ -173,16 +248,12 @@ function AddRecInvoice() {
   const [gstIn, setGstIn] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [refNo, setRefNo] = useState("");
-  const [recInvoiceNo, setRecInvoiceNo] = useState("");
-  const [salesOrderNo, setSalesOrderNo] = useState("");
-  const [profileName, setProfileName] = useState("");
-  const [entryType, setEntryType] = useState("");
-  const [nextRecInvoiceNo, setNextRecInvoiceNo] = useState("");
+  const [estimateNo, setestimateNo] = useState("");
+  const [nextestimateNo, setNextestimateNo] = useState("");
   const [date, setDate] = useState(formattedDate);
   const [placeOfSupply, setPlaceOfSupply] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [shipmentDate, setShipmentDate] = useState("");
   const [term, setTerm] = useState("");
-  const [repeatEvery, setRepeatEvery] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
   const [upiId, setUpiId] = useState("");
@@ -205,13 +276,12 @@ function AddRecInvoice() {
   const [status, setStatus] = useState("");
   const [file, setFile] = useState(null);
 
-  const [invoiceItems, setInvoiceItems] = useState([
+  const [EstimateItems, setEstimateItems] = useState([
     {
       id: 1,
       item: "",
       hsnSac: "",
       quantity: "",
-      available: "",
       price: "",
       priceListPrice: "",
       taxGst: "",
@@ -232,6 +302,10 @@ function AddRecInvoice() {
     // applyPriceList(val);
   }
 
+  function reCalcPriceList(val) {
+    applyPriceList(val);
+  }
+
   function checkForNull(val) {
     return val !== "" ? val : null;
   }
@@ -242,6 +316,24 @@ function AddRecInvoice() {
 
   function checkBalanceVal(val) {
     return val !== "" ? val : grandTotal;
+  }
+
+  function checkPL(priceList) {
+    if (priceList) {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+    } else {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+    }
   }
 
   function checkPriceList(priceList) {
@@ -319,14 +411,14 @@ function AddRecInvoice() {
       setPriceListId("");
       document.getElementById("custPriceListName").style.display = "none";
       document.getElementById("custPriceListName").innerText = "";
-      const updatedItems = invoiceItems.map((item) => {
+      const updatedItems = EstimateItems.map((item) => {
         return {
           ...item,
           priceListPrice: "",
         };
       });
-      setInvoiceItems(updatedItems);
-      refreshIndexes(updatedItems);
+      setEstimateItems(updatedItems);
+      refreshIndexes(updatedItems)
     }
   }
 
@@ -338,10 +430,10 @@ function AddRecInvoice() {
       document.getElementById("custPriceListName").innerText = "";
       setPriceList(false);
       checkPriceList2();
-      calc3(invoiceItems);
+      calc3(EstimateItems);
     } else {
       let updatedItems = await Promise.all(
-        invoiceItems.map(async (pItem) => {
+        EstimateItems.map(async (pItem) => {
           var itemId = pItem.item;
           var plc = placeOfSupply;
           var PLId = priceListId;
@@ -392,12 +484,73 @@ function AddRecInvoice() {
         })
       );
 
-      setInvoiceItems(updatedItems);
-      refreshIndexes(updatedItems);
+      setEstimateItems(updatedItems);
+      refreshIndexes(updatedItems)
       checkPriceList2();
       refreshTax(placeOfSupply);
       calc3(updatedItems);
     }
+  }
+
+  function calculate() {
+    var rows = document.querySelectorAll("#EstimateItemsTable tbody tr");
+    rows.forEach(function (row) {
+      var html = row.innerHTML;
+      if (html != "") {
+        var qty = row.querySelector(".qty").value;
+        var price;
+        if (document.getElementById("applyPriceList").checked) {
+          price = row.querySelector(".priceListPrice").value;
+        } else {
+          price = row.querySelector(".price").value;
+        }
+        var dis = row.querySelector(".disc").value;
+        var bc = document.getElementById("placeOfSupply").value;
+        var compstate = cmpState;
+
+        var tax;
+        if (bc == compstate) {
+          tax = row.querySelector(".tax_ref_gst").value;
+        } else {
+          tax = row.querySelector(".tax_ref_igst").value;
+        }
+
+        row.querySelector(".total").value =
+          parseFloat(qty) * parseFloat(price) - parseFloat(dis);
+        row.querySelector(".itemTaxAmount").value =
+          (qty * price - dis) * (tax / 100);
+        calculate_total();
+      }
+    });
+  }
+
+  function calculate_total() {
+    var total = 0;
+    var totals = document.querySelectorAll(".total");
+    totals.forEach(function (element) {
+      total += parseFloat(element.value);
+    });
+
+    var taxamount = 0;
+    var taxAmounts = document.querySelectorAll(".itemTaxAmount");
+    taxAmounts.forEach(function (element) {
+      taxamount += parseFloat(element.value);
+    });
+
+    document.getElementById("sub_total").value = total.toFixed(2);
+    document.getElementById("tax_amount").value = taxamount.toFixed(2);
+
+    var ship = parseFloat(document.getElementById("ship").value);
+    var adj_val = parseFloat(document.getElementById("adj").value);
+    var gtot = taxamount + total + ship + adj_val;
+
+    document.getElementById("grandtotal").value = gtot.toFixed(2);
+
+    var adv_val = parseFloat(document.getElementById("advance").value);
+    var bal = gtot - adv_val;
+    document.getElementById("balance").value = bal.toFixed(2);
+
+    splitTax(taxamount, placeOfSupply);
   }
 
   const handleSubmit = (e) => {
@@ -405,24 +558,20 @@ function AddRecInvoice() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("status", status);
+    formData.append("estimate_id", estimateId);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
     formData.append("gst_type", gstType);
     formData.append("gstin", gstIn);
     formData.append("place_of_supply", placeOfSupply);
-    formData.append("entry_type", entryType);
-    formData.append("profile_name", profileName);
     formData.append("reference_no", refNo);
-    formData.append("rec_invoice_no", recInvoiceNo);
-    formData.append("salesOrder_no", salesOrderNo);
+    formData.append("estimate_no", estimateNo);
     formData.append("payment_terms", term);
-    formData.append("repeat_every", repeatEvery);
-    formData.append("start_date", date);
-    formData.append("end_date", endDate);
-    formData.append("price_list_applied", priceList);
-    formData.append("price_list", checkForNull(priceListId));
+    formData.append("estimate_date", date);
+    formData.append("exp_date", shipmentDate);
+    // formData.append("price_list_applied", priceList);
+    // formData.append("price_list", checkForNull(priceListId));
     formData.append("payment_method", checkForNull(paymentMethod));
     formData.append("cheque_no", checkForNull(chequeNumber));
     formData.append("upi_no", checkForNull(upiId));
@@ -438,22 +587,22 @@ function AddRecInvoice() {
     formData.append("paid_off", checkForZero(paid));
     formData.append("balance", checkBalanceVal(balance));
     formData.append("note", description);
-    formData.append("invoiceItems", JSON.stringify(invoiceItems));
+    formData.append("EstimateItems", JSON.stringify(EstimateItems));
 
     if (file) {
       formData.append("file", file);
     }
 
     axios
-      .post(`${config.base_url}/create_new_rec_invoice/`, formData)
+      .put(`${config.base_url}/update_estimate/`, formData)
       .then((res) => {
-        console.log("RINV RES=", res);
+        console.log("Estimate RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Rec Invoice Created",
+            title: "Estimate Updated",
           });
-          navigate("/rec_invoice");
+          navigate(`/ViewEstimate/${estimateId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -515,27 +664,27 @@ function AddRecInvoice() {
     }
   }
 
-  function handleInvoiceNoChange(val) {
-    setRecInvoiceNo(val);
-    checkInvoiceNo(val);
+  function handleEstimateNoChange(val) {
+    setestimateNo(val);
+    checkestimateNo(val);
   }
 
-  function checkInvoiceNo(val) {
-    document.getElementById("INVNoErr").innerText = "";
-    var inv_num = val;
-    if (inv_num != "") {
+  function checkestimateNo(val) {
+    document.getElementById("ESNoErr").innerText = "";
+    var es_num = val;
+    if (es_num != "") {
       var s = {
         Id: ID,
-        INVNum: inv_num,
+        ESNum: es_num,
       };
       axios
-        .get(`${config.base_url}/check_rec_invoice_no/`, { params: s })
+        .get(`${config.base_url}/check_estimate_no/`, { params: s })
         .then((res) => {
-          console.log("INV NUM Res=", res);
+          console.log("ES NUM Res=", res);
           if (!res.data.status) {
-            document.getElementById("INVNoErr").innerText = res.data.message;
+            document.getElementById("ESNoErr").innerText = res.data.message;
           } else {
-            document.getElementById("INVNoErr").innerText = "";
+            document.getElementById("ESNoErr").innerText = "";
           }
         })
         .catch((err) => {
@@ -563,7 +712,7 @@ function AddRecInvoice() {
       total: "",
       taxAmount: "",
     };
-    setInvoiceItems((prevItems) => {
+    setEstimateItems((prevItems) => {
       const updatedItems = [...prevItems, newItem];
 
       return updatedItems.map((item, index) => ({
@@ -574,7 +723,7 @@ function AddRecInvoice() {
   };
 
   const removeRow = (id) => {
-    setInvoiceItems((prevItems) => {
+    setEstimateItems((prevItems) => {
       const updatedItems = prevItems.filter((item) => item.id !== id);
 
       return updatedItems.map((item, index) => ({
@@ -584,8 +733,8 @@ function AddRecInvoice() {
     });
   };
 
-  const handleInvoiceItemsInputChange = (id, field, value) => {
-    setInvoiceItems((prevItems) =>
+  const handleEstimateItemsInputChange = (id, field, value) => {
+    setEstimateItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item
       )
@@ -596,49 +745,26 @@ function AddRecInvoice() {
     var exists = itemExists(value);
     if (!exists) {
       if (placeOfSupply != "") {
-        handleInvoiceItemsInputChange(id, "item", value);
+        handleEstimateItemsInputChange(id, "item", value);
         getItemData(value, id);
       } else {
         alert("Select Place of Supply.!");
       }
     } else {
       alert(
-        "Item already exists in the Invoice, choose another or change quantity.!"
+        "Item already exists in the Estimate, choose another or change quantity.!"
       );
     }
   };
 
-  const handleQtyChange = (value, id) => {
-    handleInvoiceItemsInputChange(id, "quantity", value);
-    changeItemQty(id, value);
-  };
-
   const itemExists = (itemToCheck) => {
-    for (const item of invoiceItems) {
+    for (const item of EstimateItems) {
       if (item.item === itemToCheck) {
         return true;
       }
     }
     return false;
   };
-
-  function changeItemQty(id, value) {
-    var qty = value;
-    var avl_val = document.getElementById(`avl${id}`).textContent;
-
-    if(value != ""){
-      if (parseInt(qty) > parseInt(avl_val)) {
-        alert("Quantity Greater than Available Quantity");
-        handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
-        document.getElementById(`qtyspan${id}`).textContent = "0"
-      } else {
-        document.getElementById(`qtyspan${id}`).textContent =
-          parseInt(avl_val) - parseInt(qty);
-      }
-    }else{
-      document.getElementById(`qtyspan${id}`).textContent = avl_val
-    }
-  }
 
   function getItemData(item, id) {
     var exists = itemExists(item);
@@ -648,7 +774,7 @@ function AddRecInvoice() {
     if (!exists) {
       if (plc != "") {
         if (priceList && PLId == "") {
-          handleInvoiceItemsInputChange(id, "item", "");
+          handleEstimateItemsInputChange(id, "item", "");
           alert("Select a Price List from the dropdown..!");
         } else {
           var itm = {
@@ -664,7 +790,7 @@ function AddRecInvoice() {
               if (res.data.status) {
                 var itemData = res.data.itemData;
 
-                setInvoiceItems((prevItems) =>
+                setEstimateItems((prevItems) =>
                   prevItems.map((item) =>
                     item.id === id
                       ? {
@@ -674,7 +800,6 @@ function AddRecInvoice() {
                           taxGst: itemData.gst,
                           taxIgst: itemData.igst,
                           hsnSac: itemData.hsnSac,
-                          available: itemData.avl,
                         }
                       : item
                   )
@@ -693,7 +818,7 @@ function AddRecInvoice() {
       }
     } else {
       alert(
-        "Item already exists in the Invoice, choose another or change quantity.!"
+        "Item already exists in the Estimate, choose another or change quantity.!"
       );
     }
   }
@@ -702,6 +827,30 @@ function AddRecInvoice() {
     checkPriceList(priceList);
     refreshTax2();
     calc();
+  }
+
+  function checkTax(cmp,plc) {
+    if (cmp == plc) {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "flex";
+      document.getElementById("taxamountSGST").style.display = "flex";
+      document.getElementById("taxamountIGST").style.display = "none";
+    } else {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "none";
+      document.getElementById("taxamountSGST").style.display = "none";
+      document.getElementById("taxamountIGST").style.display = "flex";
+    }
   }
 
   function refreshTax(plc) {
@@ -754,7 +903,7 @@ function AddRecInvoice() {
     }
   }
 
-  function handleStartDateChange(date) {
+  function handleOrderDateChange(date) {
     setDate(date);
     findShipmentDate();
   }
@@ -768,10 +917,11 @@ function AddRecInvoice() {
     var paymentTerm = document.querySelector("#paymentTerm");
     var selectedOption = paymentTerm.options[paymentTerm.selectedIndex];
     var days = parseInt(selectedOption.getAttribute("text"));
-    var start_date = new Date(document.getElementById("startDate").value);
-
-    if (!isNaN(start_date.getTime())) {
-      const endDate = new Date(start_date);
+    var order_date = new Date(document.getElementById("estimateDate").value);
+    console.log(days);
+    console.log(order_date);
+    if (!isNaN(order_date.getTime())) {
+      const endDate = new Date(order_date);
       endDate.setDate(endDate.getDate() + days);
 
       const isoString = endDate.toISOString();
@@ -779,15 +929,15 @@ function AddRecInvoice() {
       const month = isoString.slice(5, 7);
       const year = isoString.slice(0, 4);
 
-      const formattedDate = `${day}-${month}-${year}`;
-      setEndDate(formattedDate);
+      const formattedDate = `${year}-${month}-${day}`;
+      setShipmentDate(formattedDate);
     } else {
       alert("Please enter a valid date.");
       setTerm("");
     }
   }
-  const calc3 = (invoiceItems) => {
-    const updatedItems = invoiceItems.map((item) => {
+  const calc3 = (EstimateItems) => {
+    const updatedItems = EstimateItems.map((item) => {
       console.log("CALC3==", item);
 
       let qty = parseInt(item.quantity || 0);
@@ -806,8 +956,8 @@ function AddRecInvoice() {
 
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total,
+        taxAmount: taxAmt,
       };
     });
 
@@ -815,7 +965,7 @@ function AddRecInvoice() {
   };
 
   function calc2(placeOfSupply) {
-    const updatedItems = invoiceItems.map((item) => {
+    const updatedItems = EstimateItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -833,18 +983,18 @@ function AddRecInvoice() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total,
+        taxAmount: taxAmt,
       };
     });
 
-    setInvoiceItems(updatedItems);
+    setEstimateItems(updatedItems);
     refreshIndexes(updatedItems);
     calc_total2(updatedItems, placeOfSupply);
   }
 
   const calc = () => {
-    const updatedItems = invoiceItems.map((item) => {
+    const updatedItems = EstimateItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -862,23 +1012,23 @@ function AddRecInvoice() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total,
+        taxAmount: taxAmt,
       };
     });
 
-    setInvoiceItems(updatedItems);
+    setEstimateItems(updatedItems);
     refreshIndexes(updatedItems);
     calc_total(updatedItems);
   };
 
-  function calc_total(invoiceItems) {
+  function calc_total(EstimateItems) {
     var total = 0;
     var taxamount = 0;
-    invoiceItems.map((item) => {
+    EstimateItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    invoiceItems.map((item) => {
+    EstimateItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -910,13 +1060,13 @@ function AddRecInvoice() {
     }
   }
 
-  function calc_total2(invoiceItems, placeOfSupply) {
+  function calc_total2(EstimateItems, placeOfSupply) {
     var total = 0;
     var taxamount = 0;
-    invoiceItems.map((item) => {
+    EstimateItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    invoiceItems.map((item) => {
+    EstimateItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -1010,48 +1160,6 @@ function AddRecInvoice() {
     }
   }
 
-  const [duration, setDuration] = useState("");
-  const [repeatType, setRepeatType] = useState("Month");
-  function handleRepeatModalSubmit(e) {
-    e.preventDefault();
-    var dr = duration;
-    var typ = repeatType;
-    if (dr != "" && typ != "") {
-      var u = {
-        Id: ID,
-        duration: duration,
-        repeat_type: repeatType,
-      };
-      axios
-        .post(`${config.base_url}/create_new_repeat_type/`, u)
-        .then((res) => {
-          if (res.data.status) {
-            Toast.fire({
-              icon: "success",
-              title: "Repeat Type Created",
-            });
-            fetchRepeatTypes();
-            setRepeatEvery(res.data.repeat.id);
-            setDuration("");
-            setRepeatType("");
-
-            document.getElementById("repeatModalDismiss").click();
-          }
-        })
-        .catch((err) => {
-          console.log("ERROR=", err);
-          if (!err.response.data.status) {
-            Swal.fire({
-              icon: "error",
-              title: `${err.response.data.message}`,
-            });
-          }
-        });
-    } else {
-      alert("Invalid");
-    }
-  }
-
   const [newTermName, setNewTermName] = useState("");
   const [newTermDays, setNewTermDays] = useState("");
   function handleTermModalSubmit(e) {
@@ -1099,15 +1207,6 @@ function AddRecInvoice() {
   function handlePaymentMethodChange(val) {
     setPaymentMethod(val);
     paymentMethodChange(val);
-  }
-
-  function refreshIndexes(items) {
-    const itms = items.map((item, index) => ({
-      ...item,
-      id: index + 1,
-    }));
-
-    setInvoiceItems(itms);
   }
 
   function paymentMethodChange(val) {
@@ -1618,7 +1717,7 @@ function AddRecInvoice() {
             icon: "success",
             title: "Customer Created",
           });
-          fetchRecInvoiceData();
+          fetchEstimateData();
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -2081,7 +2180,7 @@ function AddRecInvoice() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/rec_invoice"}>
+          <Link to={`/ViewEstimate/${estimateId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2092,7 +2191,7 @@ function AddRecInvoice() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">NEW RECURRING INVOICE</h2>
+                <h2 className="mt-3">EDIT ESTIMATE</h2>
               </center>
               <hr />
             </div>
@@ -2104,7 +2203,7 @@ function AddRecInvoice() {
           encType="multipart/form-data"
           onSubmit={handleSubmit}
         >
-          <div className="card radius-15" style={{ minWidth: "100%" }}>
+          <div className="card radius-15">
             <div className="card-body">
               <div id="salesOrder">
                 <div className="row">
@@ -2125,6 +2224,7 @@ function AddRecInvoice() {
                         className="w-100"
                         id="customer"
                         required
+                        value={customerValue || null}
                         onChange={(selectedOption) =>
                           handleCustomerChange(
                             selectedOption ? selectedOption.value : ""
@@ -2205,34 +2305,35 @@ function AddRecInvoice() {
 
                 <div className="row">
                   <div className="col-md-4 mt-3">
-                    <label className="">Profile Name</label>
+                    <div className="d-flex">
+                      <label className="">Estiamte No.</label>
+                      <span className="text-danger ml-3" id="ESNoErr"></span>
+                    </div>
                     <input
                       type="text"
                       className="form-control"
-                      name="profile_name"
-                      id="profileName"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
+                      name="estimate_no"
+                      id="estimateNumber"
+                      value={estimateNo}
+                      onChange={(e) => handleEstimateNoChange(e.target.value)}
                       style={{ backgroundColor: "#43596c" }}
+                      placeholder={nextestimateNo}
+                      required
                     />
                   </div>
                   <div className="col-md-4 mt-3">
-                    <label className="">Entry Type</label>
-                    <select
+                    <label className="">Reference Number</label>
+                    <input
                       type="text"
                       className="form-control"
-                      id="entryType"
-                      name="entry_type"
-                      value={entryType}
-                      onChange={(e) => setEntryType(e.target.value)}
-                      style={{ backgroundColor: "#43596c", color: "white" }}
-                    >
-                      <option value="" selected disabled>Select Entry Type</option>
-                      <option value="Invoice">Invoice</option>
-                      <option value="Bill Of Supply">Bill Of Supply</option>
-                    </select>
+                      name="reference_number"
+                      value={refNo}
+                      style={{ backgroundColor: "#43596c" }}
+                      readOnly
+                    />
                   </div>
                   <div className="col-md-4 mt-3">
+                    <input hidden value="{{cmp.State}}" id="cmpstate" />
                     <label className="">Place of supply</label>
                     <select
                       type="text"
@@ -2299,56 +2400,26 @@ function AddRecInvoice() {
 
                 <div className="row">
                   <div className="col-md-4 mt-3">
-                    <div className="d-flex">
-                      <label className="">Rec. Invoice No.</label>
-                      <span className="text-danger ml-3" id="INVNoErr"></span>
-                    </div>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="rec_invoice_no"
-                      id="recInvoiceNumber"
-                      value={recInvoiceNo}
-                      onChange={(e) => handleInvoiceNoChange(e.target.value)}
-                      style={{ backgroundColor: "#43596c" }}
-                      placeholder={nextRecInvoiceNo}
-                      required
-                    />
-                  </div>
-                  <div className="col-md-4 mt-3">
-                    <label className="">Reference Number</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="reference_number"
-                      value={refNo}
-                      style={{ backgroundColor: "#43596c" }}
-                      readOnly
-                    />
-                  </div>
-
-                  <div className="col-md-4 mt-3">
-                    <label className="">Start Date:</label>
+                    <label className="">Estiamte Date:</label>
                     <input
                       type="date"
                       className="form-control"
-                      name="start_date"
-                      id="startDate"
+                      name="estimate_date"
+                      id="estimateDate"
                       style={{ backgroundColor: "#43596c", color: "white" }}
                       value={date}
-                      onChange={(e) => handleStartDateChange(e.target.value)}
+                      onChange={(e) => handleOrderDateChange(e.target.value)}
                     />
                   </div>
-
                   <div className="col-md-4 mt-3">
-                    <label className="">End Date:</label>
+                    <label className="">Expected Shipment Date:</label>
                     <input
                       type="text"
                       id="shipmentDate"
                       className="form-control"
                       name="shipment_date"
                       style={{ backgroundColor: "#43596c", color: "white" }}
-                      value={endDate}
+                      value={shipmentDate}
                       readOnly
                     />
                   </div>
@@ -2387,55 +2458,6 @@ function AddRecInvoice() {
                         +
                       </a>
                     </div>
-                  </div>
-
-                  <div className="col-md-4 mt-3">
-                    <label className="">Repeat Every</label>
-                    <div className="d-flex align-items-center">
-                      <select
-                        className="form-control"
-                        name="repeat_every"
-                        value={repeatEvery}
-                        onChange={(e) =>
-                          setRepeatEvery(e.target.value)
-                        }
-                        style={{ backgroundColor: "#43596c", color: "white" }}
-                        id="paymentTerm"
-                        required
-                      >
-                        <option value="" selected disabled>
-                          Select Repeat Duration
-                        </option>
-                        {companyRepeatEvery &&
-                          companyRepeatEvery.map((repeat) => (
-                            <option value={repeat.id}>
-                              {repeat.repeat_every}
-                            </option>
-                          ))}
-                      </select>
-                      <a
-                        className="btn btn-outline-secondary ml-1"
-                        role="button"
-                        data-target="#newRepeatEvery"
-                        data-toggle="modal"
-                        style={{ width: "fit-content", height: "fit-content" }}
-                        id="repeatadd"
-                      >
-                        +
-                      </a>
-                    </div>
-                  </div>
-                  <div className="col-md-4 mt-3">
-                    <label className="">Order No.</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="sales_order_no"
-                      id="salesOrderNumber"
-                      value={salesOrderNo}
-                      onChange={(e) => setSalesOrderNo(e.target.value)}
-                      style={{ backgroundColor: "#43596c" }}
-                    />
                   </div>
 
                   <div className="col-md-4 mt-3">
@@ -2514,10 +2536,12 @@ function AddRecInvoice() {
                   </div>
                 </div>
 
+
+
                 <div
                   className="row"
                   id="applyPriceListSection"
-                  style={{ display: "block" }}
+                  style={{ display: "none" }}
                 >
                   <div className="col-md-3 mt-3">
                     <div className="form-group form-check">
@@ -2578,6 +2602,8 @@ function AddRecInvoice() {
                     </div>
                   </div>
 
+
+
                   <div className="col-md-3 mt-3"></div>
                 </div>
 
@@ -2585,7 +2611,7 @@ function AddRecInvoice() {
                   <div className="col-md-12 table-responsive-md mt-3">
                     <table
                       className="table table-bordered table-hover mt-3"
-                      id="invoiceItemsTable"
+                      id="EstimateItemsTable"
                     >
                       <thead>
                         <tr>
@@ -2600,7 +2626,12 @@ function AddRecInvoice() {
                         </tr>
                       </thead>
                       <tbody id="items-table-body">
-                        {invoiceItems.map((row) => (
+                        {EstimateItems.map((row) => {
+                          const selectedOptionI = items.find(
+                            (option) => option.value === row.item
+                          )
+                          return(
+
                           <tr key={row.id} id={`tab_row${row.id}`}>
                             <td
                               className="nnum"
@@ -2617,7 +2648,7 @@ function AddRecInvoice() {
                                   className="w-100"
                                   id={`item${row.id}`}
                                   required
-                                  defaultInputValue={row.item}
+                                  value={selectedOptionI}
                                   onChange={(selectedOption) =>
                                     handleItemChange(
                                       selectedOption
@@ -2670,28 +2701,18 @@ function AddRecInvoice() {
                                 style={{
                                   backgroundColor: "#43596c",
                                   color: "white",
-                                  marginTop: "21px",
                                 }}
                                 value={row.quantity}
                                 onChange={(e) =>
-                                  handleQtyChange(
-                                    e.target.value,
-                                    row.id
+                                  handleEstimateItemsInputChange(
+                                    row.id,
+                                    "quantity",
+                                    e.target.value
                                   )
                                 }
                                 onBlur={refreshValues}
                                 required
                               />
-                              <span
-                                id={`avl${row.id}`}
-                                style={{ display: "none" }}
-                              >
-                                {row.available}
-                              </span>
-                              <div class="d-flex">
-                                <span>Available Qty :</span>
-                                <span id={`qtyspan${row.id}`} class="">{row.available}</span>
-                              </div>
                             </td>
                             <td>
                               <input
@@ -2734,7 +2755,7 @@ function AddRecInvoice() {
                                 style={{ display: "block" }}
                                 value={row.taxGst}
                                 onChange={(e) =>
-                                  handleInvoiceItemsInputChange(
+                                  handleEstimateItemsInputChange(
                                     row.id,
                                     "taxGst",
                                     e.target.value
@@ -2757,7 +2778,7 @@ function AddRecInvoice() {
                                 style={{ display: "none" }}
                                 value={row.taxIgst}
                                 onChange={(e) =>
-                                  handleInvoiceItemsInputChange(
+                                  handleEstimateItemsInputChange(
                                     row.id,
                                     "taxIgst",
                                     e.target.value
@@ -2782,7 +2803,7 @@ function AddRecInvoice() {
                                 id={`disc${row.id}`}
                                 value={row.discount}
                                 onChange={(e) =>
-                                  handleInvoiceItemsInputChange(
+                                  handleEstimateItemsInputChange(
                                     row.id,
                                     "discount",
                                     e.target.value
@@ -2833,7 +2854,8 @@ function AddRecInvoice() {
                               ></button>
                             </td>
                           </tr>
-                        ))}
+                          )
+                        })}
                       </tbody>
                       <tr>
                         <td style={{ border: "none" }}>
@@ -2875,7 +2897,7 @@ function AddRecInvoice() {
                   <div className="col-md-1"></div>
                   <div
                     className="col-md-5 table-responsive-md mt-3 "
-                    id="invoiceItemsTableTotal"
+                    id="EstimateItemsTableTotal"
                     style={{
                       backgroundColor: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(128, 128, 128, 0.6)",
@@ -3056,11 +3078,14 @@ function AddRecInvoice() {
                     </div>
                   </div>
                 </div>
-                <div className="row">
+
+
+
+                <div className="row" style={{ display: "none" }}>
                   <div className="col-md-7"></div>
                   <div
                     className="col-md-5 table-responsive-md mt-3 "
-                    id="invoiceItemsTablePaid"
+                    id="EstimateItemsTablePaid"
                     style={{
                       backgroundColor: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(128, 128, 128, 0.6)",
@@ -3110,6 +3135,9 @@ function AddRecInvoice() {
                   </div>
                 </div>
 
+
+
+
                 <div className="row">
                   <div className="col-md-7 mt-3">
                     <div className="form-check">
@@ -3133,16 +3161,13 @@ function AddRecInvoice() {
                     <input
                       type="submit"
                       className="btn btn-outline-secondary w-50 text-light"
-                      onClick={() => setStatus("Draft")}
-                      value="Draft"
-                      style={{ height: "fit-content" }}
+                      value="Save"
                     />
                     <input
-                      type="submit"
+                      type="reset"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => setStatus("Saved")}
-                      value="Save"
-                      style={{ height: "fit-content" }}
+                      value="Cancel"
+                      onClick={()=>navigate(`/ViewEstimate/${estimateId}/`)}
                     />
                   </div>
                 </div>
@@ -3153,85 +3178,13 @@ function AddRecInvoice() {
                   </div>
                 </div>
                 <span className="text-muted">
-                  Invoice was created on a computer and is valid without the
+                  Estimate was created on a computer and is valid without the
                   signature and seal.
                 </span>
               </div>
             </div>
           </div>
         </form>
-      </div>
-
-      {/* <!-- New Repeat Every Modal --> */}
-      <div className="modal fade" id="newRepeatEvery">
-        <div className="modal-dialog modal-lg">
-          <div className="modal-content" style={{ backgroundColor: "#213b52" }}>
-            <div className="modal-header">
-              <h5 className="m-3">New Repeat Type</h5>
-              <button
-                type="button"
-                className="close"
-                id="repeatModalDismiss"
-                data-dismiss="modal"
-                aria-label="Close"
-              >
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div className="modal-body w-100">
-              <div className="card p-3">
-                <form
-                  method="post"
-                  id="newTermForm"
-                  onSubmit={handleRepeatModalSubmit}
-                >
-                  <div className="row mt-2 w-100">
-                    <div className="col-6">
-                      <label for="name">Duration</label>
-                      <input
-                        type="number"
-                        name="duration"
-                        id="duration"
-                        min="0"
-                        step="any"
-                        value={duration}
-                        onChange={(e) => setDuration(e.target.value)}
-                        className="form-control w-100"
-                      />
-                    </div>
-                    <div className="col-6">
-                      <label for="name">Type</label>
-                      <select
-                        type="number"
-                        name="type"
-                        id="repeatType"
-                        value={repeatType}
-                        onChange={(e) => setRepeatType(e.target.value)}
-                        className="form-control w-100"
-                      >
-                        <option value="Month">Month</option>
-                        <option value="Year">Year</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="row mt-4 w-100">
-                    <div className="col-4"></div>
-                    <div className="col-4 d-flex justify-content-center">
-                      <button
-                        className="btn btn-outline-secondary text-grey w-75"
-                        type="submit"
-                        id="saveRepeatEvery"
-                      >
-                        Save
-                      </button>
-                    </div>
-                    <div className="col-4"></div>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* <!-- New Payment Term Modal --> */}
@@ -4999,4 +4952,4 @@ function AddRecInvoice() {
   );
 }
 
-export default AddRecInvoice;
+export default EditEstimate;

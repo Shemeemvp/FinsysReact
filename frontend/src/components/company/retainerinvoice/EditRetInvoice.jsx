@@ -1,27 +1,28 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function AddRecInvoice() {
+function EditRetInvoice() {
   const ID = Cookies.get("Login_id");
+  const { invoiceId } = useParams();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [terms, setTerms] = useState([]);
   const [banks, setBanks] = useState([]);
   const [priceLists, setPriceLists] = useState([]);
-  const [companyRepeatEvery, setCompanyRepeatEvery] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
   const [cmpState, setCmpState] = useState("");
+  const [customerValue, setCustomerValue] = useState({});
 
-  const fetchRecInvoiceData = () => {
+  const fetchRetInvoiceData = () => {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_ret_invoice_data/${ID}/`)
       .then((res) => {
         console.log("RINV Data==", res);
         if (res.data.status) {
@@ -31,7 +32,6 @@ function AddRecInvoice() {
           let bnks = res.data.banks;
           let lst = res.data.priceList;
           let clst = res.data.custPriceList;
-          let rpt = res.data.repeat;
           setCmpState(res.data.state);
           setPriceLists([]);
           setCustomerPriceLists([]);
@@ -49,10 +49,6 @@ function AddRecInvoice() {
           trms.map((i) => {
             setTerms((prevState) => [...prevState, i]);
           });
-          setCompanyRepeatEvery([]);
-          rpt.map((r) => {
-            setCompanyRepeatEvery((prevState) => [...prevState, r]);
-          });
           setItems([]);
           const newOptions = itms.map((item) => ({
             label: item.name,
@@ -66,8 +62,6 @@ function AddRecInvoice() {
             value: item.id,
           }));
           setCustomers(newCustOptions);
-          setRefNo(res.data.refNo);
-          setNextRecInvoiceNo(res.data.invNo);
         }
       })
       .catch((err) => {
@@ -77,7 +71,7 @@ function AddRecInvoice() {
 
   function fetchPaymentTerms() {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_ret_invoice_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let trms = res.data.paymentTerms;
@@ -92,26 +86,9 @@ function AddRecInvoice() {
       });
   }
 
-  function fetchRepeatTypes() {
-    axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
-      .then((res) => {
-        if (res.data.status) {
-          let rpt = res.data.repeat;
-          setCompanyRepeatEvery([]);
-          rpt.map((i) => {
-            setCompanyRepeatEvery((prevState) => [...prevState, i]);
-          });
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }
-
   function fetchItems() {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_ret_invoice_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let items = res.data.items;
@@ -129,7 +106,7 @@ function AddRecInvoice() {
   }
 
   useEffect(() => {
-    fetchRecInvoiceData();
+    fetchRetInvoiceData();
   }, []);
 
   const customStyles = {
@@ -164,6 +141,106 @@ function AddRecInvoice() {
     }),
   };
 
+  const fetchInvoiceDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_ret_invoice_details/${invoiceId}/`)
+      .then((res) => {
+        console.log("INV DET=", res);
+        if (res.data.status) {
+          var invoice = res.data.invoice;
+          var itms = res.data.items;
+
+          var c = {
+            value: invoice.Customer,
+            label: res.data.otherDetails.customerName,
+          };
+          setCustomerValue(c);
+
+          setCustomer(invoice.Customer);
+          setEmail(invoice.customer_email);
+          setGstType(invoice.gst_type);
+          setGstIn(invoice.gstin);
+          setBillingAddress(invoice.billing_address);
+          setRefNo(invoice.reference_no);
+          setRetInvoiceNo(invoice.ret_invoice_no);
+          setDate(invoice.ret_invoice_date);
+          setPlaceOfSupply(invoice.place_of_supply);
+          setPaymentMethod(invoice.payment_method);
+          setChequeNumber(invoice.cheque_no);
+          setUpiId(invoice.upi_no);
+          setAccountNumber(invoice.bank_acc_no);
+          setPriceList(invoice.price_list_applied);
+          setPriceListId(invoice.price_list);
+          setSubTotal(invoice.subtotal);
+          setAdjustment(invoice.adjustment);
+          setGrandTotal(invoice.grandtotal);
+          setPaid(invoice.paid_off);
+          setBalance(invoice.balance);
+          setDescription(invoice.note);
+          setInvoiceItems([]);
+          const invItems = itms.map((i) => {
+            if (i.item_type == "Goods") {
+              var hsnSac = i.hsn;
+            } else {
+              var hsnSac = i.sac;
+            }
+            return {
+              id: 1,
+              item: i.itemId,
+              hsnSac: hsnSac,
+              quantity: i.quantity,
+              available: i.avl,
+              initialQty: i.quantity,
+              price: i.sales_price,
+              priceListPrice: i.price,
+              description: i.description,
+              discount: i.discount,
+              total: i.total,
+              taxAmount: "",
+            };
+          });
+
+          setInvoiceItems(invItems);
+          refreshIndexes(invItems);
+
+          paymentMethodChange(invoice.payment_method);
+          checkPL(invoice.price_list_applied);
+          // applyPriceList(sales.price_list)
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchInvoiceDetails();
+  }, []);
+
+  function checkPL(priceList) {
+    if (priceList) {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+    } else {
+      document.querySelectorAll(".price").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.querySelectorAll(".priceListPrice").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+    }
+  }
+
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
@@ -173,16 +250,10 @@ function AddRecInvoice() {
   const [gstIn, setGstIn] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [refNo, setRefNo] = useState("");
-  const [recInvoiceNo, setRecInvoiceNo] = useState("");
-  const [salesOrderNo, setSalesOrderNo] = useState("");
-  const [profileName, setProfileName] = useState("");
-  const [entryType, setEntryType] = useState("");
-  const [nextRecInvoiceNo, setNextRecInvoiceNo] = useState("");
+  const [retInvoiceNo, setRetInvoiceNo] = useState("");
+  const [nextRetInvoiceNo, setNextRetInvoiceNo] = useState("");
   const [date, setDate] = useState(formattedDate);
   const [placeOfSupply, setPlaceOfSupply] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [term, setTerm] = useState("");
-  const [repeatEvery, setRepeatEvery] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
   const [upiId, setUpiId] = useState("");
@@ -191,11 +262,6 @@ function AddRecInvoice() {
   const [priceListId, setPriceListId] = useState("");
 
   const [subTotal, setSubTotal] = useState(0.0);
-  const [igst, setIgst] = useState(0.0);
-  const [cgst, setCgst] = useState(0.0);
-  const [sgst, setSgst] = useState(0.0);
-  const [taxAmount, setTaxAmount] = useState(0.0);
-  const [shippingCharge, setShippingCharge] = useState(0.0);
   const [adjustment, setAdjustment] = useState(0.0);
   const [grandTotal, setGrandTotal] = useState(0.0);
   const [paid, setPaid] = useState(0.0);
@@ -214,11 +280,9 @@ function AddRecInvoice() {
       available: "",
       price: "",
       priceListPrice: "",
-      taxGst: "",
-      taxIgst: "",
+      description: "",
       discount: "",
       total: "",
-      taxAmount: "",
     },
   ]);
 
@@ -370,8 +434,6 @@ function AddRecInvoice() {
                   var itemData = res.data.itemData;
                   pItem.price = itemData.sales_rate;
                   pItem.priceListPrice = itemData.PLPrice;
-                  pItem.taxGst = itemData.gst;
-                  pItem.taxIgst = itemData.igst;
                   pItem.hsnSac = itemData.hsnSac;
                 }
               } catch (err) {
@@ -395,7 +457,6 @@ function AddRecInvoice() {
       setInvoiceItems(updatedItems);
       refreshIndexes(updatedItems);
       checkPriceList2();
-      refreshTax(placeOfSupply);
       calc3(updatedItems);
     }
   }
@@ -405,22 +466,16 @@ function AddRecInvoice() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("status", status);
+    formData.append("inv_id", invoiceId);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
     formData.append("gst_type", gstType);
     formData.append("gstin", gstIn);
     formData.append("place_of_supply", placeOfSupply);
-    formData.append("entry_type", entryType);
-    formData.append("profile_name", profileName);
     formData.append("reference_no", refNo);
-    formData.append("rec_invoice_no", recInvoiceNo);
-    formData.append("salesOrder_no", salesOrderNo);
-    formData.append("payment_terms", term);
-    formData.append("repeat_every", repeatEvery);
-    formData.append("start_date", date);
-    formData.append("end_date", endDate);
+    formData.append("ret_invoice_no", retInvoiceNo);
+    formData.append("ret_invoice_date", date);
     formData.append("price_list_applied", priceList);
     formData.append("price_list", checkForNull(priceListId));
     formData.append("payment_method", checkForNull(paymentMethod));
@@ -428,12 +483,7 @@ function AddRecInvoice() {
     formData.append("upi_no", checkForNull(upiId));
     formData.append("bank_acc_no", checkForNull(accountNumber));
     formData.append("subtotal", checkForZero(subTotal));
-    formData.append("igst", checkForZero(igst));
-    formData.append("cgst", checkForZero(cgst));
-    formData.append("sgst", checkForZero(sgst));
-    formData.append("tax_amount", checkForZero(taxAmount));
     formData.append("adjustment", checkForZero(adjustment));
-    formData.append("shipping_charge", checkForZero(shippingCharge));
     formData.append("grandtotal", checkForZero(grandTotal));
     formData.append("paid_off", checkForZero(paid));
     formData.append("balance", checkBalanceVal(balance));
@@ -445,15 +495,15 @@ function AddRecInvoice() {
     }
 
     axios
-      .post(`${config.base_url}/create_new_rec_invoice/`, formData)
+      .put(`${config.base_url}/update_ret_invoice/`, formData)
       .then((res) => {
         console.log("RINV RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Rec Invoice Created",
+            title: "Ret Invoice Update",
           });
-          navigate("/rec_invoice");
+          navigate(`/view_ret_invoice/${invoiceId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -500,7 +550,6 @@ function AddRecInvoice() {
             setGstIn(cust.gstIn);
             setPlaceOfSupply(cust.placeOfSupply);
             setBillingAddress(cust.address);
-            refreshTax(cust.placeOfSupply);
           }
         })
         .catch((err) => {
@@ -516,7 +565,7 @@ function AddRecInvoice() {
   }
 
   function handleInvoiceNoChange(val) {
-    setRecInvoiceNo(val);
+    setRetInvoiceNo(val);
     checkInvoiceNo(val);
   }
 
@@ -529,7 +578,7 @@ function AddRecInvoice() {
         INVNum: inv_num,
       };
       axios
-        .get(`${config.base_url}/check_rec_invoice_no/`, { params: s })
+        .get(`${config.base_url}/check_ret_invoice_no/`, { params: s })
         .then((res) => {
           console.log("INV NUM Res=", res);
           if (!res.data.status) {
@@ -546,7 +595,6 @@ function AddRecInvoice() {
 
   function handlePlaceOfSupply(val) {
     setPlaceOfSupply(val);
-    refreshTax(val);
   }
 
   const addNewRow = () => {
@@ -557,11 +605,9 @@ function AddRecInvoice() {
       quantity: "",
       price: "",
       priceListPrice: "",
-      taxGst: "",
-      taxIgst: "",
+      description: "",
       discount: "",
       total: "",
-      taxAmount: "",
     };
     setInvoiceItems((prevItems) => {
       const updatedItems = [...prevItems, newItem];
@@ -603,7 +649,7 @@ function AddRecInvoice() {
       }
     } else {
       alert(
-        "Item already exists in the Invoice, choose another or change quantity.!"
+        "Item already exists in the Ret. Invoice, choose another or change quantity.!"
       );
     }
   };
@@ -671,8 +717,6 @@ function AddRecInvoice() {
                           ...item,
                           price: itemData.sales_rate,
                           priceListPrice: itemData.PLPrice,
-                          taxGst: itemData.gst,
-                          taxIgst: itemData.igst,
                           hsnSac: itemData.hsnSac,
                           available: itemData.avl,
                         }
@@ -680,7 +724,6 @@ function AddRecInvoice() {
                   )
                 );
                 // checkPriceList();
-                // refreshTax2();
                 // calc();
               }
             })
@@ -693,99 +736,17 @@ function AddRecInvoice() {
       }
     } else {
       alert(
-        "Item already exists in the Invoice, choose another or change quantity.!"
+        "Item already exists in the Ret. Invoice, choose another or change quantity.!"
       );
     }
   }
 
   function refreshValues() {
     checkPriceList(priceList);
-    refreshTax2();
     calc();
   }
 
-  function refreshTax(plc) {
-    var cmp = cmpState;
-    if (cmp == plc) {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "flex";
-      document.getElementById("taxamountSGST").style.display = "flex";
-      document.getElementById("taxamountIGST").style.display = "none";
-    } else {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "none";
-      document.getElementById("taxamountSGST").style.display = "none";
-      document.getElementById("taxamountIGST").style.display = "flex";
-    }
-    calc2(plc);
-  }
 
-  function refreshTax2() {
-    if (cmpState == placeOfSupply) {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "flex";
-      document.getElementById("taxamountSGST").style.display = "flex";
-      document.getElementById("taxamountIGST").style.display = "none";
-    } else {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "none";
-      document.getElementById("taxamountSGST").style.display = "none";
-      document.getElementById("taxamountIGST").style.display = "flex";
-    }
-  }
-
-  function handleStartDateChange(date) {
-    setDate(date);
-    findShipmentDate();
-  }
-
-  function handlePaymentTermChange(term) {
-    setTerm(term);
-    findShipmentDate();
-  }
-
-  function findShipmentDate() {
-    var paymentTerm = document.querySelector("#paymentTerm");
-    var selectedOption = paymentTerm.options[paymentTerm.selectedIndex];
-    var days = parseInt(selectedOption.getAttribute("text"));
-    var start_date = new Date(document.getElementById("startDate").value);
-
-    if (!isNaN(start_date.getTime())) {
-      const endDate = new Date(start_date);
-      endDate.setDate(endDate.getDate() + days);
-
-      const isoString = endDate.toISOString();
-      const day = isoString.slice(8, 10);
-      const month = isoString.slice(5, 7);
-      const year = isoString.slice(0, 4);
-
-      const formattedDate = `${day}-${month}-${year}`;
-      setEndDate(formattedDate);
-    } else {
-      alert("Please enter a valid date.");
-      setTerm("");
-    }
-  }
   const calc3 = (invoiceItems) => {
     const updatedItems = invoiceItems.map((item) => {
       console.log("CALC3==", item);
@@ -796,18 +757,11 @@ function AddRecInvoice() {
         : parseFloat(item.price || 0);
       let dis = parseFloat(item.discount || 0);
 
-      let tax =
-        placeOfSupply === cmpState
-          ? parseInt(item.taxGst || 0)
-          : parseInt(item.taxIgst || 0);
-
       let total = parseFloat(qty) * parseFloat(price) - parseFloat(dis);
-      let taxAmt = (qty * price - dis) * (tax / 100);
 
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total.toFixed(2)
       };
     });
 
@@ -824,17 +778,10 @@ function AddRecInvoice() {
       }
       var dis = parseFloat(item.discount || 0);
 
-      if (placeOfSupply == cmpState) {
-        var tax = parseInt(item.taxGst || 0);
-      } else {
-        var tax = parseInt(item.taxIgst || 0);
-      }
       let total = parseFloat(qty) * parseFloat(price) - parseFloat(dis);
-      let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
         total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
       };
     });
 
@@ -853,17 +800,10 @@ function AddRecInvoice() {
       }
       var dis = parseFloat(item.discount || 0);
 
-      if (placeOfSupply == cmpState) {
-        var tax = parseInt(item.taxGst || 0);
-      } else {
-        var tax = parseInt(item.taxIgst || 0);
-      }
       let total = parseFloat(qty) * parseFloat(price) - parseFloat(dis);
-      let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
         total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
       };
     });
 
@@ -874,83 +814,38 @@ function AddRecInvoice() {
 
   function calc_total(invoiceItems) {
     var total = 0;
-    var taxamount = 0;
     invoiceItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
     invoiceItems.map((item) => {
-      taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
-    setTaxAmount(taxamount.toFixed(2));
 
-    var ship = parseFloat(shippingCharge || 0);
     var adj_val = parseFloat(adjustment || 0);
-    var gtot = taxamount + total + ship + adj_val;
+    var gtot = total + adj_val;
 
     setGrandTotal(gtot.toFixed(2));
 
     var adv_val = parseFloat(paid || 0);
     var bal = gtot - adv_val;
     setBalance(bal.toFixed(2));
-    splitTax(taxamount, placeOfSupply);
-  }
-
-  function splitTax(taxamount, placeOfSupply) {
-    var d = 0;
-    if (placeOfSupply == cmpState) {
-      var gst = taxamount / 2;
-      setCgst(parseFloat(gst.toFixed(2)));
-      setSgst(parseFloat(gst.toFixed(2)));
-      setIgst(parseFloat(d.toFixed(2)));
-    } else {
-      setIgst(taxamount.toFixed(2));
-      setCgst(d.toFixed(2));
-      setSgst(d.toFixed(2));
-    }
   }
 
   function calc_total2(invoiceItems, placeOfSupply) {
     var total = 0;
-    var taxamount = 0;
     invoiceItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    invoiceItems.map((item) => {
-      taxamount += parseFloat(item.taxAmount || 0);
-    });
-    setSubTotal(total.toFixed(2));
-    setTaxAmount(taxamount.toFixed(2));
 
-    var ship = parseFloat(shippingCharge || 0);
+    setSubTotal(total.toFixed(2));
     var adj_val = parseFloat(adjustment || 0);
-    var gtot = taxamount + total + ship + adj_val;
+    var gtot = total + adj_val;
 
     setGrandTotal(gtot.toFixed(2));
 
     var adv_val = parseFloat(paid || 0);
     var bal = gtot - adv_val;
     setBalance(bal.toFixed(2));
-    splitTax2(taxamount, placeOfSupply);
-  }
-
-  function splitTax2(taxamount, placeOfSupply) {
-    var d = 0;
-    if (placeOfSupply == cmpState) {
-      var gst = taxamount / 2;
-      setCgst(parseFloat(gst.toFixed(2)));
-      setSgst(parseFloat(gst.toFixed(2)));
-      setIgst(parseFloat(d.toFixed(2)));
-    } else {
-      setIgst(taxamount.toFixed(2));
-      setCgst(d.toFixed(2));
-      setSgst(d.toFixed(2));
-    }
-  }
-
-  function handleShippingCharge(val) {
-    setShippingCharge(val);
-    updateGrandTotalShip(val);
   }
 
   function handleAdjustment(val) {
@@ -963,30 +858,11 @@ function AddRecInvoice() {
     updateBalance(val);
   }
 
-  function updateGrandTotalShip(val) {
-    var subtot = subTotal;
-    var tax = taxAmount;
-    var sh = val;
-    var adj = adjustment;
-    var gtot = (
-      parseFloat(subtot || 0) +
-      parseFloat(tax || 0) +
-      parseFloat(sh || 0) +
-      parseFloat(adj || 0)
-    ).toFixed(2);
-    setGrandTotal(gtot);
-    setBalance((parseFloat(gtot) - parseFloat(paid)).toFixed(2));
-  }
-
   function updateGrandTotalAdj(val) {
     var subtot = subTotal;
-    var tax = taxAmount;
-    var sh = shippingCharge;
     var adj = val;
     var gtot = (
       parseFloat(subtot || 0) +
-      parseFloat(tax || 0) +
-      parseFloat(sh || 0) +
       parseFloat(adj || 0)
     ).toFixed(2);
     setGrandTotal(gtot);
@@ -1007,48 +883,6 @@ function AddRecInvoice() {
       }
     } else {
       setBalance(parseFloat(tot_val));
-    }
-  }
-
-  const [duration, setDuration] = useState("");
-  const [repeatType, setRepeatType] = useState("Month");
-  function handleRepeatModalSubmit(e) {
-    e.preventDefault();
-    var dr = duration;
-    var typ = repeatType;
-    if (dr != "" && typ != "") {
-      var u = {
-        Id: ID,
-        duration: duration,
-        repeat_type: repeatType,
-      };
-      axios
-        .post(`${config.base_url}/create_new_repeat_type/`, u)
-        .then((res) => {
-          if (res.data.status) {
-            Toast.fire({
-              icon: "success",
-              title: "Repeat Type Created",
-            });
-            fetchRepeatTypes();
-            setRepeatEvery(res.data.repeat.id);
-            setDuration("");
-            setRepeatType("");
-
-            document.getElementById("repeatModalDismiss").click();
-          }
-        })
-        .catch((err) => {
-          console.log("ERROR=", err);
-          if (!err.response.data.status) {
-            Swal.fire({
-              icon: "error",
-              title: `${err.response.data.message}`,
-            });
-          }
-        });
-    } else {
-      alert("Invalid");
     }
   }
 
@@ -1618,7 +1452,7 @@ function AddRecInvoice() {
             icon: "success",
             title: "Customer Created",
           });
-          fetchRecInvoiceData();
+          fetchRetInvoiceData();
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -2081,7 +1915,7 @@ function AddRecInvoice() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/rec_invoice"}>
+          <Link to={`/view_ret_invoice/${invoiceId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2092,7 +1926,7 @@ function AddRecInvoice() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">NEW RECURRING INVOICE</h2>
+                <h2 className="mt-3">EDIT RETAINER INVOICE</h2>
               </center>
               <hr />
             </div>
@@ -2125,6 +1959,7 @@ function AddRecInvoice() {
                         className="w-100"
                         id="customer"
                         required
+                        value={customerValue || null}
                         onChange={(selectedOption) =>
                           handleCustomerChange(
                             selectedOption ? selectedOption.value : ""
@@ -2205,34 +2040,6 @@ function AddRecInvoice() {
 
                 <div className="row">
                   <div className="col-md-4 mt-3">
-                    <label className="">Profile Name</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="profile_name"
-                      id="profileName"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                      style={{ backgroundColor: "#43596c" }}
-                    />
-                  </div>
-                  <div className="col-md-4 mt-3">
-                    <label className="">Entry Type</label>
-                    <select
-                      type="text"
-                      className="form-control"
-                      id="entryType"
-                      name="entry_type"
-                      value={entryType}
-                      onChange={(e) => setEntryType(e.target.value)}
-                      style={{ backgroundColor: "#43596c", color: "white" }}
-                    >
-                      <option value="" selected disabled>Select Entry Type</option>
-                      <option value="Invoice">Invoice</option>
-                      <option value="Bill Of Supply">Bill Of Supply</option>
-                    </select>
-                  </div>
-                  <div className="col-md-4 mt-3">
                     <label className="">Place of supply</label>
                     <select
                       type="text"
@@ -2295,23 +2102,21 @@ function AddRecInvoice() {
                       <option value="Other Territory">Other Territory</option>
                     </select>
                   </div>
-                </div>
 
-                <div className="row">
                   <div className="col-md-4 mt-3">
                     <div className="d-flex">
-                      <label className="">Rec. Invoice No.</label>
+                      <label className="">Ret. Invoice No.</label>
                       <span className="text-danger ml-3" id="INVNoErr"></span>
                     </div>
                     <input
                       type="text"
                       className="form-control"
-                      name="rec_invoice_no"
-                      id="recInvoiceNumber"
-                      value={recInvoiceNo}
+                      name="ret_invoice_no"
+                      id="retInvoiceNumber"
+                      value={retInvoiceNo}
                       onChange={(e) => handleInvoiceNoChange(e.target.value)}
                       style={{ backgroundColor: "#43596c" }}
-                      placeholder={nextRecInvoiceNo}
+                      placeholder={nextRetInvoiceNo}
                       required
                     />
                   </div>
@@ -2328,115 +2133,18 @@ function AddRecInvoice() {
                   </div>
 
                   <div className="col-md-4 mt-3">
-                    <label className="">Start Date:</label>
+                    <label className="">Ret. Invoice Date:</label>
                     <input
                       type="date"
                       className="form-control"
-                      name="start_date"
-                      id="startDate"
+                      name="ret_invoice_date"
+                      id="retInvoiceDate"
                       style={{ backgroundColor: "#43596c", color: "white" }}
                       value={date}
-                      onChange={(e) => handleStartDateChange(e.target.value)}
+                      onChange={(e) => setDate(e.target.value)}
                     />
                   </div>
 
-                  <div className="col-md-4 mt-3">
-                    <label className="">End Date:</label>
-                    <input
-                      type="text"
-                      id="shipmentDate"
-                      className="form-control"
-                      name="shipment_date"
-                      style={{ backgroundColor: "#43596c", color: "white" }}
-                      value={endDate}
-                      readOnly
-                    />
-                  </div>
-                  <div className="col-md-4 mt-3">
-                    <label className="">Terms </label>
-                    <div className="d-flex align-items-center">
-                      <select
-                        className="form-control"
-                        name="payment_term"
-                        value={term}
-                        onChange={(e) =>
-                          handlePaymentTermChange(e.target.value)
-                        }
-                        style={{ backgroundColor: "#43596c", color: "white" }}
-                        id="paymentTerm"
-                        required
-                      >
-                        <option value="" selected>
-                          Select Payment Term
-                        </option>
-                        {terms &&
-                          terms.map((term) => (
-                            <option value={term.id} text={term.days}>
-                              {term.term_name}
-                            </option>
-                          ))}
-                      </select>
-                      <a
-                        className="btn btn-outline-secondary ml-1"
-                        role="button"
-                        data-target="#newPaymentTerm"
-                        data-toggle="modal"
-                        style={{ width: "fit-content", height: "fit-content" }}
-                        id="termsadd"
-                      >
-                        +
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="col-md-4 mt-3">
-                    <label className="">Repeat Every</label>
-                    <div className="d-flex align-items-center">
-                      <select
-                        className="form-control"
-                        name="repeat_every"
-                        value={repeatEvery}
-                        onChange={(e) =>
-                          setRepeatEvery(e.target.value)
-                        }
-                        style={{ backgroundColor: "#43596c", color: "white" }}
-                        id="paymentTerm"
-                        required
-                      >
-                        <option value="" selected disabled>
-                          Select Repeat Duration
-                        </option>
-                        {companyRepeatEvery &&
-                          companyRepeatEvery.map((repeat) => (
-                            <option value={repeat.id}>
-                              {repeat.repeat_every}
-                            </option>
-                          ))}
-                      </select>
-                      <a
-                        className="btn btn-outline-secondary ml-1"
-                        role="button"
-                        data-target="#newRepeatEvery"
-                        data-toggle="modal"
-                        style={{ width: "fit-content", height: "fit-content" }}
-                        id="repeatadd"
-                      >
-                        +
-                      </a>
-                    </div>
-                  </div>
-                  <div className="col-md-4 mt-3">
-                    <label className="">Order No.</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="sales_order_no"
-                      id="salesOrderNumber"
-                      value={salesOrderNo}
-                      onChange={(e) => setSalesOrderNo(e.target.value)}
-                      style={{ backgroundColor: "#43596c" }}
-                    />
-                  </div>
 
                   <div className="col-md-4 mt-3">
                     <label className="">Payment Type</label>
@@ -2594,14 +2302,17 @@ function AddRecInvoice() {
                           <th className="text-center">HSN / SAC</th>
                           <th className="text-center">QTY</th>
                           <th className="text-center">PRICE</th>
-                          <th className="text-center">TAX (%)</th>
                           <th className="text-center">DISCOUNT</th>
+                          <th className="text-center">DESCRIPTION</th>
                           <th className="text-center">TOTAL</th>
                         </tr>
                       </thead>
                       <tbody id="items-table-body">
-                        {invoiceItems.map((row) => (
-                          <tr key={row.id} id={`tab_row${row.id}`}>
+                        {invoiceItems.map((row) => {
+                          const selectedOptionI = items.find(
+                            (option) => option.value === row.item
+                          );
+                          return(<tr key={row.id} id={`tab_row${row.id}`}>
                             <td
                               className="nnum"
                               style={{ textAlign: "center" }}
@@ -2617,7 +2328,7 @@ function AddRecInvoice() {
                                   className="w-100"
                                   id={`item${row.id}`}
                                   required
-                                  defaultInputValue={row.item}
+                                  value={selectedOptionI}
                                   onChange={(selectedOption) =>
                                     handleItemChange(
                                       selectedOption
@@ -2726,54 +2437,6 @@ function AddRecInvoice() {
                               />
                             </td>
 
-                            <td style={{ width: "13%" }}>
-                              <select
-                                name="taxGST"
-                                id={`taxGST${row.id}`}
-                                className="form-control tax_ref tax_ref_gst"
-                                style={{ display: "block" }}
-                                value={row.taxGst}
-                                onChange={(e) =>
-                                  handleInvoiceItemsInputChange(
-                                    row.id,
-                                    "taxGst",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={refreshValues}
-                              >
-                                <option value="">Select GST</option>
-                                <option value="28">28.0% GST</option>
-                                <option value="18">18.0% GST</option>
-                                <option value="12">12.0% GST</option>
-                                <option value="5">05.0% GST</option>
-                                <option value="3">03.0% GST</option>
-                                <option value="0">0.0% GST</option>
-                              </select>
-                              <select
-                                name="taxIGST"
-                                id={`taxIGST${row.id}`}
-                                className="form-control tax_ref tax_ref_igst"
-                                style={{ display: "none" }}
-                                value={row.taxIgst}
-                                onChange={(e) =>
-                                  handleInvoiceItemsInputChange(
-                                    row.id,
-                                    "taxIgst",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={refreshValues}
-                              >
-                                <option value="">Select IGST</option>
-                                <option value="28">28.0% IGST</option>
-                                <option value="18">18.0% IGST</option>
-                                <option value="12">12.0% IGST</option>
-                                <option value="5">05.0% IGST</option>
-                                <option value="3">03.0% IGST</option>
-                                <option value="0">0.0% IGST</option>
-                              </select>
-                            </td>
                             <td>
                               <input
                                 type="number"
@@ -2790,8 +2453,30 @@ function AddRecInvoice() {
                                 }
                                 onBlur={refreshValues}
                                 className="form-control disc"
-                                step="0"
+                                step="any"
                                 min="0"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                }}
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                type="text"
+                                name="description"
+                                value={row.description}
+                                onChange={(e) =>
+                                  handleInvoiceItemsInputChange(
+                                    row.id,
+                                    "description",
+                                    e.target.value
+                                  )
+                                }
+                                id={`description${row.id}`}
+                                placeholder="Description"
+                                className="form-control"
                                 style={{
                                   backgroundColor: "#43596c",
                                   color: "white",
@@ -2812,12 +2497,6 @@ function AddRecInvoice() {
                                   color: "white",
                                 }}
                               />
-                              <input
-                                type="hidden"
-                                id={`taxamount${row.id}`}
-                                className="form-control itemTaxAmount"
-                                value={row.taxAmount}
-                              />
                             </td>
                             <td>
                               <button
@@ -2832,8 +2511,8 @@ function AddRecInvoice() {
                                 title="Remove Row"
                               ></button>
                             </td>
-                          </tr>
-                        ))}
+                          </tr>)
+                        })}
                       </tbody>
                       <tr>
                         <td style={{ border: "none" }}>
@@ -2901,120 +2580,7 @@ function AddRecInvoice() {
                           />
                         </div>
                       </div>
-                      <div
-                        className="row container-fluid p-2 m-0"
-                        id="taxamountIGST"
-                        style={{ display: "flex" }}
-                      >
-                        <div className="col-sm-4 mt-2">
-                          <label for="a" className="text-center">
-                            IGST
-                          </label>
-                        </div>
-                        <div className="col-sm-1 mt-2">:</div>
-                        <div className="col-sm-7 mt-2">
-                          <input
-                            type="number"
-                            name="igst"
-                            step="any"
-                            id="igstAmount"
-                            value={igst}
-                            readOnly
-                            style={{ backgroundColor: "#37444f" }}
-                            className="form-control"
-                          />
-                        </div>
-                      </div>
-                      <div
-                        className="row container-fluid p-2 m-0"
-                        style={{ display: "none" }}
-                        id="taxamountCGST"
-                      >
-                        <div className="col-sm-4 mt-2">
-                          <label for="a" className="text-center">
-                            CGST
-                          </label>
-                        </div>
-                        <div className="col-sm-1 mt-2">:</div>
-                        <div className="col-sm-7 mt-2">
-                          <input
-                            type="number"
-                            name="cgst"
-                            step="any"
-                            id="cgstAmount"
-                            value={cgst}
-                            readOnly
-                            style={{ backgroundColor: "#37444f" }}
-                            className="form-control"
-                          />
-                        </div>
-                      </div>
-                      <div
-                        className="row container-fluid p-2 m-0"
-                        style={{ display: "none" }}
-                        id="taxamountSGST"
-                      >
-                        <div className="col-sm-4 mt-2">
-                          <label for="a" className="text-center">
-                            SGST
-                          </label>
-                        </div>
-                        <div className="col-sm-1 mt-2">:</div>
-                        <div className="col-sm-7 mt-2">
-                          <input
-                            type="number"
-                            name="sgst"
-                            step="any"
-                            id="sgstAmount"
-                            value={sgst}
-                            readOnly
-                            style={{ backgroundColor: "#37444f" }}
-                            className="form-control"
-                          />
-                        </div>
-                      </div>
-                      <div className="row container-fluid p-2 m-0">
-                        <div className="col-sm-4 mt-2">
-                          <label for="a" className="text-center">
-                            Tax Amount
-                          </label>
-                        </div>
-                        <div className="col-sm-1 mt-2">:</div>
-                        <div className="col-sm-7 mt-2">
-                          <input
-                            type="number"
-                            step="any"
-                            name="taxamount"
-                            id="tax_amount"
-                            value={taxAmount}
-                            readOnly
-                            style={{ backgroundColor: "#37444f" }}
-                            className="form-control"
-                          />
-                        </div>
-                      </div>
 
-                      <div className="row container-fluid p-2 m-0">
-                        <div className="col-sm-4 mt-2">
-                          <label for="a" className="text-center">
-                            Shipping Charge
-                          </label>
-                        </div>
-                        <div className="col-sm-1 mt-2">:</div>
-                        <div className="col-sm-7 mt-2">
-                          <input
-                            type="number"
-                            step="any"
-                            name="ship"
-                            id="ship"
-                            value={shippingCharge}
-                            onChange={(e) =>
-                              handleShippingCharge(e.target.value)
-                            }
-                            className="form-control"
-                          />
-                        </div>
-                      </div>
                       <div className="row container-fluid p-2 m-0">
                         <div className="col-sm-4 mt-2">
                           <label for="a" className="text-center">
@@ -3133,15 +2699,14 @@ function AddRecInvoice() {
                     <input
                       type="submit"
                       className="btn btn-outline-secondary w-50 text-light"
-                      onClick={() => setStatus("Draft")}
-                      value="Draft"
+                      value="Save"
                       style={{ height: "fit-content" }}
                     />
                     <input
-                      type="submit"
+                      type="reset"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => setStatus("Saved")}
-                      value="Save"
+                      value="Cancel"
+                      onClick={()=>navigate(`/view_ret_invoice/${invoiceId}/`)}
                       style={{ height: "fit-content" }}
                     />
                   </div>
@@ -3153,85 +2718,13 @@ function AddRecInvoice() {
                   </div>
                 </div>
                 <span className="text-muted">
-                  Invoice was created on a computer and is valid without the
+                  Retainer Invoice was created on a computer and is valid without the
                   signature and seal.
                 </span>
               </div>
             </div>
           </div>
         </form>
-      </div>
-
-      {/* <!-- New Repeat Every Modal --> */}
-      <div className="modal fade" id="newRepeatEvery">
-        <div className="modal-dialog modal-lg">
-          <div className="modal-content" style={{ backgroundColor: "#213b52" }}>
-            <div className="modal-header">
-              <h5 className="m-3">New Repeat Type</h5>
-              <button
-                type="button"
-                className="close"
-                id="repeatModalDismiss"
-                data-dismiss="modal"
-                aria-label="Close"
-              >
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div className="modal-body w-100">
-              <div className="card p-3">
-                <form
-                  method="post"
-                  id="newTermForm"
-                  onSubmit={handleRepeatModalSubmit}
-                >
-                  <div className="row mt-2 w-100">
-                    <div className="col-6">
-                      <label for="name">Duration</label>
-                      <input
-                        type="number"
-                        name="duration"
-                        id="duration"
-                        min="0"
-                        step="any"
-                        value={duration}
-                        onChange={(e) => setDuration(e.target.value)}
-                        className="form-control w-100"
-                      />
-                    </div>
-                    <div className="col-6">
-                      <label for="name">Type</label>
-                      <select
-                        type="number"
-                        name="type"
-                        id="repeatType"
-                        value={repeatType}
-                        onChange={(e) => setRepeatType(e.target.value)}
-                        className="form-control w-100"
-                      >
-                        <option value="Month">Month</option>
-                        <option value="Year">Year</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="row mt-4 w-100">
-                    <div className="col-4"></div>
-                    <div className="col-4 d-flex justify-content-center">
-                      <button
-                        className="btn btn-outline-secondary text-grey w-75"
-                        type="submit"
-                        id="saveRepeatEvery"
-                      >
-                        Save
-                      </button>
-                    </div>
-                    <div className="col-4"></div>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* <!-- New Payment Term Modal --> */}
@@ -4999,4 +4492,4 @@ function AddRecInvoice() {
   );
 }
 
-export default AddRecInvoice;
+export default EditRetInvoice;

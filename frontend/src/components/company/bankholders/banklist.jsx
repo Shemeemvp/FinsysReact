@@ -6,19 +6,19 @@ import Cookies from 'js-cookie';
 import axios from "axios";
 import config from "../../../functions/config";
 
-function RetInvoice() {
+function Banklist() {
   const navigate = useNavigate();
   function exportToExcel() {
-    const Table = document.getElementById("retInvoiceTable");
+    const Table = document.getElementById("itemsTable");
     const ws = XLSX.utils.table_to_sheet(Table);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-    XLSX.writeFile(wb, "Retainer_Invoices.xlsx");
+    XLSX.writeFile(wb, "items.xlsx");
   }
 
   function sortTable(columnIndex) {
     var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementById("retInvoiceTable");
+    table = document.getElementById("itemsTable");
     switching = true;
 
     while (switching) {
@@ -47,23 +47,47 @@ function RetInvoice() {
     }
   }
 
-  function filterTable(row,filterValue) {
-    var table1 = document.getElementById("retInvoiceTable");
-    var rows1 = table1.getElementsByTagName("tr");
+  function filterTable(row, filterValue) {
+    var table = document.getElementById("itemsTable");
+    var rows = table.getElementsByTagName("tr");
 
-    for (var i = 1; i < rows1.length; i++) {
-      var statusCell = rows1[i].getElementsByTagName("td")[row];
+    for (var i = 1; i < rows.length; i++) {
+      var statusCell = rows[i].getElementsByTagName("td")[row];
 
-      if (filterValue == "all" || statusCell.textContent.toLowerCase() == filterValue) {
-        rows1[i].style.display = "";
+      if (
+        filterValue == "all" ||
+        statusCell.textContent.toLowerCase() == filterValue
+      ) {
+        rows[i].style.display = "";
       } else {
-        rows1[i].style.display = "none";
+        rows[i].style.display = "none";
       }
     }
   }
 
+  function sortBankNameAscending() {
+    var table = document.getElementById("itemsTable");
+    var rows = Array.from(table.rows).slice(1);
+  
+    rows.sort(function (a, b) {
+      var bankNameA = a.cells[2].textContent.trim(); 
+      var bankNameB = b.cells[2].textContent.trim(); 
+      return bankNameA.localeCompare(bankNameB);
+    });
+  
+    
+    for (var i = table.rows.length - 1; i > 0; i--) {
+      table.deleteRow(i);
+    }
+  
+    
+    rows.forEach(function (row) {
+      table.tBodies[0].appendChild(row);
+    });
+  }
+
   function searchTable(){
-    var rows = document.querySelectorAll('#retInvoiceTable tbody tr');
+    var rows = document.querySelectorAll('#itemsTable tbody tr');
     var val = document.getElementById('search').value.trim().replace(/ +/g, ' ').toLowerCase();
     rows.forEach(function(row) {
       var text = row.textContent.replace(/\s+/g, ' ').toLowerCase();
@@ -72,17 +96,27 @@ function RetInvoice() {
   }
 
   const ID = Cookies.get('Login_id');
-  const [retInvoice, setRetInvoice] = useState([]);
-
-  const fetchRetInvoice = () =>{
-    axios.get(`${config.base_url}/fetch_ret_invoices/${ID}/`).then((res)=>{
-      console.log("RTINV RES=",res)
+  const [holder, setHolder] = useState([]);
+  
+  const fetchHolder = () =>{
+    axios.get(`${config.base_url}/fetch_bankholder/${ID}/`).then((res)=>{
+      console.log("holder RES=",res)
       if(res.data.status){
-        var inv = res.data.retInvoice;
-        setRetInvoice([])
-        inv.map((i)=>{
-          setRetInvoice((prevState)=>[
-            ...prevState, i
+        var itms = res.data.holder;
+        setHolder([])
+        itms.map((i)=>{
+          var obj = {
+            id: i.id,
+            name: i.Holder_name,
+            bank: i.Bank_name,
+            ifsc: i.Ifsc_code,
+            branch: i.Branch_name,
+            accno :i.Account_number,
+            
+            status: i.status
+          }
+          setHolder((prevState)=>[
+            ...prevState, obj
           ])
         })
       }
@@ -92,13 +126,15 @@ function RetInvoice() {
   }
 
   useEffect(()=>{
-    fetchRetInvoice();
+    fetchHolder();
   },[])
   
   function refreshAll(){
-    setRetInvoice([])
-    fetchRetInvoice();
+    setHolder([])
+    fetchHolder();
   }
+
+  
   return (
     <>
       <FinBase />
@@ -110,7 +146,7 @@ function RetInvoice() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">RETAINER INVOICES</h2>
+                <h2 className="mt-3">ALL BANK HOLDERS</h2>
               </center>
               <hr />
             </div>
@@ -166,9 +202,9 @@ function RetInvoice() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(3)}
+                          onClick={()=>sortTable(1)}
                         >
-                          Customer Name
+                         Holder Name
                         </a>
                         <a
                           className="dropdown-item"
@@ -178,9 +214,9 @@ function RetInvoice() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(2)}
+                          onClick={sortBankNameAscending}
                         >
-                          Ret. Invoice No.
+                          Bank Name
                         </a>
                       </div>
                     </div>
@@ -218,7 +254,7 @@ function RetInvoice() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'all')}
+                        onClick={()=>filterTable(5,'all')}
                       >
                         All
                       </a>
@@ -230,9 +266,9 @@ function RetInvoice() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'sent')}
+                        onClick={()=>filterTable(5,'active')}
                       >
-                        Sent
+                        Active
                       </a>
                       <a
                         className="dropdown-item"
@@ -242,19 +278,19 @@ function RetInvoice() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'draft')}
+                        onClick={()=>filterTable(5,'inactive')}
                       >
-                        Draft
-                      </a>
+                        Inactive
+                       </a>
                     </div>
                   </div>
-                  <Link to="/add_ret_invoice" className="ml-1">
+                  <Link to="/add_bankholder" className="ml-1">
                     <button
                       type="button"
                       style={{ width: "fit-content", height: "fit-content" }}
                       className="btn btn-outline-secondary text-grey"
                     >
-                      <i className="fa fa-plus font-weight-light"></i> Ret. Invoice
+                      <i className="fa fa-plus font-weight-light"></i> Bank Holder
                     </button>
                   </Link>
                 </div>
@@ -264,36 +300,38 @@ function RetInvoice() {
           <div className="table-responsive">
             <table
               className="table table-responsive-md table-hover mt-4"
-              id="retInvoiceTable"
+              id="itemsTable"
               style={{ textAlign: "center" }}
             >
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>DATE</th>
-                  <th>RET. INVOICE NO.</th>
-                  <th>CUSTOMER NAME</th>
-                  <th>MAIL ID</th>
-                  <th>AMOUNT</th>
+                  <th>SL.NO.</th>
+                  <th>HOLDER NAME</th>
+                  <th>BANK NAME</th>
+                  
+                  <th>IFSC CODE</th>
+                  <th>ACCOUNT NUMBER.</th>
+                  <th>BRANCH NAME</th>
                   <th>STATUS</th>
-                  <th>BALANCE</th>
+                  
                 </tr>
               </thead>
               <tbody>
-                {retInvoice &&retInvoice.map((i,index)=>(
+                {holder && holder.map((i,index)=>(
                   <tr
                     className="clickable-row"
-                    onClick={()=>navigate(`/view_ret_invoice/${i.id}/`)}
+                    onClick={()=>navigate(`/viewholder/${i.id}/`)}
                     style={{ cursor: "pointer" }}
                   >
                     <td>{index+1}</td>
-                    <td>{i.ret_invoice_date}</td>
-                    <td>{i.ret_invoice_no}</td>
-                    <td>{i.customer_name}</td>
-                    <td>{i.customer_email}</td>
-                    <td>{i.grandtotal}</td>
+                    <td>{i.name}</td>
+                    <td>{i.bank}</td>
+                    
+                    <td>{i.ifsc}</td>
+                    <td>{i.accno}</td>
+                    <td>{i.branch}</td>
                     <td>{i.status}</td>
-                    <td>{i.balance}</td>
+                    
                   </tr>
                 ))}
               </tbody>
@@ -305,4 +343,4 @@ function RetInvoice() {
   );
 }
 
-export default RetInvoice;
+export default Banklist;

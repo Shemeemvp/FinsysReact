@@ -2349,7 +2349,7 @@ function AddRetInvoice() {
                                 }
                                 onBlur={refreshValues}
                                 className="form-control disc"
-                                step="0"
+                                step="any"
                                 min="0"
                                 style={{
                                   backgroundColor: "#43596c",
@@ -2363,6 +2363,13 @@ function AddRetInvoice() {
                                 type="text"
                                 name="description"
                                 value={row.description}
+                                onChange={(e) =>
+                                  handleInvoiceItemsInputChange(
+                                    row.id,
+                                    "description",
+                                    e.target.value
+                                  )
+                                }
                                 id={`description${row.id}`}
                                 placeholder="Description"
                                 className="form-control"
