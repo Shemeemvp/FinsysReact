@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from datetime import date
 
 # Create your models here.
 
@@ -457,6 +458,88 @@ class Fin_BankTransactionHistory(models.Model):
     date = models.DateTimeField(auto_now_add=True,null=True)
     action = models.CharField(max_length=255,null=True,blank=True)
 
+#employee
+class Employee(models.Model):
+    upload_file = models.FileField(upload_to='file/',blank=True) 
+    upload_image = models.ImageField(upload_to='media/',blank=True)
+    title = models.CharField(max_length=255,null=True,blank=True)
+    first_name = models.CharField(max_length=255,null=True,blank=True)
+    last_name = models.CharField(max_length=255,null=True,blank=True)
+    alias = models.CharField(max_length=255,null=True,blank=True)
+    employee_mail = models.EmailField(null=True,blank=True)
+    employee_number = models.CharField(max_length=255,null=True,blank=True)
+    employee_designation = models.CharField(max_length=255,null=True,blank=True)
+    function = models.CharField(max_length=255,null=True,blank=True)
+    employee_current_location = models.CharField(max_length=255,null=True,blank=True)
+    mobile = models.CharField(max_length=255,null=True,blank=True)
+    date_of_joining = models.DateField(null=True,blank=True)
+    employee_salary_type = models.CharField(max_length=255,null=True,blank=True)
+    salary_details = models.CharField(max_length=10,null=True,blank=True)
+    salary_effective_from = models.CharField(max_length=255,null=True,blank=True)
+
+    pay_head = models.CharField(max_length=255,null=True,blank=True)
+    salary_amount = models.FloatField(null=True,blank=True)
+    amount_per_hour = models.IntegerField(null=True,blank=True)
+    total_working_hours = models.IntegerField(null=True,blank=True)
+    gender = models.CharField(max_length=255,null=True,blank=True)
+    date_of_birth = models.DateField(null=True,blank=True)
+    age = models.IntegerField(null=True,blank=True)
+    blood_group = models.CharField(max_length=255,null=True,blank=True)
+    fathers_name_mothers_name = models.CharField(max_length=255,null=True,blank=True)
+    spouse_name = models.CharField(max_length=255,null=True,blank=True)
+    emergency_contact = models.CharField(max_length=255,null=True,blank=True)
+    provide_bank_details = models.CharField(max_length=255,null=True,blank=True)
+    account_number = models.CharField(max_length=255,null=True,blank=True)
+    ifsc = models.CharField(max_length=255,null=True,blank=True)
+    name_of_bank = models.CharField(max_length=255,null=True,blank=True)
+    branch_name = models.CharField(max_length=255,null=True,blank=True)
+    bank_transaction_type = models.CharField(max_length=255,null=True,blank=True)
+    tds_applicable = models.CharField(max_length=255,null=True,blank=True)
+    tds_type = models.CharField(max_length=255,null=True,blank=True)
+    percentage_amount = models.IntegerField(null=True,blank=True)
+    pan_number = models.CharField(max_length=255,null=True,blank=True)
+    income_tax_number = models.CharField(max_length=255,null=True,blank=True)
+    aadhar_number = models.CharField(max_length=255,null=True,blank=True)
+    universal_account_number = models.CharField(max_length=255,null=True,blank=True)
+    pf_account_number = models.CharField(max_length=255,null=True,blank=True)
+    pr_account_number = models.CharField(max_length=255,null=True,blank=True)
+    esi_number = models.CharField(max_length=255,null=True,blank=True)
+
+    street = models.CharField(max_length=255,null=True,blank=True)
+    city = models.CharField(max_length=255,null=True,blank=True)
+    state = models.CharField(max_length=255,null=True,blank=True)
+    pincode = models.CharField(max_length=255,null=True,blank=True)
+    country = models.CharField(max_length=255,null=True,blank=True)
+    temporary_street = models.CharField(max_length=255,null=True,blank=True)
+    temporary_city = models.CharField(max_length=255,null=True,blank=True)
+    temporary_state = models.CharField(max_length=255,null=True,blank=True)
+    temporary_pincode = models.CharField(max_length=255,null=True,blank=True)
+    temporary_country = models.CharField(max_length=255,null=True,blank=True)
+    employee_status = models.CharField(max_length=30,null=True,blank=True)
+    company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True,blank=True)
+    login = models.ForeignKey(Fin_Login_Details,on_delete=models.CASCADE,null=True,blank=True)
+
+class Employee_History(models.Model):
+    company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True,blank=True)
+    login = models.ForeignKey(Fin_Login_Details,on_delete=models.CASCADE,null=True,blank=True)
+    employee = models.ForeignKey(Employee,on_delete=models.CASCADE,blank=True,null=True)
+    date = models.DateField(null=True,blank=True)
+    action = models.CharField(max_length=255,null=True,blank=True)
+
+class Employee_Comment(models.Model):
+    employee = models.ForeignKey(Employee,on_delete=models.CASCADE,blank=True,null=True)
+    company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True,blank=True)
+    login = models.ForeignKey(Fin_Login_Details,on_delete=models.CASCADE,null=True,blank=True)
+    comment = models.CharField(max_length=255,null=True,blank=True)
+    date = models.DateField(default = date.today())
+    
+class Employee_Blood_Group(models.Model):
+    blood_group = models.CharField(max_length=255,null=True,blank=True)
+    company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True,blank=True)
+    login = models.ForeignKey(Fin_Login_Details,on_delete=models.CASCADE,null=True,blank=True)      
+
+#End
+
 
 # Stock Adjustment
 
@@ -586,6 +669,169 @@ class Fin_Sales_Order_Comments(models.Model):
     SalesOrder = models.ForeignKey(Fin_Sales_Order,on_delete=models.CASCADE, null=True)
     comments = models.CharField(max_length=500,null=True,blank=True)
 
+
+# Vendors
+class Fin_Vendor(models.Model):
+    Title = models.CharField(max_length=10,null=True)
+    First_name = models.CharField(max_length=50,null=True)
+    Last_name = models.CharField(max_length=50,null=True)
+    Vendor_email = models.EmailField(null=True)
+    Mobile = models.CharField(max_length=25,null=True)
+    Company_Name = models.CharField(max_length=100,null=True)
+    Location = models.CharField(max_length=100,null=True)
+    Website = models.CharField(max_length=100,null=True,default='')
+    GST_Treatment = models.CharField(max_length=50,null=True)
+    GST_Number = models.CharField(max_length=50,null=True)
+    Pan_Number = models.CharField(max_length=50,null=True)
+    Opening_balance_type = models.CharField(max_length=50,null=True)
+    Opening_balance = models.FloatField(null=True,default=0.0)
+    Current_balance = models.FloatField(null=True,default=0.0)
+    Credit_limit = models.FloatField(null=True,default=0.0)
+    Place_of_supply = models.CharField(max_length=200,null=True)
+    Billing_street = models.CharField(max_length=200,null=True)
+    Billing_city = models.CharField(max_length=200,null=True)
+    Billing_state = models.CharField(max_length=200,null=True)
+    Billing_country = models.CharField(max_length=200,null=True)
+    Billing_pincode = models.CharField(max_length=10,null=True)
+    Shipping_street = models.CharField(max_length=200,null=True)
+    Shipping_city = models.CharField(max_length=200,null=True)
+    Shipping_state = models.CharField(max_length=200,null=True)
+    Shipping_country = models.CharField(max_length=200,null=True)
+    Shipping_pincode = models.CharField(max_length=10,null=True)
+    currency = models.CharField(max_length=50,null=True)
+    Date = models.DateField(auto_now_add=True,auto_now=False,null=True)
+    vendor_status = (
+        ('Active','Active'),
+        ('Inactive','Inactive'),
+    )
+    status = models.CharField(max_length=100,null=True,choices=vendor_status,default='Active')
+    payment_terms = models.ForeignKey(Fin_Company_Payment_Terms,on_delete=models.CASCADE,null=True)
+    Company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True)
+    Login_details = models.ForeignKey(Fin_Login_Details,on_delete=models.CASCADE,null=True)
+
+class Fin_Vendor_History(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True)
+    Login_details = models.ForeignKey(Fin_Login_Details,on_delete=models.CASCADE,null=True)
+    Vendor = models.ForeignKey(Fin_Vendor,on_delete=models.CASCADE,null=True)
+    Date = models.DateField(auto_now_add=True,auto_now=False,null=True)
+    Action_choices = (
+        ('Created', 'Created'),
+        ('Edited', 'Edited'),
+    )
+    Action = models.CharField(max_length=30,null=True,choices=Action_choices)
+
+class Fin_Vendor_Comments(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details,on_delete=models.CASCADE,null=True)
+    Vendor = models.ForeignKey(Fin_Vendor,on_delete=models.CASCADE,null=True)
+    comments = models.CharField(max_length=200,null=True)
+    
+#End
+#Bank Holders
+class Fin_BankHolder(models.Model):
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True, blank=True)
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True, blank=True)
+    bank = models.ForeignKey(Fin_Banking, on_delete=models.CASCADE,null=True)
+    Holder_name = models.CharField(max_length=255, null=True, blank=True)
+    Alias = models.CharField(max_length=255, null=True, blank=True)
+    phone_number = models.CharField(max_length=10, null=True, blank=True)
+    Email = models.EmailField(max_length=255, null=True, blank=True)
+    ACCOUNT_TYPE_CHOICES = [('CC', 'Credit Card'), ('BA', 'Bank Account'),]
+    Account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPE_CHOICES, default='BA',)
+
+    Set_cheque_book_range = models.BooleanField(default=False)
+    Enable_cheque_printing = models.BooleanField(default=False)
+    Set_cheque_printing_configuration = models.BooleanField(default=False)
+
+    Mailing_name = models.CharField(max_length=100)
+    Address = models.TextField(max_length=255, null=True, blank=True)
+    Country = models.CharField(max_length=100,null=True,blank=True)
+    STATE_CHOICES = [
+    ('AN', 'Andaman and Nicobar Islands'),
+    ('AP', 'Andhra Pradesh'),
+    ('AR', 'Arunachal Pradesh'),
+    ('AS', 'Assam'),
+    ('BR', 'Bihar'),
+    ('CH', 'Chhattisgarh'),
+    ('DL', 'National Capital Territory of Delhi'),
+    ('GA', 'Goa'),
+    ('GJ', 'Gujarat'),
+    ('HR', 'Haryana'),
+    ('HP', 'Himachal Pradesh'),
+    ('JK', 'Jammu and Kashmir'),
+    ('LA', 'Ladakh'),
+    ('JH', 'Jharkhand'),
+    ('KA', 'Karnataka'),
+    ('KL', 'Kerala'),
+    ('MP', 'Madhya Pradesh'),
+    ('MH', 'Maharashtra'),
+    ('MN', 'Manipur'),
+    ('ML', 'Meghalaya'),
+    ('MZ', 'Mizoram'),
+    ('NL', 'Nagaland'),
+    ('OR', 'Odisha'),
+    ('PB', 'Punjab'),
+    ('RJ', 'Rajasthan'),
+    ('SK', 'Sikkim'),
+    ('TN', 'Tamil Nadu'),
+    ('TG', 'Telangana'),
+    ('TR', 'Tripura'),
+    ('UT', 'Uttarakhand'),
+    ('UP', 'Uttar Pradesh'),
+    ('WB', 'West Bengal')
+    ]
+    State = models.CharField(max_length=100, choices=STATE_CHOICES,)
+    Pin = models.CharField(max_length=6)
+
+    REGISTRATION_TYPE_CHOICES = [('regular', 'Regular'), ('composition', 'Composition'), ('consumer', 'Consumer'),
+                                 ('unregistered', 'Unregistered'),]
+    Pan_it_number = models.CharField(max_length=10, blank=True)
+    Registration_type = models.CharField(max_length=20, choices=REGISTRATION_TYPE_CHOICES, default='unknown')
+    Gstin_un = models.CharField(max_length=15, blank=True)
+    Set_alter_gst_details = models.BooleanField(default=False)
+
+    date = models.DateField(auto_now_add=False,null=True)
+    
+    Types = [('CREDIT', 'CREDIT'), ('DEBIT', 'DEBIT'),]
+    Open_type = models.CharField(max_length=20, choices=Types, default='unknown')
+
+    Swift_code = models.CharField(max_length=11,null=True, blank=True)
+    Bank_name = models.CharField(max_length=200, null=True, blank=True)
+    Ifsc_code = models.CharField(max_length=15, null=True, blank=True)
+    Branch_name = models.CharField(max_length=20, null=True, blank=True)
+    Account_number = models.CharField(max_length=20, null=True, blank=True)
+    Amount = models.CharField(max_length=20, null=True, blank=True)
+    status = models.CharField(max_length=100,null=True, default='Active')
+
+    
+  
+
+    def __str__(self):
+        return self.Holder_name
+    
+class Fin_BankHolderComment(models.Model):
+    
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE,null=True,blank=True)
+
+    Holder = models.ForeignKey(Fin_BankHolder, on_delete=models.CASCADE)
+    comment = models.TextField(max_length=255, null=True, blank=True)
+    
+    def __str__(self):
+        return f'Comment #{self.id}'
+       
+class Fin_BankHolderHistory(models.Model):
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE,null=True,blank=True)
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE,null=True,blank=True)
+    Holder = models.ForeignKey(Fin_BankHolder, on_delete=models.CASCADE)
+
+
+    date = models.DateField(auto_now_add=True, auto_now=False, null=True)
+    action_choices = [
+        ('Created', 'Created'),
+        ('Edited', 'Edited')
+        ]
+    action = models.CharField(max_length=20, null=True, blank = True, choices=action_choices)
+    
+#End
 
 # Invoice
 
@@ -740,6 +986,85 @@ class Fin_Delivery_Challan_Comments(models.Model):
     delivery_challan = models.ForeignKey(Fin_Delivery_Challan,on_delete=models.CASCADE, null=True)
     comments = models.CharField(max_length=500,null=True,blank=True)
 
+
+# Estimate
+class Fin_Estimate(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    Customer = models.ForeignKey(Fin_Customers, on_delete=models.CASCADE, null=True)
+    customer_email = models.EmailField(max_length=100, null=True, blank=True)
+    billing_address = models.TextField(null=True, blank=True)
+    gst_type = models.CharField(max_length=100, null=True, blank=True)
+    gstin = models.CharField(max_length=100, null=True, blank=True)
+    place_of_supply = models.CharField(max_length=100, null=True, blank=True)
+    reference_no = models.IntegerField(null=True, blank=True)
+    estimate_no = models.CharField(max_length=100)
+    payment_terms = models.ForeignKey(Fin_Company_Payment_Terms, on_delete = models.SET_NULL,null=True)
+    estimate_date = models.DateField(null=True, blank=True)
+    exp_date = models.DateField(null=True,blank=True)
+
+    payment_method = models.CharField(max_length=100, null=True, blank=True)
+    cheque_no = models.CharField(max_length=100, null=True, blank=True)
+    upi_no = models.CharField(max_length=100, null=True, blank=True)
+    bank_acc_no = models.CharField(max_length=100, null=True, blank=True)
+
+    subtotal = models.IntegerField(default=0, null=True)
+    igst = models.FloatField(default=0.0, null=True, blank=True)
+    cgst = models.FloatField(default=0.0, null=True, blank=True)
+    sgst = models.FloatField(default=0.0, null=True, blank=True)
+    tax_amount = models.FloatField(default=0.0, null=True, blank=True)
+    adjustment = models.FloatField(default=0.0, null=True, blank=True)
+    shipping_charge = models.FloatField(default=0.0, null=True, blank=True)
+    grandtotal = models.FloatField(default=0.0, null=True, blank=True)
+    balance = models.FloatField(default=0.0, null=True, blank = True)
+
+    # converted_to_sales_order =  models.ForeignKey(Fin_Sales_Order, on_delete = models.SET_NULL, null = True)
+    # converted_to_invoice =  models.ForeignKey(Fin_Invoice, on_delete = models.SET_NULL, null = True)
+    # converted_to_rec_invoice =  models.ForeignKey(Fin_Recurring_Invoice, on_delete = models.SET_NULL, null = True)
+    
+    note = models.TextField(null=True, blank=True)
+    file = models.FileField(upload_to='estimate', null=True, default=None)
+    status =models.CharField(max_length=150,default='Draft')
+
+    def getNumFieldName(self):
+        return 'estimate_no'
+
+
+class Fin_Estimate_Items(models.Model):
+    Estimate = models.ForeignKey(Fin_Estimate,on_delete=models.CASCADE, null=True)
+    Item = models.ForeignKey(Fin_Items,on_delete=models.SET_NULL, null=True)
+    hsn = models.BigIntegerField(null=True, blank=True)
+    sac = models.BigIntegerField(null=True, blank=True)
+    quantity = models.IntegerField(default=0, null=True)
+    price = models.FloatField(default=0.0, null=True, blank=True)
+    total = models.FloatField(default=0.0, null=True, blank=True)
+    tax = models.CharField(max_length=100, null=True)
+    discount = models.FloatField(default=0.0, null=True, blank=True)
+
+
+class Fin_Estimate_Reference(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    reference_no = models.BigIntegerField(null = False, blank=False)
+
+
+class Fin_Estimate_History(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    Estimate = models.ForeignKey(Fin_Estimate,on_delete=models.CASCADE, null=True)
+    date = models.DateField(auto_now_add=True, auto_now=False, null=True)
+    action_choices = [
+        ('Created', 'Created'),
+        ('Edited', 'Edited'),
+    ]
+    action = models.CharField(max_length=20, null=True, blank = True, choices=action_choices)
+
+class Fin_Estimate_Comments(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    Estimate = models.ForeignKey(Fin_Estimate,on_delete=models.CASCADE, null=True)
+    comments = models.CharField(max_length=500,null=True,blank=True)
+    
+#End
 
 # Recurring Invoice
 

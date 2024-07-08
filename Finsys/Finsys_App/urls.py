@@ -151,6 +151,21 @@ urlpatterns = [
     path('update_bank_adjust/',Fin_updateBankAdjust),
     path('update_bank_to_bank/',Fin_updateBankToBank),
 
+    #Employee
+    path('create_new_employee/<int:id>/',Fin_createemployee),
+    path('create_new_bloodgroup/',Fin_createNewbloodgroup),
+    path('fetch_employee/<int:id>/',Fin_fetchemployee),
+    path('employee_save/',employee_save),
+    path('fetch_employee_details/<int:id>/',Fin_fetchEmployeeDetails),
+    path('change_Employee_status/',Fin_changeEmployeeStatus),
+    path('Fin_addEmployeeComment/',Fin_addEmployeeComment),
+    path('delete_employee_comment/<int:id>/',Fin_deleteemployeeComment),
+    path('delete_employee/<int:id>/',Fin_deleteemployee),
+    path('fetch_employee_history/<int:id>/',Fin_fetchemployeeHistory),
+    path('employee_transaction_pdf/<int:itemId>/<int:id>/',Fin_employTransactionPdf),
+    path('share_employee_transactions_email/',Fin_share_employ_TransactionsToEmail),
+    path('update_employee/',Fin_updateemployee),
+
     # Stock Adjustment
     path('fetch_stock_adjust/<int:id>/',Fin_fetchStockAdjust),
     path('fetch_stock_adjust_details/<int:id>/',Fin_fetchStockAdjustDetails),
@@ -191,6 +206,34 @@ urlpatterns = [
     path('share_sales_order_email/',Fin_shareSalesOrderToEmail),
     path('update_sales_order/',Fin_updateSalesOrder),
 
+    #Vendor
+    path('add_vendor_new/',Fin_add_vendor_new),
+    path('all_vendors/<int:id>/',Fin_all_vendors),
+    path('view_vendor/<int:id>/<int:ID>/',Fin_view_vendor),
+    path('change_vendor_status/<int:id>/<str:sta>/',Fin_change_vendor_status),
+    path('vendor_transaction_pdf/<int:id>/<int:ID>/',Fin_vendorTransactionsPdf),
+    path('share_vendor_transaction_mail/',Fin_sharevendorTransactionsToEmail),
+    path('get_vendor_details/<int:id>/<int:ID>/',Fin_get_vendor_details),
+    path('update_vendor/',Fin_update_vendor),
+    path('delete_vendor/<int:id>/',Fin_delete_vendor),
+    path('add_vendor_comment/',Fin_add_vendor_comment),
+    path('delete_vendor_comment/<int:id>/',Fin_delete_vendor_comment),
+    path('fetch_vendor_history/<int:id>/',Fin_fetch_vendor_history),
+    
+    #bank holder
+    path('holder_create_new_bank/',holder_createNewBank),
+    path('get_banks/<int:id>/',get_banks),
+    path('get_bank_details/<int:bid>/<int:id>/',get_bank_details),
+    path('create_new_bank_holder/',create_bank_holder),
+    path('fetch_bankholder/<int:id>/',fetch_bankholder),
+    path('fetch_holder_details/<int:id>/',fetch_holder_details),
+    path('change_holder_status/',Fin_changeHolderStatus),
+    path('delete_holder/<int:id>/',Fin_deleteHolder),
+    path('fetch_holder_history/<int:id>/',Fin_holderHistory),
+    path('add_holder_comment/',Fin_addHolderComment),
+    path('delete_holder_comment/<int:id>/',Fin_deleteHolderComment),
+    path('edit_bank_holder/',Fin_editHolder),
+
     #Invoice
     path('fetch_invoices/<int:id>/',Fin_fetchInvoices),
     path('fetch_invoice_data/<int:id>/',Fin_fetchInvoiceData),
@@ -223,6 +266,26 @@ urlpatterns = [
     path('share_challan_email/',Fin_shareChallanToEmail),
     path('update_delivery_challan/',Fin_updateChallan),
     path('convert_challan_to_invoice/',Fin_convertChallanToInvoice),
+
+    #Estimate
+    path('fetch_estimate/<int:id>/',Fin_fetchEstimate),
+    path('fetch_estimatedata/<int:id>/',Fin_fetchestimateData),
+    path('get_estcustomer_data/',Fin_get_estCustomerData),
+    path('create_new_estpayment_term/',Fin_createNewestPaymentTerm),
+    path('get_estbank_account_data/<int:id>/',Fin_getestBankAccountData),
+    path('get_estitem_data/',Fin_getestTableItemData),
+    path('check_estimate_no/',Fin_checkEstimateNo),
+    path('create_new_estimate/',Fin_createEstimate),
+    path('fetch_estimate_details/<int:id>/',Fin_fetchEstimateDetails),
+    path('change_estimate_status/',Fin_changeEstimateStatus),
+    path('add_estimate_comment/',Fin_addEstimateComment),
+    path('delete_estimate_comment/<int:id>/',Fin_deleteEstimateComment),
+    path('fetch_estimate_history/<int:id>/',Fin_fetchEstimateHistory),
+    path('add_estimate_attachment/',Fin_addEstimateAttachment),
+    path('delete_estimate/<int:id>/',Fin_deleteEstimate),
+    path('estimate_pdf/',Fin_estimatePdf),
+    path('share_estimate_email/',Fin_shareEstimateToEmail),
+    path('update_estimate/',Fin_updateEstimate),
 
     #Recurring Invoice
     path('fetch_rec_invoices/<int:id>/',Fin_fetchRecInvoices),

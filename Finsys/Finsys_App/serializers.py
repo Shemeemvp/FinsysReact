@@ -123,6 +123,26 @@ class BankAttachmentSerializer(serializers.ModelSerializer):
         model = Fin_BankingAttachments
         fields = '__all__'
 
+class EmployeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
+        fields = '__all__'
+        
+class EmployeeBloodgroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee_Blood_Group
+        fields = '__all__'
+        
+class EmployeeHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee_History
+        fields = '__all__'
+
+class EmployeeCommentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee_Comment
+        fields = '__all__'
+
 # Stock Adjustment
 class StockAdjustSerializer(serializers.ModelSerializer):
     class Meta:
@@ -160,6 +180,35 @@ class SalesOrderItemsSerializer(serializers.ModelSerializer):
         model = Fin_Sales_Order_Items
         fields = '__all__'
 
+#Vendor
+class VendorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Vendor
+        fields = '__all__'
+
+class VendorHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Vendor_History
+        fields = '__all__'
+
+class VendorCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Vendor_Comments
+        fields = '__all__'
+        
+#End
+#Bankholder
+class BankHolderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_BankHolder
+        fields = '__all__'
+
+class BankHolderCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_BankHolderComment
+        fields = '__all__'
+#End
+
 # Invoice
 class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -181,6 +230,24 @@ class DeliveryChallanCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Delivery_Challan_Comments
         fields = '__all__'
+
+# Estimate
+class FinEstimateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Estimate
+        fields = '__all__'
+        
+class FinEstimateCommentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Estimate_Comments
+        fields = '__all__'
+        
+class FinEstimateItemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Estimate_Items
+        fields = '__all__'
+
+#End
 
 # Rec. Invoice
 class RecInvoiceSerializer(serializers.ModelSerializer):
