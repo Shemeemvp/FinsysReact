@@ -124,6 +124,11 @@ import AddRetInvoice from './components/company/retainerinvoice/AddRetInvoice';
 import ViewRetInvoice from './components/company/retainerinvoice/ViewRetInvoice';
 import RetInvoiceHistory from './components/company/retainerinvoice/RetInvoiceHistory';
 import EditRetInvoice from './components/company/retainerinvoice/EditRetInvoice';
+import CreditNote from './components/company/creditnote/CreditNote';
+import AddCreditNote from './components/company/creditnote/AddCreditNote';
+import ViewCreditNote from './components/company/creditnote/ViewCreditNote';
+import CreditNoteHistory from './components/company/creditnote/CreditNoteHistory';
+import EditCreditNote from './components/company/creditnote/EditCreditNote';
 
 
 function App() {
@@ -294,6 +299,12 @@ function App() {
             <Route path="/ret_invoice_history/:invoiceId/" element={<RetInvoiceHistory />}></Route>
             <Route path="/edit_ret_invoice/:invoiceId/" element={<EditRetInvoice />}></Route>
             
+            {/* Credit Note */}
+            <Route path="/credit_note" element={<CreditNote />}></Route>
+            <Route path="/add_credit_note" element={<AddCreditNote />}></Route>
+            <Route path="/view_credit_note/:creditNoteId/" element={<ViewCreditNote />}></Route>
+            <Route path="/credit_note_history/:creditNoteId/" element={<CreditNoteHistory />}></Route>
+            <Route path="/edit_credit_note/:creditNoteId/" element={<EditCreditNote />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

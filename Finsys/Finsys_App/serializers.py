@@ -275,3 +275,14 @@ class RetInvoiceCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Retainer_Invoice_Comments
         fields = '__all__'
+
+# Credit Note
+class CreditNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_CreditNote
+        fields = '__all__'
+
+class CreditNoteCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_CreditNote_Comments
+        fields = '__all__'

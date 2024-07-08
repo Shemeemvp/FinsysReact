@@ -1284,7 +1284,7 @@ function FinBase() {
 
                   {/* {% if allmodules.Credit_Note == 1 %} */}
                   <li id="creditnote">
-                    <a href="{% url 'Fin_creditNotes' %}"><i className="bx bx-right-arrow-alt"></i>Credit Note</a>
+                    <Link to="/credit_note"><i className="bx bx-right-arrow-alt"></i>Credit Note</Link>
                   </li>
                   {/* {% endif %} */}
 

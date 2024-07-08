@@ -319,4 +319,23 @@ urlpatterns = [
     path('ret_invoice_pdf/',Fin_retInvoicePdf),
     path('share_ret_invoice_email/',Fin_shareRetInvoiceToEmail),
     path('update_ret_invoice/',Fin_updateRetInvoice),
+
+    # Recurring Invoice
+    path('fetch_credit_notes/<int:id>/',Fin_fetchCreditNotes),
+    path('fetch_credit_note_data/<int:id>/',Fin_fetchCreditNoteData),
+    path('get_invoice_numbers/',Fin_getInvoiceNumbers),
+    path('get_invoice_numbers_edit/',Fin_getInvoiceNumbersEdit),
+    path('get_invoice_items/',Fin_getInvoiceItems),
+    path('check_credit_note_no/',Fin_checkCreditNoteNo),
+    path('create_new_credit_note/',Fin_createCreditNote),
+    path('fetch_credit_note_details/<int:id>/',Fin_fetchCreditNoteDetails),
+    path('change_credit_note_status/',Fin_changeCreditNoteStatus),
+    path('add_credit_note_comment/',Fin_addCreditNoteComment),
+    path('add_credit_note_attachment/',Fin_addCreditNoteAttachment),
+    path('delete_credit_note_comment/<int:id>/',Fin_deleteCreditNoteComment),
+    path('fetch_credit_note_history/<int:id>/',Fin_fetchCreditNoteHistory),
+    path('delete_credit_note/<int:id>/',Fin_deleteCreditNote),
+    path('credit_note_pdf/',Fin_creditNotePdf),
+    path('share_credit_note_email/',Fin_shareCreditNoteToEmail),
+    path('update_credit_note/',Fin_updateCreditNote),
 ]
