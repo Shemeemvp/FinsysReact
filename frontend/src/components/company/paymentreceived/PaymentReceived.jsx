@@ -2,23 +2,23 @@ import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
 import * as XLSX from "xlsx";
 import { Link, useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
+import Cookies from 'js-cookie';
 import axios from "axios";
 import config from "../../../functions/config";
 
-function DeliveryChallan() {
+function PaymentReceived() {
   const navigate = useNavigate();
   function exportToExcel() {
-    const Table = document.getElementById("deliveryChallanTableExport");
+    const Table = document.getElementById("paymentsTable");
     const ws = XLSX.utils.table_to_sheet(Table);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-    XLSX.writeFile(wb, "DeliveryChallan.xlsx");
+    XLSX.writeFile(wb, "PaymentReceived.xlsx");
   }
 
   function sortTable(columnIndex) {
     var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementById("deliveryChallanTable");
+    table = document.getElementById("paymentsTable");
     switching = true;
 
     while (switching) {
@@ -47,102 +47,56 @@ function DeliveryChallan() {
     }
   }
 
-  function filterTable(row, filterValue) {
-    var table1 = document.getElementById("deliveryChallanTable");
+  function filterTable(row,filterValue) {
+    var table1 = document.getElementById("paymentsTable");
     var rows1 = table1.getElementsByTagName("tr");
 
     for (var i = 1; i < rows1.length; i++) {
       var statusCell = rows1[i].getElementsByTagName("td")[row];
 
-      if (
-        filterValue == "all" ||
-        statusCell.textContent.toLowerCase() == filterValue
-      ) {
+      if (filterValue == "all" || statusCell.textContent.toLowerCase() == filterValue) {
         rows1[i].style.display = "";
       } else {
         rows1[i].style.display = "none";
       }
     }
+  }
 
-    var table2 = document.getElementById("deliveryChallanTableExport");
-    var rows2 = table2.getElementsByTagName("tr");
+  function searchTable(){
+    var rows = document.querySelectorAll('#paymentsTable tbody tr');
+    var val = document.getElementById('search').value.trim().replace(/ +/g, ' ').toLowerCase();
+    rows.forEach(function(row) {
+      var text = row.textContent.replace(/\s+/g, ' ').toLowerCase();
+      row.style.display = text.includes(val) ? '' : 'none';
+    });
+  }
 
-    for (var i = 1; i < rows2.length; i++) {
-      var statusCell = rows2[i].getElementsByTagName("td")[row];
+  const ID = Cookies.get('Login_id');
+  const [payment, setPayment] = useState([]);
 
-      if (
-        filterValue == "all" ||
-        statusCell.textContent.toLowerCase() == filterValue
-      ) {
-        rows2[i].style.display = "";
-      } else {
-        rows2[i].style.display = "none";
+  const fetchPayments = () =>{
+    axios.get(`${config.base_url}/fetch_payments/${ID}/`).then((res)=>{
+      if(res.data.status){
+        var pay = res.data.payments;
+        setPayment([])
+        pay.map((i)=>{
+          setPayment((prevState)=>[
+            ...prevState, i
+          ])
+        })
       }
-    }
+    }).catch((err)=>{
+      console.log('ERR',err)
+    })
   }
 
-  function sortHsnAscending() {
-    var table = document.getElementById("deliveryChallanTable");
-    var rows = Array.from(table.rows).slice(1);
-
-    rows.sort(function (a, b) {
-      var hsnA = parseInt(a.cells[2].textContent);
-      var hsnB = parseInt(b.cells[2].textContent);
-      return hsnA - hsnB;
-    });
-
-    // Remove existing rows from the table
-    for (var i = table.rows.length - 1; i > 0; i--) {
-      table.deleteRow(i);
-    }
-
-    // Append the sorted rows back to the table
-    rows.forEach(function (row) {
-      table.tBodies[0].appendChild(row);
-    });
-  }
-
-  function searchTable() {
-    var rows = document.querySelectorAll("#deliveryChallanTable tbody tr");
-    var val = document
-      .getElementById("search")
-      .value.trim()
-      .replace(/ +/g, " ")
-      .toLowerCase();
-    rows.forEach(function (row) {
-      var text = row.textContent.replace(/\s+/g, " ").toLowerCase();
-      row.style.display = text.includes(val) ? "" : "none";
-    });
-  }
-
-  const ID = Cookies.get("Login_id");
-  const [deliveryChallan, setDeliveryChallan] = useState([]);
-
-  const fetchDeliveryChallan = () => {
-    axios
-      .get(`${config.base_url}/fetch_delivery_challan/${ID}/`)
-      .then((res) => {
-        console.log("DC RES=", res);
-        if (res.data.status) {
-          var dc = res.data.challan;
-          setDeliveryChallan([]);
-          dc.map((i) => {
-            setDeliveryChallan((prevState) => [...prevState, i]);
-          });
-        }
-      })
-      .catch((err) => {
-        console.log("ERR", err);
-      });
-  };
-
-  useEffect(() => {
-    fetchDeliveryChallan();
-  }, []);
-
-  function refreshAll() {
-    setDeliveryChallan([]);
-    fetchDeliveryChallan();
+  useEffect(()=>{
+    fetchPayments();
+  },[])
+  
+  function refreshAll(){
+    setPayment([])
+    fetchPayments();
   }
   return (
     <>
@@ -155,7 +109,7 @@ function DeliveryChallan() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">DELIVERY CHALLAN</h2>
+                <h2 className="mt-3">PAYMENTS RECEIVED</h2>
               </center>
               <hr />
             </div>
@@ -211,7 +165,7 @@ function DeliveryChallan() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={() => sortTable(3)}
+                          onClick={()=>sortTable(3)}
                         >
                           Customer Name
                         </a>
@@ -223,9 +177,9 @@ function DeliveryChallan() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={() => sortTable(2)}
+                          onClick={()=>sortTable(2)}
                         >
-                          Challan No.
+                          Payment No.
                         </a>
                       </div>
                     </div>
@@ -263,7 +217,7 @@ function DeliveryChallan() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={() => filterTable(6, "all")}
+                        onClick={()=>filterTable(6,'all')}
                       >
                         All
                       </a>
@@ -275,7 +229,7 @@ function DeliveryChallan() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={() => filterTable(6, "saved")}
+                        onClick={()=>filterTable(6,'saved')}
                       >
                         Saved
                       </a>
@@ -287,20 +241,19 @@ function DeliveryChallan() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={() => filterTable(6, "draft")}
+                        onClick={()=>filterTable(6,'draft')}
                       >
                         Draft
                       </a>
                     </div>
                   </div>
-                  <Link to="/add_delivery_challan" className="ml-1">
+                  <Link to="/add_payment" className="ml-1">
                     <button
                       type="button"
                       style={{ width: "fit-content", height: "fit-content" }}
                       className="btn btn-outline-secondary text-grey"
                     >
-                      <i className="fa fa-plus font-weight-light"></i> Delivery
-                      Challan
+                      <i className="fa fa-plus font-weight-light"></i> Payment Received
                     </button>
                   </Link>
                 </div>
@@ -310,126 +263,45 @@ function DeliveryChallan() {
           <div className="table-responsive">
             <table
               className="table table-responsive-md table-hover mt-4"
-              id="deliveryChallanTable"
+              id="paymentsTable"
               style={{ textAlign: "center" }}
             >
               <thead>
                 <tr>
                   <th>#</th>
                   <th>DATE</th>
-                  <th>CHALLAN NO.</th>
+                  <th>PAYMENT NO.</th>
                   <th>CUSTOMER NAME</th>
                   <th>MAIL ID</th>
                   <th>AMOUNT</th>
                   <th>STATUS</th>
                   <th>BALANCE</th>
-                  <th>ACTION</th>
                 </tr>
               </thead>
               <tbody>
-                {deliveryChallan &&
-                  deliveryChallan.map((i, index) => (
-                    <tr
-                      className="clickable-row"
-                      onDoubleClick={() =>
-                        navigate(`/view_delivery_challan/${i.id}/`)
-                      }
-                      style={{ cursor: "pointer" }}
-                    >
-                      <td>{index + 1}</td>
-                      <td>{i.challan_date}</td>
-                      <td>{i.challan_no}</td>
-                      <td>{i.customer_name}</td>
-                      <td>{i.customer_email}</td>
-                      <td>{i.grandtotal}</td>
-                      <td>{i.status}</td>
-                      <td>{i.balance}</td>
-                      <td>
-                        {i.converted ? (
-                          <span
-                            className="text-info font-weight-bolder text-center"
-                            onClick={() => navigate(i.link)}
-                          >
-                            Converted to <br />
-                            {i.type} - #{i.number}
-                          </span>
-                        ) : (
-                          <div className="btn-group">
-                            <button
-                              type="button"
-                              className="btn btn-secondary dropdown-toggle"
-                              style={{
-                                width: "fit-content",
-                                height: "fit-content",
-                              }}
-                              data-toggle="dropdown"
-                              aria-expanded="false"
-                            >
-                              Convert
-                            </button>
-                            <ul className="dropdown-menu">
-                              <li>
-                                <Link
-                                  to={`/convert_challan_to_invoice/${i.id}/`}
-                                  className="dropdown-item fw-bold"
-                                >
-                                  To Invoice
-                                </Link>
-                              </li>
-                              <li>
-                                <Link
-                                  to={`/convert_challan_to_rec_invoice/${i.id}/`}
-                                  className="dropdown-item fw-bold"
-                                >
-                                  To Rec. Invoice
-                                </Link>
-                              </li>
-                            </ul>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                {payment &&payment.map((i,index)=>(
+                  <tr
+                    className="clickable-row"
+                    onClick={()=>navigate(`/view_payment/${i.id}/`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <td>{index+1}</td>
+                    <td>{i.payment_date}</td>
+                    <td>{i.payment_no}</td>
+                    <td>{i.customer_name}</td>
+                    <td>{i.customer_email}</td>
+                    <td>{i.total}</td>
+                    <td>{i.status}</td>
+                    <td>{i.balance}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       </div>
-      <table
-        className="deliveryChallanTable"
-        id="deliveryChallanTableExport"
-        hidden
-      >
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>DATE</th>
-            <th>CHALLAN NO.</th>
-            <th>CUSTOMER NAME</th>
-            <th>MAIL ID</th>
-            <th>AMOUNT</th>
-            <th>STATUS</th>
-            <th>BALANCE</th>
-          </tr>
-        </thead>
-        <tbody>
-          {deliveryChallan &&
-            deliveryChallan.map((i, index) => (
-              <tr>
-                <td>{index + 1}</td>
-                <td>{i.challan_date}</td>
-                <td>{i.challan_no}</td>
-                <td>{i.customer_name}</td>
-                <td>{i.customer_email}</td>
-                <td>{i.grandtotal}</td>
-                <td>{i.status}</td>
-                <td>{i.balance}</td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
     </>
   );
 }
 
-export default DeliveryChallan;
+export default PaymentReceived;

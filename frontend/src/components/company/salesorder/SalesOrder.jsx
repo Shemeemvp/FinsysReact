@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
 import * as XLSX from "xlsx";
 import { Link, useNavigate } from "react-router-dom";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 
@@ -47,14 +47,17 @@ function SalesOrder() {
     }
   }
 
-  function filterTable(row,filterValue) {
+  function filterTable(row, filterValue) {
     var table1 = document.getElementById("salesOrderTable");
     var rows1 = table1.getElementsByTagName("tr");
 
     for (var i = 1; i < rows1.length; i++) {
       var statusCell = rows1[i].getElementsByTagName("td")[row];
 
-      if (filterValue == "all" || statusCell.textContent.toLowerCase() == filterValue) {
+      if (
+        filterValue == "all" ||
+        statusCell.textContent.toLowerCase() == filterValue
+      ) {
         rows1[i].style.display = "";
       } else {
         rows1[i].style.display = "none";
@@ -67,7 +70,10 @@ function SalesOrder() {
     for (var i = 1; i < rows2.length; i++) {
       var statusCell = rows2[i].getElementsByTagName("td")[row];
 
-      if (filterValue == "all" || statusCell.textContent.toLowerCase() == filterValue) {
+      if (
+        filterValue == "all" ||
+        statusCell.textContent.toLowerCase() == filterValue
+      ) {
         rows2[i].style.display = "";
       } else {
         rows2[i].style.display = "none";
@@ -96,41 +102,46 @@ function SalesOrder() {
     });
   }
 
-  function searchTable(){
-    var rows = document.querySelectorAll('#salesOrderTable tbody tr');
-    var val = document.getElementById('search').value.trim().replace(/ +/g, ' ').toLowerCase();
-    rows.forEach(function(row) {
-      var text = row.textContent.replace(/\s+/g, ' ').toLowerCase();
-      row.style.display = text.includes(val) ? '' : 'none';
+  function searchTable() {
+    var rows = document.querySelectorAll("#salesOrderTable tbody tr");
+    var val = document
+      .getElementById("search")
+      .value.trim()
+      .replace(/ +/g, " ")
+      .toLowerCase();
+    rows.forEach(function (row) {
+      var text = row.textContent.replace(/\s+/g, " ").toLowerCase();
+      row.style.display = text.includes(val) ? "" : "none";
     });
   }
 
-  const ID = Cookies.get('Login_id');
+  const ID = Cookies.get("Login_id");
   const [salesOrders, setSalesOrders] = useState([]);
 
-  const fetchSalesOrders = () =>{
-    axios.get(`${config.base_url}/fetch_sales_orders/${ID}/`).then((res)=>{
-      console.log("SO RES=",res)
-      if(res.data.status){
-        var sls = res.data.salesOrder;
-        setSalesOrders([])
-        sls.map((i)=>{
-          setSalesOrders((prevState)=>[
-            ...prevState, i
-          ])
-        })
-      }
-    }).catch((err)=>{
-      console.log('ERR',err)
-    })
-  }
+  const fetchSalesOrders = () => {
+    axios
+      .get(`${config.base_url}/fetch_sales_orders/${ID}/`)
+      .then((res) => {
+        console.log("SO RES=", res);
+        if (res.data.status) {
+          var sls = res.data.salesOrder;
+          setSalesOrders([]);
+          sls.map((i) => {
+            setSalesOrders((prevState) => [...prevState, i]);
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("ERR", err);
+      });
+  };
 
-  useEffect(()=>{
+  useEffect(() => {
     fetchSalesOrders();
-  },[])
-  
-  function refreshAll(){
-    setSalesOrders([])
+  }, []);
+
+  function refreshAll() {
+    setSalesOrders([]);
     fetchSalesOrders();
   }
   return (
@@ -200,7 +211,7 @@ function SalesOrder() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(2)}
+                          onClick={() => sortTable(2)}
                         >
                           Customer Name
                         </a>
@@ -212,7 +223,7 @@ function SalesOrder() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(1)}
+                          onClick={() => sortTable(1)}
                         >
                           Sales Order No.
                         </a>
@@ -252,7 +263,7 @@ function SalesOrder() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(5,'all')}
+                        onClick={() => filterTable(5, "all")}
                       >
                         All
                       </a>
@@ -264,7 +275,7 @@ function SalesOrder() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(5,'saved')}
+                        onClick={() => filterTable(5, "saved")}
                       >
                         Saved
                       </a>
@@ -276,7 +287,7 @@ function SalesOrder() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(5,'draft')}
+                        onClick={() => filterTable(5, "draft")}
                       >
                         Draft
                       </a>
@@ -288,7 +299,8 @@ function SalesOrder() {
                       style={{ width: "fit-content", height: "fit-content" }}
                       className="btn btn-outline-secondary text-grey"
                     >
-                      <i className="fa fa-plus font-weight-light"></i> Sales Order
+                      <i className="fa fa-plus font-weight-light"></i> Sales
+                      Order
                     </button>
                   </Link>
                 </div>
@@ -314,62 +326,99 @@ function SalesOrder() {
                 </tr>
               </thead>
               <tbody>
-                {salesOrders &&salesOrders.map((i,index)=>(
-                  <tr
-                    className="clickable-row"
-                    onDoubleClick={()=>navigate(`/view_sales_order/${i.id}/`)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <td>{index+1}</td>
-                    <td>{i.sales_order_no}</td>
-                    <td>{i.customer_name}</td>
-                    <td>{i.customer_email}</td>
-                    <td>{i.grandtotal}</td>
-                    <td>{i.status}</td>
-                    <td>{i.balance}</td>
-                    <td>
-                      <div className="btn-group">
-                        <button type="button" className="btn btn-secondary dropdown-toggle" style={{width:'fit-content', height: 'fit-content'}} data-toggle="dropdown" aria-expanded="false">
-                            Convert
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li><button type="button" className="dropdown-item fw-bold" onclick="window.location.href=`{% url 'Fin_convertSalesOrderToInvoice' a.id %}`">To Invoice</button></li>
-                          <li><button type="button" className="dropdown-item fw-bold" onclick="window.location.href=`{% url 'Fin_convertSalesOrderToRecInvoice' a.id %}`">To Recurring Invoice</button></li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {salesOrders &&
+                  salesOrders.map((i, index) => (
+                    <tr
+                      className="clickable-row"
+                      onDoubleClick={() =>
+                        navigate(`/view_sales_order/${i.id}/`)
+                      }
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>{index + 1}</td>
+                      <td>{i.sales_order_no}</td>
+                      <td>{i.customer_name}</td>
+                      <td>{i.customer_email}</td>
+                      <td>{i.grandtotal}</td>
+                      <td>{i.status}</td>
+                      <td>{i.balance}</td>
+                      <td>
+                        {i.converted ? (
+                          <span
+                            className="text-info font-weight-bolder text-center"
+                            onClick={() => navigate(i.link)}
+                          >
+                            Converted to <br />
+                            {i.type} - #{i.number}
+                          </span>
+                        ) : (
+                          <div className="btn-group">
+                            <button
+                              type="button"
+                              className="btn btn-secondary dropdown-toggle"
+                              style={{
+                                width: "fit-content",
+                                height: "fit-content",
+                              }}
+                              data-toggle="dropdown"
+                              aria-expanded="false"
+                            >
+                              Convert
+                            </button>
+                            <ul className="dropdown-menu">
+                              <li>
+                                <Link
+                                  to={`/convert_sales_order_to_invoice/${i.id}/`}
+                                  className="dropdown-item fw-bold"
+                                >
+                                  To Invoice
+                                </Link>
+                              </li>
+                              <li>
+                              <Link
+                                  to={`/convert_sales_order_to_rec_invoice/${i.id}/`}
+                                  className="dropdown-item fw-bold"
+                                >
+                                  To Rec. Invoice
+                                </Link>
+                              </li>
+                            </ul>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
         </div>
       </div>
       <table className="salesOrderTable" id="salesOrderTableExport" hidden>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>SALES ORDER NO.</th>
-          <th>CUSTOMER NAME</th>
-          <th>MAIL ID</th>
-          <th>AMOUNT</th>
-          <th>STATUS</th>
-          <th>BALANCE</th>
-        </tr>
-      </thead>
-      <tbody>
-        {salesOrders && salesOrders.map((i,index)=>(
+        <thead>
           <tr>
-            <td>{index+1}</td>
-            <td>{i.sales_order_no}</td>
-            <td>{i.customer_name}</td>
-            <td>{i.customer_email}</td>
-            <td>{i.grandtotal}</td>
-            <td>{i.status}</td>
-            <td>{i.balance}</td>
+            <th>#</th>
+            <th>SALES ORDER NO.</th>
+            <th>CUSTOMER NAME</th>
+            <th>MAIL ID</th>
+            <th>AMOUNT</th>
+            <th>STATUS</th>
+            <th>BALANCE</th>
           </tr>
-        ))}
-      </tbody>
+        </thead>
+        <tbody>
+          {salesOrders &&
+            salesOrders.map((i, index) => (
+              <tr>
+                <td>{index + 1}</td>
+                <td>{i.sales_order_no}</td>
+                <td>{i.customer_name}</td>
+                <td>{i.customer_email}</td>
+                <td>{i.grandtotal}</td>
+                <td>{i.status}</td>
+                <td>{i.balance}</td>
+              </tr>
+            ))}
+        </tbody>
       </table>
     </>
   );

@@ -129,6 +129,14 @@ import AddCreditNote from './components/company/creditnote/AddCreditNote';
 import ViewCreditNote from './components/company/creditnote/ViewCreditNote';
 import CreditNoteHistory from './components/company/creditnote/CreditNoteHistory';
 import EditCreditNote from './components/company/creditnote/EditCreditNote';
+import ConvertSalesOrderToInvoice from './components/company/salesorder/ConvertSalesOrderToInvoice';
+import ConvertEstimateToInvoice from './components/company/estimate/ConvertEstimateToInvoice';
+import ConvertEstimateToRecInvoice from './components/company/estimate/ConvertEstimateToRecInvoice';
+import ConvertChallanToRecInvoice from './components/company/deliverychallan/ConvertChallanToRecInvoice';
+import ConvertSalesOrderToRecInvoice from './components/company/salesorder/ConvertSalesOrderToRecInvoice';
+import ConvertEstimateToSalesOrder from './components/company/estimate/ConvertEstimateToSalesOrder';
+import PaymentReceived from './components/company/paymentreceived/PaymentReceived';
+import AddPaymentReceived from './components/company/paymentreceived/AddPaymentReceived';
 
 
 function App() {
@@ -248,6 +256,8 @@ function App() {
             <Route path="/view_sales_order/:salesId/" element={<ViewSalesOrder />}></Route>
             <Route path="/sales_order_history/:salesId/" element={<SalesOrderHistory />}></Route>
             <Route path="/edit_sales_order/:salesId/" element={<EditSalesOrder />}></Route>
+            <Route path="/convert_sales_order_to_invoice/:salesId/" element={<ConvertSalesOrderToInvoice />}></Route>
+            <Route path="/convert_sales_order_to_rec_invoice/:salesId/" element={<ConvertSalesOrderToRecInvoice />}></Route>
 
             {/* Vendors */}
             <Route path="/vendors" element={<Vendors />} />
@@ -277,6 +287,7 @@ function App() {
             <Route path="/delivery_challan_history/:challanId/" element={<ChallanHistory />}></Route>
             <Route path="/edit_delivery_challan/:challanId/" element={<EditDeliveryChallan />}></Route>
             <Route path="/convert_challan_to_invoice/:challanId/" element={<ConvertChallanToInvoice />}></Route>
+            <Route path="/convert_challan_to_rec_invoice/:challanId/" element={<ConvertChallanToRecInvoice />}></Route>
 
             {/* Estimate */}
             <Route path="/Estimate" element={<Estimate />}></Route>
@@ -284,6 +295,9 @@ function App() {
             <Route path="/ViewEstimate/:estimateId/" element={<ViewEstimate />}></Route>
             <Route path="/EstimateHistory/:estimateId/" element={<EstimateHistory />}></Route>
             <Route path="/EditEstimate/:estimateId/" element={<EditEstimate />}></Route>
+            <Route path="/convert_estimate_to_sales_order/:estimateId/" element={<ConvertEstimateToSalesOrder />}></Route>
+            <Route path="/convert_estimate_to_invoice/:estimateId/" element={<ConvertEstimateToInvoice />}></Route>
+            <Route path="/convert_estimate_to_rec_invoice/:estimateId/" element={<ConvertEstimateToRecInvoice />}></Route>
 
             {/* Recurring Invoice */}
             <Route path="/rec_invoice" element={<RecInvoice />}></Route>
@@ -305,6 +319,10 @@ function App() {
             <Route path="/view_credit_note/:creditNoteId/" element={<ViewCreditNote />}></Route>
             <Route path="/credit_note_history/:creditNoteId/" element={<CreditNoteHistory />}></Route>
             <Route path="/edit_credit_note/:creditNoteId/" element={<EditCreditNote />}></Route>
+
+            {/* Payment Received */}
+            <Route path="/payment_received" element={<PaymentReceived />}></Route>
+            <Route path="/add_payment" element={<AddPaymentReceived />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

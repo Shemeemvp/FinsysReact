@@ -286,3 +286,14 @@ class CreditNoteCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_CreditNote_Comments
         fields = '__all__'
+
+# Payment Received
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Payment_Received
+        fields = '__all__'
+
+class PaymentCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Payment_Comments
+        fields = '__all__'

@@ -1289,10 +1289,9 @@ function FinBase() {
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Payment_Received == 1 %} */}
-                  <li id="paymentsreceived"><a href="{% url 'Fin_view_payment_received' %}"><i className="bx bx-right-arrow-alt"></i>Payments Received</a>
+                  <li id="paymentsreceived"><Link to="/payment_received"><i className="bx bx-right-arrow-alt"></i>Payments Received</Link>
                   </li>
                   {/* {% endif %} */}
-
           
                   {/* {% if allmodules.Retainer_Invoice == 1 %} */}
                   <li id="retainerinvoices"><Link to="/ret_invoice"><i className="bx bx-right-arrow-alt"></i>Retainer Invoices</Link>

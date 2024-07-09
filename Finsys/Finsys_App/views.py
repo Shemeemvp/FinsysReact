@@ -8480,6 +8480,21 @@ def Fin_fetchSalesOrders(request, id):
         sales = Fin_Sales_Order.objects.filter(Company = com)
         sls = []
         for i in sales:
+            if i.converted_to_invoice:
+                converted = True
+                type = "Invoice"
+                number = i.converted_to_invoice.invoice_no
+                link = f"/view_invoice/{i.converted_to_invoice.id}/"
+            elif i.converted_to_rec_invoice:
+                converted = True
+                type = "Recurring Invoice"
+                number = i.converted_to_rec_invoice.rec_invoice_no
+                link = f"/view_rec_invoice/{i.converted_to_rec_invoice.id}/"
+            else:
+                converted = False
+                type = None
+                number = None
+                link = None
             obj = {
                 "id": i.id,
                 "sales_order_no": i.sales_order_no,
@@ -8488,6 +8503,10 @@ def Fin_fetchSalesOrders(request, id):
                 "grandtotal": i.grandtotal,
                 "status": i.status,
                 "balance": i.balance,
+                "converted": converted,
+                "type": type,
+                "number": number,
+                "link": link
             }
             sls.append(obj)
         return Response(
@@ -8541,6 +8560,7 @@ def Fin_fetchSalesOrderDetails(request, id):
                 "sales_price": i.Item.selling_price,
                 'name': i.Item.name,
                 "item_type": i.Item.item_type,
+                "avl": i.Item.current_stock,
                 "hsn": i.hsn,
                 "sac": i.sac,
                 "quantity": i.quantity,
@@ -10334,25 +10354,21 @@ def Fin_fetchDeliveryChallan(request, id):
         challan = Fin_Delivery_Challan.objects.filter(Company = com)
         chl = []
         for i in challan:
-            converted = False
-            type = None
-            number = None
-            link = None
             if i.converted_to_invoice:
                 converted = True
                 type = "Invoice"
                 number = i.converted_to_invoice.invoice_no
                 link = f"/view_invoice/{i.converted_to_invoice.id}/"
-            # elif i.converted_to_rec_invoice:
-            #     converted = True
-            #     type = "Recurring Invoice"
-            #     number = i.converted_to_rec_invoice.rec_invoice_no
-            #     link = f"/view_recurring_invoice/{i.converted_to_rec_invoice.id}/"
-            # else:
-            #     converted = False
-            #     type = None
-            #     number = None
-            #     link = None
+            elif i.converted_to_rec_invoice:
+                converted = True
+                type = "Recurring Invoice"
+                number = i.converted_to_rec_invoice.rec_invoice_no
+                link = f"/view_rec_invoice/{i.converted_to_rec_invoice.id}/"
+            else:
+                converted = False
+                type = None
+                number = None
+                link = None
 
             obj = {
                 "id": i.id,
@@ -11376,6 +11392,26 @@ def Fin_fetchEstimate(request, id):
         estimate = Fin_Estimate.objects.filter(Company = com)
         est = []
         for i in estimate:
+            if i.converted_to_sales_order:
+                converted = True
+                type = "Sales Order"
+                number = i.converted_to_sales_order.sales_order_no
+                link = f"/view_sales_order/{i.converted_to_sales_order.id}/"
+            elif i.converted_to_invoice:
+                converted = True
+                type = "Invoice"
+                number = i.converted_to_invoice.invoice_no
+                link = f"/view_invoice/{i.converted_to_invoice.id}/"
+            elif i.converted_to_rec_invoice:
+                converted = True
+                type = "Recurring Invoice"
+                number = i.converted_to_rec_invoice.rec_invoice_no
+                link = f"/view_rec_invoice/{i.converted_to_rec_invoice.id}/"
+            else:
+                converted = False
+                type = None
+                number = None
+                link = None
             obj = {
                 "id": i.id,
                 "estimate_no": i.estimate_no,
@@ -11384,6 +11420,10 @@ def Fin_fetchEstimate(request, id):
                 "grandtotal": i.grandtotal,
                 "status": i.status,
                 "balance": i.balance,
+                "converted": converted,
+                "type": type,
+                "number": number,
+                "link": link
             }
             est.append(obj)
         return Response(
@@ -11437,6 +11477,7 @@ def Fin_fetchEstimateDetails(request, id):
                 "sales_price": i.Item.selling_price,
                 'name': i.Item.name,
                 "item_type": i.Item.item_type,
+                "avl": i.Item.current_stock,
                 "hsn": i.hsn,
                 "sac": i.sac,
                 "quantity": i.quantity,
@@ -13814,6 +13855,798 @@ def Fin_updateCreditNote(request):
                     LoginDetails = data,
                     creditNote = note,
                     action = 'Edited'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+# Sales Order - udpation
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_convertSalesOrderToInvoice(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        sOrder = Fin_Sales_Order.objects.get(id=request.data['sales_id'])
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        try:
+            mutable_data["duedate"] = datetime.strptime(request.data['duedate'], '%d-%m-%Y').date()
+        except:
+            mutable_data["duedate"] = datetime.strptime(request.data['duedate'], '%Y-%m-%d').date()
+        mutable_data["exp_ship_date"] = None
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+
+        # Parse stock_items from JSON
+        invItems = json.loads(request.data['invoiceItems'])
+        INVNum = request.data['invoice_no']
+        if Fin_Invoice.objects.filter(Company = com, invoice_no__iexact = INVNum).exists():
+            return Response({'status':False, 'message': f"Invoice Number '{INVNum}' already exists, try another!"})
+        else:
+            serializer = InvoiceSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                inv = Fin_Invoice.objects.get(id=serializer.data['id'])
+
+                for ele in invItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if inv.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Invoice_Items.objects.create(Invoice = inv, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                        
+                Fin_Invoice_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    Invoice = inv,
+                    action = 'Created'
+                )
+
+                # Save invoice details to Sales Order
+                sOrder.converted_to_invoice = inv
+                sOrder.save()
+                
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_convertSalesOrderToRecInvoice(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        sOrder = Fin_Sales_Order.objects.get(id=request.data['sales_id'])
+        
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        try:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%d-%m-%Y').date()
+        except:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%Y-%m-%d').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+        mutable_data["repeat_every"] = None if request.data["repeat_every"] == '' else request.data["repeat_every"]
+
+        # Parse stock_items from JSON
+        invItems = json.loads(request.data['invoiceItems'])
+        INVNum = request.data['rec_invoice_no']
+        if Fin_Recurring_Invoice.objects.filter(Company = com, rec_invoice_no__iexact = INVNum).exists():
+            return Response({'status':False, 'message': f"Rec.Invoice Number '{INVNum}' already exists, try another!"})
+        else:
+            serializer = RecInvoiceSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                inv = Fin_Recurring_Invoice.objects.get(id=serializer.data['id'])
+
+                for ele in invItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if inv.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Recurring_Invoice_Items.objects.create(RecInvoice = inv, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                Fin_Recurring_Invoice_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    RecInvoice = inv,
+                    action = 'Created'
+                )
+
+                # Save invoice details to Sales Order
+                sOrder.converted_to_rec_invoice = inv
+                sOrder.save()
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+# Estimate - udpation
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_convertEstimateToInvoice(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        est = Fin_Estimate.objects.get(id=request.data['est_id'])
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        try:
+            mutable_data["duedate"] = datetime.strptime(request.data['duedate'], '%d-%m-%Y').date()
+        except:
+            mutable_data["duedate"] = datetime.strptime(request.data['duedate'], '%Y-%m-%d').date()
+        mutable_data["exp_ship_date"] = None
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+
+        # Parse stock_items from JSON
+        invItems = json.loads(request.data['invoiceItems'])
+        INVNum = request.data['invoice_no']
+        if Fin_Invoice.objects.filter(Company = com, invoice_no__iexact = INVNum).exists():
+            return Response({'status':False, 'message': f"Invoice Number '{INVNum}' already exists, try another!"})
+        else:
+            serializer = InvoiceSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                inv = Fin_Invoice.objects.get(id=serializer.data['id'])
+
+                for ele in invItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if inv.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Invoice_Items.objects.create(Invoice = inv, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                        
+                Fin_Invoice_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    Invoice = inv,
+                    action = 'Created'
+                )
+
+                # Save invoice details to Estimate
+                est.converted_to_invoice = inv
+                est.balance = inv.balance
+                est.save()
+                
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_convertEstimateToRecInvoice(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        est = Fin_Estimate.objects.get(id=request.data['est_id'])
+        
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        try:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%d-%m-%Y').date()
+        except:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%Y-%m-%d').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+        mutable_data["repeat_every"] = None if request.data["repeat_every"] == '' else request.data["repeat_every"]
+
+        # Parse stock_items from JSON
+        invItems = json.loads(request.data['invoiceItems'])
+        INVNum = request.data['rec_invoice_no']
+        if Fin_Recurring_Invoice.objects.filter(Company = com, rec_invoice_no__iexact = INVNum).exists():
+            return Response({'status':False, 'message': f"Rec.Invoice Number '{INVNum}' already exists, try another!"})
+        else:
+            serializer = RecInvoiceSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                inv = Fin_Recurring_Invoice.objects.get(id=serializer.data['id'])
+
+                for ele in invItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if inv.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Recurring_Invoice_Items.objects.create(RecInvoice = inv, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                Fin_Recurring_Invoice_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    RecInvoice = inv,
+                    action = 'Created'
+                )
+
+                # Save invoice details to Estimate
+                est.converted_to_rec_invoice = inv
+                est.balance = inv.balance
+                est.save()
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_convertEstimateToSalesOrder(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        est = Fin_Estimate.objects.get(id=request.data['est_id'])
+        
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        try:
+            mutable_data["exp_ship_date"] = datetime.strptime(request.data['exp_ship_date'], '%d-%m-%Y').date()
+        except:
+            mutable_data["exp_ship_date"] = datetime.strptime(request.data['exp_ship_date'], '%Y-%m-%d').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+
+        # Parse stock_items from JSON
+        salesItems = json.loads(request.data['salesOrderItems'])
+        SONum = request.data['sales_order_no']
+        if Fin_Sales_Order.objects.filter(Company = com, sales_order_no__iexact = SONum).exists():
+            return Response({'status':False, 'message': f"Sales Order Number '{SONum}' already exists, try another!"})
+        else:
+            serializer = SalesOrderSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                sale = Fin_Sales_Order.objects.get(id=serializer.data['id'])
+
+                for ele in salesItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if sale.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Sales_Order_Items.objects.create(SalesOrder = sale, Item = itm, hsn = hsn,sac=sac, quantity = int(ele.get('quantity')), price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+            
+                # Save transaction
+                        
+                Fin_Sales_Order_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    SalesOrder = sale,
+                    action = 'Created'
+                )
+
+                # Save sales order details to Estimate
+                est.converted_to_sales_order = sale
+                est.balance = sale.balance
+                est.save()
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+# Delivery Challan - updation
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_convertChallanToRecInvoice(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        challan = Fin_Delivery_Challan.objects.get(id=request.data['chl_id'])
+        
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        try:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%d-%m-%Y').date()
+        except:
+            mutable_data["end_date"] = datetime.strptime(request.data['end_date'], '%Y-%m-%d').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+        mutable_data["repeat_every"] = None if request.data["repeat_every"] == '' else request.data["repeat_every"]
+
+        # Parse stock_items from JSON
+        invItems = json.loads(request.data['invoiceItems'])
+        INVNum = request.data['rec_invoice_no']
+        if Fin_Recurring_Invoice.objects.filter(Company = com, rec_invoice_no__iexact = INVNum).exists():
+            return Response({'status':False, 'message': f"Rec.Invoice Number '{INVNum}' already exists, try another!"})
+        else:
+            serializer = RecInvoiceSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                inv = Fin_Recurring_Invoice.objects.get(id=serializer.data['id'])
+
+                for ele in invItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if inv.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Recurring_Invoice_Items.objects.create(RecInvoice = inv, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                Fin_Recurring_Invoice_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    RecInvoice = inv,
+                    action = 'Created'
+                )
+
+                # Save invoice details to Challan
+                challan.converted_to_rec_invoice = inv
+                challan.balance = inv.balance
+                challan.save()
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+# Payment Received
+
+@api_view(("GET",))
+def Fin_fetchPayments(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        payments = Fin_Payment_Received.objects.filter(Company = com)
+        pay = []
+        for i in payments:
+            obj = {
+                "id": i.id,
+                "payment_no": i.payment_no,
+                "payment_date": i.payment_date,
+                "customer_name": i.Customer.first_name+" "+i.Customer.last_name,
+                "customer_email":i. Customer.email,
+                "total": i.total_amount,
+                "status": i.status,
+                "balance": i.total_balance,
+            }
+            pay.append(obj)
+        return Response(
+            {"status": True, "payments": pay}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getPaymentInvoices(request):
+    try:
+        id = request.GET['Id']
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        paymentList = []
+
+        totAmount = 0;
+        totPayment = 0;
+        totBalance = 0;
+
+        custId = request.GET['custId']
+        customer = Fin_Customers.objects.get(id=custId)
+        
+        if customer.opening_balance > 0:
+            dict = {
+                "date": customer.date.strftime('%m/%d/%Y'),
+                "dueDate": customer.date.strftime('%m/%d/%Y'),
+                "type": "Opening Balance",
+                "number": "",
+                "total": customer.opening_balance,
+                "paid": 0,
+                "bal": customer.opening_balance
+            }
+            paymentList.append(dict)
+
+            totAmount += validateNum(customer.opening_balance)
+            totBalance += validateNum(customer.opening_balance)
+
+        invItems = Fin_Invoice.objects.filter(Customer=customer ,Company =com)
+        recInvItems = Fin_Recurring_Invoice.objects.filter(Customer=customer ,Company =com)
+        creditItems = Fin_CreditNote.objects.filter(Customer=customer ,Company =com)
+
+
+        if invItems:
+            for inv in invItems:
+                dict = {
+                    "date": inv.invoice_date.strftime('%m/%d/%Y'),
+                    "dueDate": inv.duedate.strftime('%m/%d/%Y'),
+                    "type": "Invoice",
+                    "number": inv.invoice_no,
+                    "total": inv.grandtotal,
+                    "paid": inv.paid_off,
+                    "bal": inv.balance
+                }
+                paymentList.append(dict)
+
+                totAmount += validateNum(inv.grandtotal)
+                totPayment += validateNum(inv.paid_off)
+                totBalance += validateNum(inv.balance)
+
+        if recInvItems:
+            for recInv in recInvItems:
+                dict = {
+                    "date": recInv.start_date.strftime('%m/%d/%Y'),
+                    "dueDate": recInv.end_date.strftime('%m/%d/%Y'),
+                    "type": "Recurring Invoice",
+                    "number": recInv.rec_invoice_no,
+                    "total": recInv.grandtotal,
+                    "paid": recInv.paid_off,
+                    "bal": recInv.balance
+                }
+                paymentList.append(dict)
+
+                totAmount += validateNum(recInv.grandtotal)
+                totPayment += validateNum(recInv.paid_off)
+                totBalance += validateNum(recInv.balance)
+
+        if creditItems:
+            for crd in creditItems:
+                dict = {
+                    "date": crd.credit_note_date.strftime('%m/%d/%Y'),
+                    "dueDate": crd.credit_note_date.strftime('%m/%d/%Y'),
+                    "type": "Credit Note",
+                    "number": crd.credit_note_no,
+                    "total": crd.grandtotal,
+                    "paid": crd.paid,
+                    "bal": crd.balance
+                }
+                paymentList.append(dict)
+
+                totAmount -= validateNum(crd.grandtotal)
+                totPayment += validateNum(crd.paid)
+                totBalance += validateNum(crd.balance)
+
+        return Response(
+            {"status": True, "payItems": paymentList, "totalPayment":totPayment, "totalAmount": totAmount, "totalBalance":totBalance}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+def validateNum(val):
+    try:
+        return float(val)
+    except ValueError:
+        return 0
+
+@api_view(("GET",))
+def Fin_fetchPaymentReceivedData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        cust = Fin_Customers.objects.filter(Company=cmp)
+        trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        bnk = Fin_Banking.objects.filter(company = cmp)
+        custLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='sales', status = 'Active')
+        
+        custSerializer = CustomerSerializer(cust, many=True)
+        pTermSerializer = CompanyPaymentTermsSerializer(trms, many=True)
+        bankSerializer = BankSerializer(bnk, many=True)
+        clSerializer = PriceListSerializer(custLists, many=True)
+
+        # Fetching last payment and assigning upcoming ref no as current + 1
+        # Also check for if any bill is deleted and ref no is continuos w r t the deleted payment
+        latest_pay = Fin_Payment_Received.objects.filter(Company = cmp).order_by('-id').first()
+
+        new_number = int(latest_pay.reference_no) + 1 if latest_pay else 1
+
+        if Fin_Payment_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_Payment_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+        # Finding next Credit Nt number w r t last Credit Nt number if exists.
+        nxtPay = ""
+        lastPy = Fin_Payment_Received.objects.filter(Company = cmp).last()
+        if lastPy:
+            cn_no = str(lastPy.payment_no)
+            numbers = []
+            stri = []
+            for word in cn_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            pay_num = int(num)+1
+
+            if num[0] == 0:
+                nxtPay = st + num.zfill(len(num))
+            else:
+                nxtPay = st + str(pay_num).zfill(len(num))
+
+        return Response(
+            {
+                "status": True,
+                "customers":custSerializer.data,
+                "paymentTerms":pTermSerializer.data,
+                "banks":bankSerializer.data,
+                "custPriceList":clSerializer.data,
+                "refNo": new_number,
+                "payNo": nxtPay,
+                "state": cmp.State
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("GET",))
+def Fin_checkPaymentNo(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        PayNo = request.GET['PAYNum']
+
+        nxtPay = ""
+        lastPy = Fin_Payment_Received.objects.filter(Company = com).last()
+        if lastPy:
+            cn_no = str(lastPy.payment_no)
+            numbers = []
+            stri = []
+            for word in cn_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            py_num = int(num)+1
+
+            if num[0] == 0:
+                nxtPay = st + num.zfill(len(num))
+            else:
+                nxtPay = st + str(py_num).zfill(len(num))
+
+        if Fin_Payment_Received.objects.filter(Company = com, payment_no__iexact = PayNo).exists():
+            return Response({'status':False, 'message':'Payment No. already Exists.!'})
+        elif nxtPay != "" and PayNo != nxtPay:
+            return Response({'status':False, 'message':'Payment No. is not continuous.!'})
+        else:
+            return Response({'status':True, 'message':'Number is okay.!'})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_createPaymentReceived(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        
+        # Parse stock_items from JSON
+        payItems = json.loads(request.data['paymentItems'])
+        PayNum = request.data['payment_no']
+        if Fin_Payment_Received.objects.filter(Company = com, payment_no__iexact = PayNum).exists():
+            return Response({'status':False, 'message': f"Payment Number '{PayNum}' already exists, try another!"})
+        else:
+            serializer = PaymentSerializer(data=mutable_data)
+            if serializer.is_valid():
+                serializer.save()
+                pay = Fin_Payment_Received.objects.get(id=serializer.data['id'])
+
+                for ele in payItems:
+                    amt = float(ele.get('total')) if ele.get('total') != "" else 0.0
+                    py = float(ele.get('payment')) if ele.get('payment') != "" else 0.0
+                    bal = float(ele.get('balance')) if ele.get('balance') != "" else 0.0
+                    Fin_Payment_Invoice.objects.create(
+                        Payment = pay,
+                        date = datetime.strptime(ele.get('date'), '%m/%d/%Y').date(),
+                        duedate = datetime.strptime(ele.get('dueDate'), '%m/%d/%Y').date(),
+                        invoice_type = ele.get('invoiceType'),
+                        invoice_no = ele.get('invoiceNumber'),
+                        invoice_amount = amt,
+                        invoice_payment = py,
+                        invoice_balance = bal,
+                        Company = com,
+                        LoginDetails = com.Login_Id
+                    )
+            
+                # Save transaction
+                Fin_Payment_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    Payment = pay,
+                    action = 'Created'
                 )
 
                 return Response(

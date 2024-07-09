@@ -7,10 +7,10 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function ConvertChallanToInvoice() {
+function ConvertEstimateToSalesOrder() {
+  const { estimateId } = useParams();
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
-  const { challanId } = useParams();
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [terms, setTerms] = useState([]);
@@ -20,11 +20,11 @@ function ConvertChallanToInvoice() {
   const [cmpState, setCmpState] = useState("");
   const [customerValue, setCustomerValue] = useState({});
 
-  const fetchInvoiceData = () => {
+  const fetchSalesOrderData = () => {
     axios
-      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_sales_order_data/${ID}/`)
       .then((res) => {
-        console.log("INV Data==", res);
+        console.log("SO Data==", res);
         if (res.data.status) {
           let itms = res.data.items;
           let cust = res.data.customers;
@@ -62,8 +62,8 @@ function ConvertChallanToInvoice() {
             value: item.id,
           }));
           setCustomers(newCustOptions);
-          setNextInvoiceNo(res.data.invNo);
-          setRefNo(res.data.refNo)
+          setNextSalesOrderNo(res.data.soNo);
+          setRefNo(res.data.refNo);
         }
       })
       .catch((err) => {
@@ -73,7 +73,7 @@ function ConvertChallanToInvoice() {
 
   function fetchPaymentTerms() {
     axios
-      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_sales_order_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let trms = res.data.paymentTerms;
@@ -90,7 +90,7 @@ function ConvertChallanToInvoice() {
 
   function fetchItems() {
     axios
-      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_sales_order_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let items = res.data.items;
@@ -108,7 +108,7 @@ function ConvertChallanToInvoice() {
   }
 
   useEffect(() => {
-    fetchInvoiceData();
+    fetchSalesOrderData();
   }, []);
 
   const customStyles = {
@@ -143,54 +143,56 @@ function ConvertChallanToInvoice() {
     }),
   };
 
-  const fetchChallanDetails = () => {
+  const fetchEstimateDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_challan_details/${challanId}/`)
+      .get(`${config.base_url}/fetch_estimate_details/${estimateId}/`)
       .then((res) => {
-        console.log("CHL DET=", res);
+        console.log("SO DET=", res);
         if (res.data.status) {
-          var challan = res.data.challan;
+          var est = res.data.est;
           var itms = res.data.items;
 
           var c = {
-            value: challan.Customer,
-            label: res.data.otherDetails.customerName,
-          };
-          setCustomerValue(c);
+            value: est.Customer,
+            label: res.data.otherDetails.customerName
+          }
+          setCustomerValue(c)
 
-          setCustomer(challan.Customer);
-          setEmail(challan.customer_email);
-          setGstType(challan.gst_type);
-          setGstIn(challan.gstin);
-          setBillingAddress(challan.billing_address);
-          setDate(challan.challan_date);
-          setPlaceOfSupply(challan.place_of_supply)
-          setPriceList(challan.price_list_applied);
-          setPriceListId(challan.price_list);
-          setSubTotal(challan.subtotal);
-          setIgst(challan.igst);
-          setCgst(challan.cgst);
-          setSgst(challan.sgst);
-          setTaxAmount(challan.tax_amount);
-          setAdjustment(challan.adjustment);
-          setShippingCharge(challan.shipping_charge);
-          setGrandTotal(challan.grandtotal);
-          setBalance(challan.grandtotal);
-          setDescription(challan.note);
-          setInvoiceItems([]);
-          const invItems = itms.map((i) => {
-            if (i.item_type == "Goods") {
-              var hsnSac = i.hsn;
-            } else {
-              var hsnSac = i.sac;
+          setCustomer(est.Customer);
+          setEmail(est.customer_email);
+          setGstType(est.gst_type);
+          setGstIn(est.gstin);
+          setBillingAddress(est.billing_address);
+          setDate(est.estimate_date);
+          setPlaceOfSupply(est.place_of_supply);
+          setShipmentDate(est.exp_date);
+          setTerm(est.payment_terms);
+          setPaymentMethod(est.payment_method);
+          setChequeNumber(est.cheque_no);
+          setUpiId(est.upi_no);
+          setAccountNumber(est.bank_acc_no);
+          setSubTotal(est.subtotal);
+          setIgst(est.igst);
+          setCgst(est.cgst);
+          setSgst(est.sgst);
+          setTaxAmount(est.tax_amount);
+          setShippingCharge(est.adjustment);
+          setAdjustment(est.shipping_charge);
+          setGrandTotal(est.grandtotal);
+          setBalance(est.grandtotal);
+          setDescription(est.note);
+          setSalesOrderItems([])
+          const salesItems = itms.map((i)=>{
+            if(i.item_type == "Goods"){
+              var hsnSac = i.hsn
+            }else{
+              var hsnSac = i.sac
             }
             return {
               id: 1,
               item: i.itemId,
               hsnSac: hsnSac,
               quantity: i.quantity,
-              available: i.avl,
-              initialQty: i.quantity,
               price: i.sales_price,
               priceListPrice: i.price,
               taxGst: i.tax,
@@ -198,14 +200,17 @@ function ConvertChallanToInvoice() {
               discount: i.discount,
               total: i.total,
               taxAmount: "",
-            };
-          });
+            }
+          })
 
-          setInvoiceItems(invItems);
-          refreshIndexes(invItems);
+          setSalesOrderItems(salesItems);
+          refreshIndexes(salesItems);
 
-          checkTax(res.data.otherDetails.State, challan.place_of_supply);
-          checkPL(challan.price_list_applied);
+          if(est.payment_method!='null'){
+            paymentMethodChange(est.payment_method);
+          }
+          checkTax(res.data.otherDetails.State,est.place_of_supply);
+          checkPL(est.price_list_applied);
         }
       })
       .catch((err) => {
@@ -220,8 +225,17 @@ function ConvertChallanToInvoice() {
   };
 
   useEffect(() => {
-    fetchChallanDetails();
+    fetchEstimateDetails();
   }, []);
+
+  function refreshIndexes(items){
+    const itms = items.map((item, index) => ({
+      ...item,
+      id: index + 1,
+    }));
+
+    setSalesOrderItems(itms)
+  }
 
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
@@ -232,12 +246,11 @@ function ConvertChallanToInvoice() {
   const [gstIn, setGstIn] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [refNo, setRefNo] = useState("");
-  const [invoiceNo, setInvoiceNo] = useState("");
   const [salesOrderNo, setSalesOrderNo] = useState("");
-  const [nextInvoiceNo, setNextInvoiceNo] = useState("");
+  const [nextSalesOrderNo, setNextSalesOrderNo] = useState("");
   const [date, setDate] = useState(formattedDate);
   const [placeOfSupply, setPlaceOfSupply] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  const [shipmentDate, setShipmentDate] = useState("");
   const [term, setTerm] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
@@ -258,16 +271,15 @@ function ConvertChallanToInvoice() {
   const [balance, setBalance] = useState(0.0);
 
   const [description, setDescription] = useState("");
+  const [status, setStatus] = useState("");
   const [file, setFile] = useState(null);
 
-  const [invoiceItems, setInvoiceItems] = useState([
+  const [salesOrderItems, setSalesOrderItems] = useState([
     {
       id: 1,
       item: "",
       hsnSac: "",
       quantity: "",
-      initialQty: "",
-      available: "",
       price: "",
       priceListPrice: "",
       taxGst: "",
@@ -302,30 +314,6 @@ function ConvertChallanToInvoice() {
 
   function checkBalanceVal(val) {
     return val !== "" ? val : grandTotal;
-  }
-
-  function checkTax(cmp, plc) {
-    if (cmp == plc) {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "flex";
-      document.getElementById("taxamountSGST").style.display = "flex";
-      document.getElementById("taxamountIGST").style.display = "none";
-    } else {
-      document.querySelectorAll(".tax_ref").forEach(function (ele) {
-        ele.style.display = "none";
-      });
-      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
-        ele.style.display = "block";
-      });
-      document.getElementById("taxamountCGST").style.display = "none";
-      document.getElementById("taxamountSGST").style.display = "none";
-      document.getElementById("taxamountIGST").style.display = "flex";
-    }
   }
 
   function checkPL(priceList) {
@@ -421,14 +409,14 @@ function ConvertChallanToInvoice() {
       setPriceListId("");
       document.getElementById("custPriceListName").style.display = "none";
       document.getElementById("custPriceListName").innerText = "";
-      const updatedItems = invoiceItems.map((item) => {
+      const updatedItems = salesOrderItems.map((item) => {
         return {
           ...item,
           priceListPrice: "",
         };
       });
-      setInvoiceItems(updatedItems);
-      refreshIndexes(updatedItems);
+      setSalesOrderItems(updatedItems);
+      refreshIndexes(updatedItems)
     }
   }
 
@@ -440,10 +428,10 @@ function ConvertChallanToInvoice() {
       document.getElementById("custPriceListName").innerText = "";
       setPriceList(false);
       checkPriceList2();
-      calc3(invoiceItems);
+      calc3(salesOrderItems);
     } else {
       let updatedItems = await Promise.all(
-        invoiceItems.map(async (pItem) => {
+        salesOrderItems.map(async (pItem) => {
           var itemId = pItem.item;
           var plc = placeOfSupply;
           var PLId = priceListId;
@@ -494,12 +482,44 @@ function ConvertChallanToInvoice() {
         })
       );
 
-      setInvoiceItems(updatedItems);
-      refreshIndexes(updatedItems);
+      setSalesOrderItems(updatedItems);
+      refreshIndexes(updatedItems)
       checkPriceList2();
       refreshTax(placeOfSupply);
       calc3(updatedItems);
     }
+  }
+
+  function calculate() {
+    var rows = document.querySelectorAll("#salesOrderItemsTable tbody tr");
+    rows.forEach(function (row) {
+      var html = row.innerHTML;
+      if (html != "") {
+        var qty = row.querySelector(".qty").value;
+        var price;
+        if (document.getElementById("applyPriceList").checked) {
+          price = row.querySelector(".priceListPrice").value;
+        } else {
+          price = row.querySelector(".price").value;
+        }
+        var dis = row.querySelector(".disc").value;
+        var bc = document.getElementById("placeOfSupply").value;
+        var compstate = cmpState;
+
+        var tax;
+        if (bc == compstate) {
+          tax = row.querySelector(".tax_ref_gst").value;
+        } else {
+          tax = row.querySelector(".tax_ref_igst").value;
+        }
+
+        row.querySelector(".total").value =
+          parseFloat(qty) * parseFloat(price) - parseFloat(dis);
+        row.querySelector(".itemTaxAmount").value =
+          (qty * price - dis) * (tax / 100);
+        calculate_total();
+      }
+    });
   }
 
   function calculate_total() {
@@ -536,7 +556,7 @@ function ConvertChallanToInvoice() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("chl_id", challanId);
+    formData.append("est_id", estimateId);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
@@ -544,11 +564,10 @@ function ConvertChallanToInvoice() {
     formData.append("gstin", gstIn);
     formData.append("place_of_supply", placeOfSupply);
     formData.append("reference_no", refNo);
-    formData.append("invoice_no", invoiceNo);
-    formData.append("salesOrder_no", salesOrderNo);
+    formData.append("sales_order_no", salesOrderNo);
     formData.append("payment_terms", term);
-    formData.append("invoice_date", date);
-    formData.append("duedate", dueDate);
+    formData.append("sales_order_date", date);
+    formData.append("exp_ship_date", shipmentDate);
     formData.append("price_list_applied", priceList);
     formData.append("price_list", checkForNull(priceListId));
     formData.append("payment_method", checkForNull(paymentMethod));
@@ -566,23 +585,21 @@ function ConvertChallanToInvoice() {
     formData.append("paid_off", checkForZero(paid));
     formData.append("balance", checkBalanceVal(balance));
     formData.append("note", description);
-    formData.append("Status", "Saved");
-    formData.append("invoiceItems", JSON.stringify(invoiceItems));
+    formData.append("salesOrderItems", JSON.stringify(salesOrderItems));
 
     if (file) {
       formData.append("file", file);
     }
 
     axios
-      .post(`${config.base_url}/convert_challan_to_invoice/`, formData)
+      .post(`${config.base_url}/convert_estimate_to_sales_order/`, formData)
       .then((res) => {
-        console.log("INV RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Converted To Invoice",
+            title: "Converted to Sales Order",
           });
-          navigate("/delivery_challan");
+          navigate(`/Estimate`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -644,27 +661,27 @@ function ConvertChallanToInvoice() {
     }
   }
 
-  function handleInvoiceNoChange(val) {
-    setInvoiceNo(val);
-    checkInvoiceNo(val);
+  function handleSalesOrderNoChange(val) {
+    setSalesOrderNo(val);
+    checkSalesOrderNo(val);
   }
 
-  function checkInvoiceNo(val) {
-    document.getElementById("INVNoErr").innerText = "";
-    var inv_num = val;
-    if (inv_num != "") {
+  function checkSalesOrderNo(val) {
+    document.getElementById("SONoErr").innerText = "";
+    var so_num = val;
+    if (so_num != "") {
       var s = {
         Id: ID,
-        INVNum: inv_num,
+        SONum: so_num,
       };
       axios
-        .get(`${config.base_url}/check_invoice_no/`, { params: s })
+        .get(`${config.base_url}/check_sales_order_no/`, { params: s })
         .then((res) => {
-          console.log("INV NUM Res=", res);
+          console.log("SO NUM Res=", res);
           if (!res.data.status) {
-            document.getElementById("INVNoErr").innerText = res.data.message;
+            document.getElementById("SONoErr").innerText = res.data.message;
           } else {
-            document.getElementById("INVNoErr").innerText = "";
+            document.getElementById("SONoErr").innerText = "";
           }
         })
         .catch((err) => {
@@ -684,7 +701,6 @@ function ConvertChallanToInvoice() {
       item: "",
       hsnSac: "",
       quantity: "",
-      initialQty: "",
       price: "",
       priceListPrice: "",
       taxGst: "",
@@ -693,7 +709,7 @@ function ConvertChallanToInvoice() {
       total: "",
       taxAmount: "",
     };
-    setInvoiceItems((prevItems) => {
+    setSalesOrderItems((prevItems) => {
       const updatedItems = [...prevItems, newItem];
 
       return updatedItems.map((item, index) => ({
@@ -704,7 +720,7 @@ function ConvertChallanToInvoice() {
   };
 
   const removeRow = (id) => {
-    setInvoiceItems((prevItems) => {
+    setSalesOrderItems((prevItems) => {
       const updatedItems = prevItems.filter((item) => item.id !== id);
 
       return updatedItems.map((item, index) => ({
@@ -714,8 +730,8 @@ function ConvertChallanToInvoice() {
     });
   };
 
-  const handleInvoiceItemsInputChange = (id, field, value) => {
-    setInvoiceItems((prevItems) =>
+  const handleSalesOrderItemsInputChange = (id, field, value) => {
+    setSalesOrderItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item
       )
@@ -726,67 +742,26 @@ function ConvertChallanToInvoice() {
     var exists = itemExists(value);
     if (!exists) {
       if (placeOfSupply != "") {
-        handleInvoiceItemsInputChange(id, "item", value);
+        handleSalesOrderItemsInputChange(id, "item", value);
         getItemData(value, id);
       } else {
         alert("Select Place of Supply.!");
       }
     } else {
       alert(
-        "Item already exists in the Invoice, choose another or change quantity.!"
+        "Item already exists in the Sales Order, choose another or change quantity.!"
       );
     }
   };
 
-  const handleQtyChange = (value, id, initialValue) => {
-    handleInvoiceItemsInputChange(id, "quantity", value);
-    changeItemQty(id, value, initialValue);
-  };
-
   const itemExists = (itemToCheck) => {
-    for (const item of invoiceItems) {
+    for (const item of salesOrderItems) {
       if (item.item === itemToCheck) {
         return true;
       }
     }
     return false;
   };
-
-  function changeItemQty(id, value, initialValue) {
-    var qty = value;
-    var avl_val = document.getElementById(`avl${id}`).textContent;
-    
-    if (value != "" && initialValue != "") {
-      var crQty = parseInt(initialValue);
-      var diff = Math.abs(parseInt(qty) - crQty);
-      if (parseInt(qty) > parseInt(avl_val)) {
-        alert("Quantity Greater than Available Quantity");
-        handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
-        document.getElementById(`qtyspan${id}`).textContent = "0";
-      } else {
-        if (crQty < parseInt(qty)) {
-          document.getElementById(`qtyspan${id}`).textContent =
-            parseInt(avl_val) - diff;
-        } else {
-          document.getElementById(`qtyspan${id}`).textContent =
-            parseInt(avl_val) + diff;
-        }
-      }
-    } else {
-      if (value != "") {
-        if (parseInt(qty) > parseInt(avl_val)) {
-          alert("Quantity Greater than Available Quantity");
-          handleInvoiceItemsInputChange(id, "quantity", parseInt(avl_val));
-          document.getElementById(`qtyspan${id}`).textContent = "0";
-        } else {
-          document.getElementById(`qtyspan${id}`).textContent =
-            parseInt(avl_val) - parseInt(qty);
-        }
-      } else {
-        document.getElementById(`qtyspan${id}`).textContent = avl_val;
-      }
-    }
-  }
 
   function getItemData(item, id) {
     var exists = itemExists(item);
@@ -796,7 +771,7 @@ function ConvertChallanToInvoice() {
     if (!exists) {
       if (plc != "") {
         if (priceList && PLId == "") {
-          handleInvoiceItemsInputChange(id, "item", "");
+          handleSalesOrderItemsInputChange(id, "item", "");
           alert("Select a Price List from the dropdown..!");
         } else {
           var itm = {
@@ -812,7 +787,7 @@ function ConvertChallanToInvoice() {
               if (res.data.status) {
                 var itemData = res.data.itemData;
 
-                setInvoiceItems((prevItems) =>
+                setSalesOrderItems((prevItems) =>
                   prevItems.map((item) =>
                     item.id === id
                       ? {
@@ -822,7 +797,6 @@ function ConvertChallanToInvoice() {
                           taxGst: itemData.gst,
                           taxIgst: itemData.igst,
                           hsnSac: itemData.hsnSac,
-                          available: itemData.avl,
                         }
                       : item
                   )
@@ -841,7 +815,7 @@ function ConvertChallanToInvoice() {
       }
     } else {
       alert(
-        "Item already exists in the Invoice, choose another or change quantity.!"
+        "Item already exists in the Sales Order, choose another or change quantity.!"
       );
     }
   }
@@ -850,6 +824,30 @@ function ConvertChallanToInvoice() {
     checkPriceList(priceList);
     refreshTax2();
     calc();
+  }
+
+  function checkTax(cmp,plc) {
+    if (cmp == plc) {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_gst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "flex";
+      document.getElementById("taxamountSGST").style.display = "flex";
+      document.getElementById("taxamountIGST").style.display = "none";
+    } else {
+      document.querySelectorAll(".tax_ref").forEach(function (ele) {
+        ele.style.display = "none";
+      });
+      document.querySelectorAll(".tax_ref_igst").forEach(function (ele) {
+        ele.style.display = "block";
+      });
+      document.getElementById("taxamountCGST").style.display = "none";
+      document.getElementById("taxamountSGST").style.display = "none";
+      document.getElementById("taxamountIGST").style.display = "flex";
+    }
   }
 
   function refreshTax(plc) {
@@ -929,14 +927,14 @@ function ConvertChallanToInvoice() {
       const year = isoString.slice(0, 4);
 
       const formattedDate = `${day}-${month}-${year}`;
-      setDueDate(formattedDate);
+      setShipmentDate(formattedDate);
     } else {
       alert("Please enter a valid date.");
       setTerm("");
     }
   }
-  const calc3 = (invoiceItems) => {
-    const updatedItems = invoiceItems.map((item) => {
+  const calc3 = (salesOrderItems) => {
+    const updatedItems = salesOrderItems.map((item) => {
       console.log("CALC3==", item);
 
       let qty = parseInt(item.quantity || 0);
@@ -955,8 +953,8 @@ function ConvertChallanToInvoice() {
 
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total,
+        taxAmount: taxAmt,
       };
     });
 
@@ -964,7 +962,7 @@ function ConvertChallanToInvoice() {
   };
 
   function calc2(placeOfSupply) {
-    const updatedItems = invoiceItems.map((item) => {
+    const updatedItems = salesOrderItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -982,18 +980,18 @@ function ConvertChallanToInvoice() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total,
+        taxAmount: taxAmt,
       };
     });
 
-    setInvoiceItems(updatedItems);
+    setSalesOrderItems(updatedItems);
     refreshIndexes(updatedItems);
     calc_total2(updatedItems, placeOfSupply);
   }
 
   const calc = () => {
-    const updatedItems = invoiceItems.map((item) => {
+    const updatedItems = salesOrderItems.map((item) => {
       var qty = parseInt(item.quantity || 0);
       if (priceList) {
         var price = parseFloat(item.priceListPrice || 0);
@@ -1011,23 +1009,23 @@ function ConvertChallanToInvoice() {
       let taxAmt = (qty * price - dis) * (tax / 100);
       return {
         ...item,
-        total: total.toFixed(2),
-        taxAmount: taxAmt.toFixed(2),
+        total: total,
+        taxAmount: taxAmt,
       };
     });
 
-    setInvoiceItems(updatedItems);
+    setSalesOrderItems(updatedItems);
     refreshIndexes(updatedItems);
     calc_total(updatedItems);
   };
 
-  function calc_total(invoiceItems) {
+  function calc_total(salesOrderItems) {
     var total = 0;
     var taxamount = 0;
-    invoiceItems.map((item) => {
+    salesOrderItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    invoiceItems.map((item) => {
+    salesOrderItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -1059,13 +1057,13 @@ function ConvertChallanToInvoice() {
     }
   }
 
-  function calc_total2(invoiceItems, placeOfSupply) {
+  function calc_total2(salesOrderItems, placeOfSupply) {
     var total = 0;
     var taxamount = 0;
-    invoiceItems.map((item) => {
+    salesOrderItems.map((item) => {
       total += parseFloat(item.total || 0);
     });
-    invoiceItems.map((item) => {
+    salesOrderItems.map((item) => {
       taxamount += parseFloat(item.taxAmount || 0);
     });
     setSubTotal(total.toFixed(2));
@@ -1206,15 +1204,6 @@ function ConvertChallanToInvoice() {
   function handlePaymentMethodChange(val) {
     setPaymentMethod(val);
     paymentMethodChange(val);
-  }
-
-  function refreshIndexes(items) {
-    const itms = items.map((item, index) => ({
-      ...item,
-      id: index + 1,
-    }));
-
-    setInvoiceItems(itms);
   }
 
   function paymentMethodChange(val) {
@@ -1725,7 +1714,7 @@ function ConvertChallanToInvoice() {
             icon: "success",
             title: "Customer Created",
           });
-          fetchInvoiceData();
+          fetchSalesOrderData();
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -2188,7 +2177,7 @@ function ConvertChallanToInvoice() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={`/delivery_challan`}>
+          <Link to={`/Estimate`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2199,7 +2188,7 @@ function ConvertChallanToInvoice() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">CONVERT DELIVERY CHALLAN TO INVOICE</h2>
+                <h2 className="mt-3">CONVERT ESTIMATE TO SALES ORDER</h2>
               </center>
               <hr />
             </div>
@@ -2211,7 +2200,7 @@ function ConvertChallanToInvoice() {
           encType="multipart/form-data"
           onSubmit={handleSubmit}
         >
-          <div className="card radius-15" style={{ minWidth: "100%" }}>
+          <div className="card radius-15" style={{minWidth:'100%'}}>
             <div className="card-body">
               <div id="salesOrder">
                 <div className="row">
@@ -2231,8 +2220,8 @@ function ConvertChallanToInvoice() {
                         name="customer"
                         className="w-100"
                         id="customer"
-                        value={customerValue || null}
                         required
+                        value={customerValue || null}
                         onChange={(selectedOption) =>
                           handleCustomerChange(
                             selectedOption ? selectedOption.value : ""
@@ -2314,18 +2303,18 @@ function ConvertChallanToInvoice() {
                 <div className="row">
                   <div className="col-md-4 mt-3">
                     <div className="d-flex">
-                      <label className="">Invoice No.</label>
-                      <span className="text-danger ml-3" id="INVNoErr"></span>
+                      <label className="">Sales Order No.</label>
+                      <span className="text-danger ml-3" id="SONoErr"></span>
                     </div>
                     <input
                       type="text"
                       className="form-control"
-                      name="invoice_no"
-                      id="invoiceNumber"
-                      value={invoiceNo}
-                      onChange={(e) => handleInvoiceNoChange(e.target.value)}
+                      name="sales_order_no"
+                      id="salesOrderNumber"
+                      value={salesOrderNo}
+                      onChange={(e) => handleSalesOrderNoChange(e.target.value)}
                       style={{ backgroundColor: "#43596c" }}
-                      placeholder={nextInvoiceNo}
+                      placeholder={nextSalesOrderNo}
                       required
                     />
                   </div>
@@ -2341,6 +2330,7 @@ function ConvertChallanToInvoice() {
                     />
                   </div>
                   <div className="col-md-4 mt-3">
+                    <input hidden value="{{cmp.State}}" id="cmpstate" />
                     <label className="">Place of supply</label>
                     <select
                       type="text"
@@ -2406,8 +2396,8 @@ function ConvertChallanToInvoice() {
                 </div>
 
                 <div className="row">
-                  <div className="col-md-3 mt-3">
-                    <label className="">Invoice Date:</label>
+                  <div className="col-md-4 mt-3">
+                    <label className="">Sales Order Date:</label>
                     <input
                       type="date"
                       className="form-control"
@@ -2416,10 +2406,9 @@ function ConvertChallanToInvoice() {
                       style={{ backgroundColor: "#43596c", color: "white" }}
                       value={date}
                       onChange={(e) => handleOrderDateChange(e.target.value)}
-                      required
                     />
                   </div>
-                  <div className="col-md-3 mt-3">
+                  <div className="col-md-4 mt-3">
                     <label className="">Expected Shipment Date:</label>
                     <input
                       type="text"
@@ -2427,11 +2416,11 @@ function ConvertChallanToInvoice() {
                       className="form-control"
                       name="shipment_date"
                       style={{ backgroundColor: "#43596c", color: "white" }}
-                      value={dueDate}
+                      value={shipmentDate}
                       readOnly
                     />
                   </div>
-                  <div className="col-md-3 mt-3">
+                  <div className="col-md-4 mt-3">
                     <label className="">Terms </label>
                     <div className="d-flex align-items-center">
                       <select
@@ -2468,21 +2457,6 @@ function ConvertChallanToInvoice() {
                     </div>
                   </div>
 
-                  <div className="col-md-3 mt-3">
-                    <label className="">Order No.</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="sales_order_no"
-                      id="salesOrderNumber"
-                      value={salesOrderNo}
-                      onChange={(e) => setSalesOrderNo(e.target.value)}
-                      style={{ backgroundColor: "#43596c" }}
-                    />
-                  </div>
-                </div>
-
-                <div className="row">
                   <div className="col-md-4 mt-3">
                     <label className="">Payment Type</label>
                     <select
@@ -2630,7 +2604,7 @@ function ConvertChallanToInvoice() {
                   <div className="col-md-12 table-responsive-md mt-3">
                     <table
                       className="table table-bordered table-hover mt-3"
-                      id="invoiceItemsTable"
+                      id="salesOrderItemsTable"
                     >
                       <thead>
                         <tr>
@@ -2645,248 +2619,235 @@ function ConvertChallanToInvoice() {
                         </tr>
                       </thead>
                       <tbody id="items-table-body">
-                        {invoiceItems.map((row) => {
+                        {salesOrderItems.map((row) => {
                           const selectedOptionI = items.find(
                             (option) => option.value === row.item
-                          );
+                          )
+                          return(
 
-                          return (
-                            <tr key={row.id} id={`tab_row${row.id}`}>
-                              <td
-                                className="nnum"
-                                style={{ textAlign: "center" }}
-                              >
-                                {row.id}
-                              </td>
-                              <td style={{ width: "20%" }}>
-                                <div className="d-flex align-items-center">
-                                  <Select
-                                    options={items}
-                                    styles={customStyles}
-                                    name="item"
-                                    className="w-100"
-                                    id={`item${row.id}`}
-                                    required
-                                    value={selectedOptionI}
-                                    onChange={(selectedOption) =>
-                                      handleItemChange(
-                                        selectedOption
-                                          ? selectedOption.value
-                                          : "",
-                                        row.id
-                                      )
-                                    }
-                                    onBlur={refreshValues}
-                                    isClearable
-                                    isSearchable
-                                  />
-                                  <button
-                                    type="button"
-                                    className="btn btn-outline-secondary ml-1"
-                                    data-target="#newItem"
-                                    data-toggle="modal"
-                                    style={{
-                                      width: "fit-content",
-                                      height: "fit-content",
-                                    }}
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              </td>
-                              <td>
-                                <input
-                                  type="text"
-                                  name="hsnSac"
-                                  value={row.hsnSac}
-                                  id={`hsn${row.id}`}
-                                  placeholder="HSN/SAC Code"
-                                  className="form-control HSNCODE"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                  }}
-                                  readOnly
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  name="qty[]"
-                                  id={`qty${row.id}`}
-                                  className="form-control qty"
-                                  step="0"
-                                  min="1"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                    marginTop: "21px",
-                                  }}
-                                  value={row.quantity}
-                                  onChange={(e) =>
-                                    handleQtyChange(
-                                      e.target.value,
-                                      row.id,
-                                      row.initialQty
-                                    )
-                                  }
-                                  onBlur={refreshValues}
+                          <tr key={row.id} id={`tab_row${row.id}`}>
+                            <td
+                              className="nnum"
+                              style={{ textAlign: "center" }}
+                            >
+                              {row.id}
+                            </td>
+                            <td style={{ width: "20%" }}>
+                              <div className="d-flex align-items-center">
+                                <Select
+                                  options={items}
+                                  styles={customStyles}
+                                  name="item"
+                                  className="w-100"
+                                  id={`item${row.id}`}
                                   required
-                                />
-                                <span
-                                  id={`avl${row.id}`}
-                                  style={{ display: "none" }}
-                                >
-                                  {row.available}
-                                </span>
-                                <div class="d-flex">
-                                  <span>Available Qty :</span>
-                                  <span id={`qtyspan${row.id}`} class="">
-                                    {row.available}
-                                  </span>
-                                </div>
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  name="price"
-                                  id={`price${row.id}`}
-                                  className="form-control price"
-                                  step="0.00"
-                                  min="0"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                    display: "block",
-                                  }}
-                                  value={row.price}
-                                  readOnly
-                                />
-                                <input
-                                  type="number"
-                                  name="priceListPrice"
-                                  id={`priceListPrice${row.id}`}
-                                  className="form-control priceListPrice"
-                                  step="0.00"
-                                  min="0"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                    display: "none",
-                                  }}
-                                  value={row.priceListPrice}
-                                  readOnly
-                                />
-                              </td>
-
-                              <td style={{ width: "13%" }}>
-                                <select
-                                  name="taxGST"
-                                  id={`taxGST${row.id}`}
-                                  className="form-control tax_ref tax_ref_gst"
-                                  style={{ display: "block" }}
-                                  value={row.taxGst}
-                                  onChange={(e) =>
-                                    handleInvoiceItemsInputChange(
-                                      row.id,
-                                      "taxGst",
-                                      e.target.value
+                                  value={selectedOptionI}
+                                  onChange={(selectedOption) =>
+                                    handleItemChange(
+                                      selectedOption
+                                        ? selectedOption.value
+                                        : "",
+                                      row.id
                                     )
                                   }
                                   onBlur={refreshValues}
-                                >
-                                  <option value="">Select GST</option>
-                                  <option value="28">28.0% GST</option>
-                                  <option value="18">18.0% GST</option>
-                                  <option value="12">12.0% GST</option>
-                                  <option value="5">05.0% GST</option>
-                                  <option value="3">03.0% GST</option>
-                                  <option value="0">0.0% GST</option>
-                                </select>
-                                <select
-                                  name="taxIGST"
-                                  id={`taxIGST${row.id}`}
-                                  className="form-control tax_ref tax_ref_igst"
-                                  style={{ display: "none" }}
-                                  value={row.taxIgst}
-                                  onChange={(e) =>
-                                    handleInvoiceItemsInputChange(
-                                      row.id,
-                                      "taxIgst",
-                                      e.target.value
-                                    )
-                                  }
-                                  onBlur={refreshValues}
-                                >
-                                  <option value="">Select IGST</option>
-                                  <option value="28">28.0% IGST</option>
-                                  <option value="18">18.0% IGST</option>
-                                  <option value="12">12.0% IGST</option>
-                                  <option value="5">05.0% IGST</option>
-                                  <option value="3">03.0% IGST</option>
-                                  <option value="0">0.0% IGST</option>
-                                </select>
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  name="discount"
-                                  placeholder="Enter Discount"
-                                  id={`disc${row.id}`}
-                                  value={row.discount}
-                                  onChange={(e) =>
-                                    handleInvoiceItemsInputChange(
-                                      row.id,
-                                      "discount",
-                                      e.target.value
-                                    )
-                                  }
-                                  onBlur={refreshValues}
-                                  className="form-control disc"
-                                  step="0"
-                                  min="0"
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                  }}
+                                  isClearable
+                                  isSearchable
                                 />
-                              </td>
-
-                              <td>
-                                <input
-                                  type="number"
-                                  name="total"
-                                  id={`total${row.id}`}
-                                  className="form-control total"
-                                  value={row.total}
-                                  readOnly
-                                  style={{
-                                    backgroundColor: "#43596c",
-                                    color: "white",
-                                  }}
-                                />
-                                <input
-                                  type="hidden"
-                                  id={`taxamount${row.id}`}
-                                  className="form-control itemTaxAmount"
-                                  value={row.taxAmount}
-                                />
-                              </td>
-                              <td>
                                 <button
                                   type="button"
-                                  id={`${row.id}`}
+                                  className="btn btn-outline-secondary ml-1"
+                                  data-target="#newItem"
+                                  data-toggle="modal"
                                   style={{
                                     width: "fit-content",
                                     height: "fit-content",
                                   }}
-                                  onClick={() => removeRow(row.id)}
-                                  className="btn btn-danger remove_row px-2 py-1 mx-1 fa fa-close"
-                                  title="Remove Row"
-                                ></button>
-                              </td>
-                            </tr>
-                          );
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                name="hsnSac"
+                                value={row.hsnSac}
+                                id={`hsn${row.id}`}
+                                placeholder="HSN/SAC Code"
+                                className="form-control HSNCODE"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                }}
+                                readOnly
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                name="qty[]"
+                                id={`qty${row.id}`}
+                                className="form-control qty"
+                                step="0"
+                                min="1"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                }}
+                                value={row.quantity}
+                                onChange={(e) =>
+                                  handleSalesOrderItemsInputChange(
+                                    row.id,
+                                    "quantity",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={refreshValues}
+                                required
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                name="price"
+                                id={`price${row.id}`}
+                                className="form-control price"
+                                step="0.00"
+                                min="0"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                  display: "block",
+                                }}
+                                value={row.price}
+                                readOnly
+                              />
+                              <input
+                                type="number"
+                                name="priceListPrice"
+                                id={`priceListPrice${row.id}`}
+                                className="form-control priceListPrice"
+                                step="0.00"
+                                min="0"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                  display: "none",
+                                }}
+                                value={row.priceListPrice}
+                                readOnly
+                              />
+                            </td>
+
+                            <td style={{ width: "13%" }}>
+                              <select
+                                name="taxGST"
+                                id={`taxGST${row.id}`}
+                                className="form-control tax_ref tax_ref_gst"
+                                style={{ display: "block" }}
+                                value={row.taxGst}
+                                onChange={(e) =>
+                                  handleSalesOrderItemsInputChange(
+                                    row.id,
+                                    "taxGst",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={refreshValues}
+                              >
+                                <option value="">Select GST</option>
+                                <option value="28">28.0% GST</option>
+                                <option value="18">18.0% GST</option>
+                                <option value="12">12.0% GST</option>
+                                <option value="5">05.0% GST</option>
+                                <option value="3">03.0% GST</option>
+                                <option value="0">0.0% GST</option>
+                              </select>
+                              <select
+                                name="taxIGST"
+                                id={`taxIGST${row.id}`}
+                                className="form-control tax_ref tax_ref_igst"
+                                style={{ display: "none" }}
+                                value={row.taxIgst}
+                                onChange={(e) =>
+                                  handleSalesOrderItemsInputChange(
+                                    row.id,
+                                    "taxIgst",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={refreshValues}
+                              >
+                                <option value="">Select IGST</option>
+                                <option value="28">28.0% IGST</option>
+                                <option value="18">18.0% IGST</option>
+                                <option value="12">12.0% IGST</option>
+                                <option value="5">05.0% IGST</option>
+                                <option value="3">03.0% IGST</option>
+                                <option value="0">0.0% IGST</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                name="discount"
+                                placeholder="Enter Discount"
+                                id={`disc${row.id}`}
+                                value={row.discount}
+                                onChange={(e) =>
+                                  handleSalesOrderItemsInputChange(
+                                    row.id,
+                                    "discount",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={refreshValues}
+                                className="form-control disc"
+                                step="0"
+                                min="0"
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                }}
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                type="number"
+                                name="total"
+                                id={`total${row.id}`}
+                                className="form-control total"
+                                value={row.total}
+                                readOnly
+                                style={{
+                                  backgroundColor: "#43596c",
+                                  color: "white",
+                                }}
+                              />
+                              <input
+                                type="hidden"
+                                id={`taxamount${row.id}`}
+                                className="form-control itemTaxAmount"
+                                value={row.taxAmount}
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                id={`${row.id}`}
+                                style={{
+                                  width: "fit-content",
+                                  height: "fit-content",
+                                }}
+                                onClick={() => removeRow(row.id)}
+                                className="btn btn-danger remove_row px-2 py-1 mx-1 fa fa-close"
+                                title="Remove Row"
+                              ></button>
+                            </td>
+                          </tr>
+                          )
                         })}
                       </tbody>
                       <tr>
@@ -2929,7 +2890,7 @@ function ConvertChallanToInvoice() {
                   <div className="col-md-1"></div>
                   <div
                     className="col-md-5 table-responsive-md mt-3 "
-                    id="invoiceItemsTableTotal"
+                    id="salesOrderItemsTableTotal"
                     style={{
                       backgroundColor: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(128, 128, 128, 0.6)",
@@ -3114,7 +3075,7 @@ function ConvertChallanToInvoice() {
                   <div className="col-md-7"></div>
                   <div
                     className="col-md-5 table-responsive-md mt-3 "
-                    id="invoiceItemsTablePaid"
+                    id="salesOrderItemsTablePaid"
                     style={{
                       backgroundColor: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(128, 128, 128, 0.6)",
@@ -3188,14 +3149,12 @@ function ConvertChallanToInvoice() {
                       type="submit"
                       className="btn btn-outline-secondary w-50 text-light"
                       value="Convert"
-                      style={{ height: "fit-content" }}
                     />
                     <input
                       type="reset"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => navigate(`/delivery_challan`)}
                       value="Cancel"
-                      style={{ height: "fit-content" }}
+                      onClick={()=>navigate(`/Estimate`)}
                     />
                   </div>
                 </div>
@@ -3206,7 +3165,7 @@ function ConvertChallanToInvoice() {
                   </div>
                 </div>
                 <span className="text-muted">
-                  Invoice was created on a computer and is valid without the
+                  Sales Order was created on a computer and is valid without the
                   signature and seal.
                 </span>
               </div>
@@ -4440,7 +4399,7 @@ function ConvertChallanToInvoice() {
               <div className="card p-3">
                 <form
                   className="needs-validation px-1"
-                  onSubmit={handleSubmit}
+                  onSubmit={handleItemModalSubmit}
                   validate
                 >
                   <div className="row w-100">
@@ -4980,4 +4939,4 @@ function ConvertChallanToInvoice() {
   );
 }
 
-export default ConvertChallanToInvoice;
+export default ConvertEstimateToSalesOrder;

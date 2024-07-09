@@ -338,4 +338,33 @@ urlpatterns = [
     path('credit_note_pdf/',Fin_creditNotePdf),
     path('share_credit_note_email/',Fin_shareCreditNoteToEmail),
     path('update_credit_note/',Fin_updateCreditNote),
+
+    # Payment Received
+    path('fetch_payments/<int:id>/',Fin_fetchPayments),
+    path('get_payment_invoices/',Fin_getPaymentInvoices),
+    path('fetch_payment_received_data/<int:id>/',Fin_fetchPaymentReceivedData),
+    path('check_payment_no/',Fin_checkPaymentNo),
+    path('create_new_payment_received/',Fin_createPaymentReceived),
+    # path('fetch_ret_invoice_details/<int:id>/',Fin_fetchRetInvoiceDetails),
+    # path('change_ret_invoice_status/',Fin_changeRetInvoiceStatus),
+    # path('add_ret_invoice_comment/',Fin_addRetInvoiceComment),
+    # path('add_ret_invoice_attachment/',Fin_addRetInvoiceAttachment),
+    # path('delete_ret_invoice_comment/<int:id>/',Fin_deleteRetInvoiceComment),
+    # path('fetch_ret_invoice_history/<int:id>/',Fin_fetchRetInvoiceHistory),
+    # path('delete_ret_invoice/<int:id>/',Fin_deleteRetInvoice),
+    # path('ret_invoice_pdf/',Fin_retInvoicePdf),
+    # path('share_ret_invoice_email/',Fin_shareRetInvoiceToEmail),
+    # path('update_ret_invoice/',Fin_updateRetInvoice),
+
+    # Sales order - updation
+    path('convert_sales_order_to_invoice/',Fin_convertSalesOrderToInvoice),
+    path('convert_sales_order_to_rec_invoice/',Fin_convertSalesOrderToRecInvoice),
+
+    # Delivery Challan - updation
+    path('convert_challan_to_rec_invoice/',Fin_convertChallanToRecInvoice),
+
+    # Estimate - updation
+    path('convert_estimate_to_invoice/',Fin_convertEstimateToInvoice),
+    path('convert_estimate_to_rec_invoice/',Fin_convertEstimateToRecInvoice),
+    path('convert_estimate_to_sales_order/',Fin_convertEstimateToSalesOrder),
 ]

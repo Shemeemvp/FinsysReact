@@ -7,10 +7,10 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function ConvertChallanToInvoice() {
+function ConvertSalesOrderToInvoice() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
-  const { challanId } = useParams();
+  const { salesId } = useParams();
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [terms, setTerms] = useState([]);
@@ -62,7 +62,7 @@ function ConvertChallanToInvoice() {
             value: item.id,
           }));
           setCustomers(newCustOptions);
-          setNextInvoiceNo(res.data.invNo);
+          setNextInvoiceNo(res.data.soNo);
           setRefNo(res.data.refNo)
         }
       })
@@ -143,40 +143,45 @@ function ConvertChallanToInvoice() {
     }),
   };
 
-  const fetchChallanDetails = () => {
+  const fetchSalesOrderDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_challan_details/${challanId}/`)
+      .get(`${config.base_url}/fetch_sales_order_details/${salesId}/`)
       .then((res) => {
-        console.log("CHL DET=", res);
+        console.log("SO DET=", res);
         if (res.data.status) {
-          var challan = res.data.challan;
+          var sOrder = res.data.sales;
           var itms = res.data.items;
 
           var c = {
-            value: challan.Customer,
+            value: sOrder.Customer,
             label: res.data.otherDetails.customerName,
           };
           setCustomerValue(c);
 
-          setCustomer(challan.Customer);
-          setEmail(challan.customer_email);
-          setGstType(challan.gst_type);
-          setGstIn(challan.gstin);
-          setBillingAddress(challan.billing_address);
-          setDate(challan.challan_date);
-          setPlaceOfSupply(challan.place_of_supply)
-          setPriceList(challan.price_list_applied);
-          setPriceListId(challan.price_list);
-          setSubTotal(challan.subtotal);
-          setIgst(challan.igst);
-          setCgst(challan.cgst);
-          setSgst(challan.sgst);
-          setTaxAmount(challan.tax_amount);
-          setAdjustment(challan.adjustment);
-          setShippingCharge(challan.shipping_charge);
-          setGrandTotal(challan.grandtotal);
-          setBalance(challan.grandtotal);
-          setDescription(challan.note);
+          setCustomer(sOrder.Customer);
+          setEmail(sOrder.customer_email);
+          setGstType(sOrder.gst_type);
+          setGstIn(sOrder.gstin);
+          setBillingAddress(sOrder.billing_address);
+          setDate(sOrder.sales_order_date);
+          setDueDate(sOrder.exp_ship_date);
+          setTerm(sOrder.payment_terms);
+          setSalesOrderNo(sOrder.sales_order_no);
+          setPlaceOfSupply(sOrder.place_of_supply)
+          setPriceList(sOrder.price_list_applied);
+          setPriceListId(sOrder.price_list);
+          setPaymentMethod(sOrder.payment_method);
+          setSubTotal(sOrder.subtotal);
+          setIgst(sOrder.igst);
+          setCgst(sOrder.cgst);
+          setSgst(sOrder.sgst);
+          setTaxAmount(sOrder.tax_amount);
+          setAdjustment(sOrder.adjustment);
+          setShippingCharge(sOrder.shipping_charge);
+          setGrandTotal(sOrder.grandtotal);
+          setPaid(sOrder.paid_off);
+          setBalance(sOrder.balance);
+          setDescription(sOrder.note);
           setInvoiceItems([]);
           const invItems = itms.map((i) => {
             if (i.item_type == "Goods") {
@@ -204,8 +209,8 @@ function ConvertChallanToInvoice() {
           setInvoiceItems(invItems);
           refreshIndexes(invItems);
 
-          checkTax(res.data.otherDetails.State, challan.place_of_supply);
-          checkPL(challan.price_list_applied);
+          checkTax(res.data.otherDetails.State, sOrder.place_of_supply);
+          checkPL(sOrder.price_list_applied);
         }
       })
       .catch((err) => {
@@ -220,7 +225,7 @@ function ConvertChallanToInvoice() {
   };
 
   useEffect(() => {
-    fetchChallanDetails();
+    fetchSalesOrderDetails();
   }, []);
 
   var currentDate = new Date();
@@ -536,7 +541,7 @@ function ConvertChallanToInvoice() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("chl_id", challanId);
+    formData.append("sales_id", salesId);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
@@ -574,7 +579,7 @@ function ConvertChallanToInvoice() {
     }
 
     axios
-      .post(`${config.base_url}/convert_challan_to_invoice/`, formData)
+      .post(`${config.base_url}/convert_sales_order_to_invoice/`, formData)
       .then((res) => {
         console.log("INV RES=", res);
         if (res.data.status) {
@@ -582,7 +587,7 @@ function ConvertChallanToInvoice() {
             icon: "success",
             title: "Converted To Invoice",
           });
-          navigate("/delivery_challan");
+          navigate("/sales_order");
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -2188,7 +2193,7 @@ function ConvertChallanToInvoice() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={`/delivery_challan`}>
+          <Link to={`/sales_order`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2199,7 +2204,7 @@ function ConvertChallanToInvoice() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">CONVERT DELIVERY CHALLAN TO INVOICE</h2>
+                <h2 className="mt-3">CONVERT SALES ORDER TO INVOICE</h2>
               </center>
               <hr />
             </div>
@@ -3193,7 +3198,7 @@ function ConvertChallanToInvoice() {
                     <input
                       type="reset"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => navigate(`/delivery_challan`)}
+                      onClick={() => navigate(`/sales_order`)}
                       value="Cancel"
                       style={{ height: "fit-content" }}
                     />
@@ -4980,4 +4985,4 @@ function ConvertChallanToInvoice() {
   );
 }
 
-export default ConvertChallanToInvoice;
+export default ConvertSalesOrderToInvoice;

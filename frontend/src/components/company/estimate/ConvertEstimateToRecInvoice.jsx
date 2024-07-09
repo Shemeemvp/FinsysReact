@@ -7,22 +7,23 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function ConvertChallanToInvoice() {
+function ConvertEstimateToRecInvoice() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
-  const { challanId } = useParams();
+  const { estimateId } = useParams();
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [terms, setTerms] = useState([]);
   const [banks, setBanks] = useState([]);
   const [priceLists, setPriceLists] = useState([]);
+  const [companyRepeatEvery, setCompanyRepeatEvery] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
   const [cmpState, setCmpState] = useState("");
   const [customerValue, setCustomerValue] = useState({});
 
   const fetchInvoiceData = () => {
     axios
-      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
       .then((res) => {
         console.log("INV Data==", res);
         if (res.data.status) {
@@ -32,6 +33,8 @@ function ConvertChallanToInvoice() {
           let bnks = res.data.banks;
           let lst = res.data.priceList;
           let clst = res.data.custPriceList;
+          let rpt = res.data.repeat;
+
           setCmpState(res.data.state);
           setPriceLists([]);
           setCustomerPriceLists([]);
@@ -56,14 +59,19 @@ function ConvertChallanToInvoice() {
           }));
           setItems(newOptions);
 
+          setCompanyRepeatEvery([]);
+          rpt.map((r) => {
+            setCompanyRepeatEvery((prevState) => [...prevState, r]);
+          });
+
           setCustomers([]);
           const newCustOptions = cust.map((item) => ({
             label: item.first_name + " " + item.last_name,
             value: item.id,
           }));
           setCustomers(newCustOptions);
-          setNextInvoiceNo(res.data.invNo);
-          setRefNo(res.data.refNo)
+          setNextRecInvoiceNo(res.data.invNo);
+          setRefNo(res.data.refNo);
         }
       })
       .catch((err) => {
@@ -73,7 +81,7 @@ function ConvertChallanToInvoice() {
 
   function fetchPaymentTerms() {
     axios
-      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let trms = res.data.paymentTerms;
@@ -90,7 +98,7 @@ function ConvertChallanToInvoice() {
 
   function fetchItems() {
     axios
-      .get(`${config.base_url}/fetch_invoice_data/${ID}/`)
+      .get(`${config.base_url}/fetch_rec_invoice_data/${ID}/`)
       .then((res) => {
         if (res.data.status) {
           let items = res.data.items;
@@ -143,40 +151,44 @@ function ConvertChallanToInvoice() {
     }),
   };
 
-  const fetchChallanDetails = () => {
+  const fetchEstimateDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_challan_details/${challanId}/`)
+      .get(`${config.base_url}/fetch_estimate_details/${estimateId}/`)
       .then((res) => {
-        console.log("CHL DET=", res);
+        console.log("INV DET=", res);
         if (res.data.status) {
-          var challan = res.data.challan;
+          var est = res.data.est;
           var itms = res.data.items;
 
           var c = {
-            value: challan.Customer,
+            value: est.Customer,
             label: res.data.otherDetails.customerName,
           };
           setCustomerValue(c);
 
-          setCustomer(challan.Customer);
-          setEmail(challan.customer_email);
-          setGstType(challan.gst_type);
-          setGstIn(challan.gstin);
-          setBillingAddress(challan.billing_address);
-          setDate(challan.challan_date);
-          setPlaceOfSupply(challan.place_of_supply)
-          setPriceList(challan.price_list_applied);
-          setPriceListId(challan.price_list);
-          setSubTotal(challan.subtotal);
-          setIgst(challan.igst);
-          setCgst(challan.cgst);
-          setSgst(challan.sgst);
-          setTaxAmount(challan.tax_amount);
-          setAdjustment(challan.adjustment);
-          setShippingCharge(challan.shipping_charge);
-          setGrandTotal(challan.grandtotal);
-          setBalance(challan.grandtotal);
-          setDescription(challan.note);
+          setCustomer(est.Customer);
+          setEmail(est.customer_email);
+          setGstType(est.gst_type);
+          setGstIn(est.gstin);
+          setBillingAddress(est.billing_address);
+          setPlaceOfSupply(est.place_of_supply);
+          setDate(est.estimate_date);
+          setEndDate(est.exp_date);
+          setTerm(est.payment_terms);
+          setPaymentMethod(est.payment_method);
+          setChequeNumber(est.cheque_no);
+          setUpiId(est.upi_no);
+          setAccountNumber(est.bank_acc_no);
+          setSubTotal(est.subtotal);
+          setIgst(est.igst);
+          setCgst(est.cgst);
+          setSgst(est.sgst);
+          setTaxAmount(est.tax_amount);
+          setAdjustment(est.adjustment);
+          setShippingCharge(est.shipping_charge);
+          setGrandTotal(est.grandtotal);
+          setBalance(est.grandtotal);
+          setDescription(est.note);
           setInvoiceItems([]);
           const invItems = itms.map((i) => {
             if (i.item_type == "Goods") {
@@ -204,8 +216,8 @@ function ConvertChallanToInvoice() {
           setInvoiceItems(invItems);
           refreshIndexes(invItems);
 
-          checkTax(res.data.otherDetails.State, challan.place_of_supply);
-          checkPL(challan.price_list_applied);
+          paymentMethodChange(est.payment_method);
+          checkTax(res.data.otherDetails.State, est.place_of_supply);
         }
       })
       .catch((err) => {
@@ -220,7 +232,7 @@ function ConvertChallanToInvoice() {
   };
 
   useEffect(() => {
-    fetchChallanDetails();
+    fetchEstimateDetails();
   }, []);
 
   var currentDate = new Date();
@@ -232,13 +244,16 @@ function ConvertChallanToInvoice() {
   const [gstIn, setGstIn] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [refNo, setRefNo] = useState("");
-  const [invoiceNo, setInvoiceNo] = useState("");
+  const [recInvoiceNo, setRecInvoiceNo] = useState("");
   const [salesOrderNo, setSalesOrderNo] = useState("");
-  const [nextInvoiceNo, setNextInvoiceNo] = useState("");
+  const [nextRecInvoiceNo, setNextRecInvoiceNo] = useState("");
+  const [profileName, setProfileName] = useState("");
+  const [entryType, setEntryType] = useState("");
   const [date, setDate] = useState(formattedDate);
   const [placeOfSupply, setPlaceOfSupply] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [term, setTerm] = useState("");
+  const [repeatEvery, setRepeatEvery] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
   const [upiId, setUpiId] = useState("");
@@ -536,19 +551,22 @@ function ConvertChallanToInvoice() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("chl_id", challanId);
+    formData.append("est_id", estimateId);
     formData.append("Customer", customer);
     formData.append("customer_email", email);
     formData.append("billing_address", billingAddress);
     formData.append("gst_type", gstType);
     formData.append("gstin", gstIn);
     formData.append("place_of_supply", placeOfSupply);
+    formData.append("entry_type", entryType);
+    formData.append("profile_name", profileName);
     formData.append("reference_no", refNo);
-    formData.append("invoice_no", invoiceNo);
+    formData.append("rec_invoice_no", recInvoiceNo);
     formData.append("salesOrder_no", salesOrderNo);
     formData.append("payment_terms", term);
-    formData.append("invoice_date", date);
-    formData.append("duedate", dueDate);
+    formData.append("repeat_every", repeatEvery);
+    formData.append("start_date", date);
+    formData.append("end_date", endDate);
     formData.append("price_list_applied", priceList);
     formData.append("price_list", checkForNull(priceListId));
     formData.append("payment_method", checkForNull(paymentMethod));
@@ -566,7 +584,6 @@ function ConvertChallanToInvoice() {
     formData.append("paid_off", checkForZero(paid));
     formData.append("balance", checkBalanceVal(balance));
     formData.append("note", description);
-    formData.append("Status", "Saved");
     formData.append("invoiceItems", JSON.stringify(invoiceItems));
 
     if (file) {
@@ -574,15 +591,14 @@ function ConvertChallanToInvoice() {
     }
 
     axios
-      .post(`${config.base_url}/convert_challan_to_invoice/`, formData)
+      .post(`${config.base_url}/convert_estimate_to_rec_invoice/`, formData)
       .then((res) => {
-        console.log("INV RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Converted To Invoice",
+            title: "Converted To Rec. Invoice",
           });
-          navigate("/delivery_challan");
+          navigate(`/Estimate`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -645,7 +661,7 @@ function ConvertChallanToInvoice() {
   }
 
   function handleInvoiceNoChange(val) {
-    setInvoiceNo(val);
+    setRecInvoiceNo(val);
     checkInvoiceNo(val);
   }
 
@@ -658,7 +674,7 @@ function ConvertChallanToInvoice() {
         INVNum: inv_num,
       };
       axios
-        .get(`${config.base_url}/check_invoice_no/`, { params: s })
+        .get(`${config.base_url}/check_rec_invoice_no/`, { params: s })
         .then((res) => {
           console.log("INV NUM Res=", res);
           if (!res.data.status) {
@@ -902,7 +918,7 @@ function ConvertChallanToInvoice() {
     }
   }
 
-  function handleOrderDateChange(date) {
+  function handleStartDateChange(date) {
     setDate(date);
     findShipmentDate();
   }
@@ -916,7 +932,7 @@ function ConvertChallanToInvoice() {
     var paymentTerm = document.querySelector("#paymentTerm");
     var selectedOption = paymentTerm.options[paymentTerm.selectedIndex];
     var days = parseInt(selectedOption.getAttribute("text"));
-    var order_date = new Date(document.getElementById("salesOrderDate").value);
+    var order_date = new Date(document.getElementById("startDate").value);
     console.log(days);
     console.log(order_date);
     if (!isNaN(order_date.getTime())) {
@@ -929,7 +945,7 @@ function ConvertChallanToInvoice() {
       const year = isoString.slice(0, 4);
 
       const formattedDate = `${day}-${month}-${year}`;
-      setDueDate(formattedDate);
+      setEndDate(formattedDate);
     } else {
       alert("Please enter a valid date.");
       setTerm("");
@@ -2188,7 +2204,7 @@ function ConvertChallanToInvoice() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={`/delivery_challan`}>
+          <Link to={`/Estimate`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -2199,7 +2215,7 @@ function ConvertChallanToInvoice() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">CONVERT DELIVERY CHALLAN TO INVOICE</h2>
+                <h2 className="mt-3">CONVERT ESTIMATE TO RECURRING INVOICE</h2>
               </center>
               <hr />
             </div>
@@ -2313,32 +2329,32 @@ function ConvertChallanToInvoice() {
 
                 <div className="row">
                   <div className="col-md-4 mt-3">
-                    <div className="d-flex">
-                      <label className="">Invoice No.</label>
-                      <span className="text-danger ml-3" id="INVNoErr"></span>
-                    </div>
+                    <label className="">Profile Name</label>
                     <input
                       type="text"
                       className="form-control"
-                      name="invoice_no"
-                      id="invoiceNumber"
-                      value={invoiceNo}
-                      onChange={(e) => handleInvoiceNoChange(e.target.value)}
+                      name="profile_name"
+                      id="profileName"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
                       style={{ backgroundColor: "#43596c" }}
-                      placeholder={nextInvoiceNo}
-                      required
                     />
                   </div>
                   <div className="col-md-4 mt-3">
-                    <label className="">Reference Number</label>
-                    <input
+                    <label className="">Entry Type</label>
+                    <select
                       type="text"
                       className="form-control"
-                      name="reference_number"
-                      value={refNo}
-                      style={{ backgroundColor: "#43596c" }}
-                      readOnly
-                    />
+                      id="entryType"
+                      name="entry_type"
+                      value={entryType}
+                      onChange={(e) => setEntryType(e.target.value)}
+                      style={{ backgroundColor: "#43596c", color: "white" }}
+                    >
+                      <option value="" selected disabled>Select Entry Type</option>
+                      <option value="Invoice">Invoice</option>
+                      <option value="Bill Of Supply">Bill Of Supply</option>
+                    </select>
                   </div>
                   <div className="col-md-4 mt-3">
                     <label className="">Place of supply</label>
@@ -2406,32 +2422,61 @@ function ConvertChallanToInvoice() {
                 </div>
 
                 <div className="row">
-                  <div className="col-md-3 mt-3">
-                    <label className="">Invoice Date:</label>
+                  <div className="col-md-4 mt-3">
+                    <div className="d-flex">
+                      <label className="">Rec. Invoice No.</label>
+                      <span className="text-danger ml-3" id="INVNoErr"></span>
+                    </div>
                     <input
-                      type="date"
+                      type="text"
                       className="form-control"
-                      name="sales_order_date"
-                      id="salesOrderDate"
-                      style={{ backgroundColor: "#43596c", color: "white" }}
-                      value={date}
-                      onChange={(e) => handleOrderDateChange(e.target.value)}
+                      name="rec_invoice_no"
+                      id="recInvoiceNumber"
+                      value={recInvoiceNo}
+                      onChange={(e) => handleInvoiceNoChange(e.target.value)}
+                      style={{ backgroundColor: "#43596c" }}
+                      placeholder={nextRecInvoiceNo}
                       required
                     />
                   </div>
-                  <div className="col-md-3 mt-3">
-                    <label className="">Expected Shipment Date:</label>
+                  <div className="col-md-4 mt-3">
+                    <label className="">Reference Number</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="reference_number"
+                      value={refNo}
+                      style={{ backgroundColor: "#43596c" }}
+                      readOnly
+                    />
+                  </div>
+
+                  <div className="col-md-4 mt-3">
+                    <label className="">Start Date:</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      name="start_date"
+                      id="startDate"
+                      style={{ backgroundColor: "#43596c", color: "white" }}
+                      value={date}
+                      onChange={(e) => handleStartDateChange(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="col-md-4 mt-3">
+                    <label className="">End Date:</label>
                     <input
                       type="text"
                       id="shipmentDate"
                       className="form-control"
                       name="shipment_date"
                       style={{ backgroundColor: "#43596c", color: "white" }}
-                      value={dueDate}
+                      value={endDate}
                       readOnly
                     />
                   </div>
-                  <div className="col-md-3 mt-3">
+                  <div className="col-md-4 mt-3">
                     <label className="">Terms </label>
                     <div className="d-flex align-items-center">
                       <select
@@ -2468,7 +2513,43 @@ function ConvertChallanToInvoice() {
                     </div>
                   </div>
 
-                  <div className="col-md-3 mt-3">
+                  <div className="col-md-4 mt-3">
+                    <label className="">Repeat Every</label>
+                    <div className="d-flex align-items-center">
+                      <select
+                        className="form-control"
+                        name="repeat_every"
+                        value={repeatEvery}
+                        onChange={(e) =>
+                          setRepeatEvery(e.target.value)
+                        }
+                        style={{ backgroundColor: "#43596c", color: "white" }}
+                        id="paymentTerm"
+                        required
+                      >
+                        <option value="" selected disabled>
+                          Select Repeat Duration
+                        </option>
+                        {companyRepeatEvery &&
+                          companyRepeatEvery.map((repeat) => (
+                            <option value={repeat.id}>
+                              {repeat.repeat_every}
+                            </option>
+                          ))}
+                      </select>
+                      <a
+                        className="btn btn-outline-secondary ml-1"
+                        role="button"
+                        data-target="#newRepeatEvery"
+                        data-toggle="modal"
+                        style={{ width: "fit-content", height: "fit-content" }}
+                        id="repeatadd"
+                      >
+                        +
+                      </a>
+                    </div>
+                  </div>
+                  <div className="col-md-4 mt-3">
                     <label className="">Order No.</label>
                     <input
                       type="text"
@@ -2480,9 +2561,7 @@ function ConvertChallanToInvoice() {
                       style={{ backgroundColor: "#43596c" }}
                     />
                   </div>
-                </div>
 
-                <div className="row">
                   <div className="col-md-4 mt-3">
                     <label className="">Payment Type</label>
                     <select
@@ -3193,7 +3272,7 @@ function ConvertChallanToInvoice() {
                     <input
                       type="reset"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => navigate(`/delivery_challan`)}
+                      onClick={() => navigate(`/Estimate`)}
                       value="Cancel"
                       style={{ height: "fit-content" }}
                     />
@@ -4980,4 +5059,4 @@ function ConvertChallanToInvoice() {
   );
 }
 
-export default ConvertChallanToInvoice;
+export default ConvertEstimateToRecInvoice;
