@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinsYs</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<style>
+    table {
+    border-collapse: collapse;
+    width: 100%;
+    }
+
+    th, td {
+    border: 1px solid #dddddd;
+    padding: 5px 2px;
+    /* text-align: left; */
+    }
+
+    th {
+    background-color: #f2f2f2;
+    }
+
+    body {
+        font-size: 14px;
+    }
+
+    .invoice_data {
+        font-size: 1.2rem;
+    }
+
+    .data_row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .data_1, .data_2 {
+        font-weight: bold;
+    }
+
+    .data_value {
+        flex: 1;
+        text-align: right;
+    }
+
+    .balance_info{
+        display: flex;
+        justify-content: start;
+        align-items: center;
+    }
+    .balance_info .bal_head{
+        width: 48%;
+    }
+
+    .bal_value{
+        width: 48%;
+        flex: 1;
+        text-align: right;
+    }
+
+
+
+
+
+</style>
+
+<body>
+    <div class="my-5 page" size="A4">
+        <div class="p-5">
+            <div id="ember2512" class="row tooltip-container ember-view text-ellipsis" style="display: flex; justify-content: space-between;">
+                <div class="col-md-4"></div>
+                <div class="col-md-4">
+                    <center style="color: black;">
+                        <b>
+                            <p style="font-size: 1.3rem;">PAYMENT RECEIVED</p>
+                        </b>
+                        <p> {{cmp.Company_name}}<br>
+                            {{cmp.Address}} <br>
+                            {{cmp.City}},
+                            {{cmp.State}}<br>
+                            {{cmp.Email}}
+                        </p>
+                    </center>
+                </div>
+                <hr>
+                <div style="width: 100%;">
+                    <div class="invoice_data">
+                        <div class="data_row">
+                            <div class="data_1 data_value">Payment No: {{payment.payment_no}}</div>
+                            <div class="data_2 data_value">Payment Date: {{payment.payment_date}}</div>
+                        </div> 
+                        <div class="data_row">
+                            <div class="data_1">Payment Method: {{payment.payment_method}}</div>
+                            <div class="data_2"></div>
+                        </div>
+                        <br>
+                        <div class="data_row">
+                            <div class="data_1">Customer:<br><b>{{payment.Customer.title}}. {{payment.Customer.first_name}} {{payment.Customer.last_name}}</b><br>
+                                {{payment.Customer.billing_street}},{{payment.Customer.billing_city}}<br> {{payment.Customer.billing_state}} <br> {{payment.Customer.billing_country}} <br>{{payment.Customer.billing_pincode}}
+                            </div>
+                            <div class="data_2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <section class="mt-4">
+                <table class="table2">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center; text-transform:uppercase;">Payment Type</th>
+                            <th style="text-align: center; text-transform:uppercase;">Date</th>
+                            <th style="text-align: center; text-transform:uppercase;">Invoice Number</th>
+                            <th style="text-align: center; text-transform:uppercase;">Balance</th>
+                            <th style="text-align: center; text-transform:uppercase;">Payment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for itm in payItems %}
+                        <tr>
+                            <td style="text-align: center;">{{itm.invoice_type}}</td>
+                            <td style="text-align: center;">{{itm.date}}</td>
+                            <td style="text-align: center;">{{itm.invoice_no|default:'N/A'}}</td>
+                            <td style="text-align: center;">{{itm.invoice_balance}}</td>
+                            <td style="text-align: center;">{{itm.invoice_payment}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+            <hr>
+            <section style="margin-top: 1rem; display: flex; justify-content: right;">
+                <div style="width: 50%;" >
+                    <div class="invoice_data">
+                        <div class="data_row">
+                            <div class="data_1 data_value">Total Payment &nbsp;&nbsp;&nbsp;: {{payment.total_payment}}</div>
+                            <div class="data_2 data_value">Total Balance &nbsp;&nbsp;&nbsp;: {{payment.total_balance}}</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</body>
+
+</html>

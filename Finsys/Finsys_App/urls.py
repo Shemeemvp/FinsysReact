@@ -320,7 +320,7 @@ urlpatterns = [
     path('share_ret_invoice_email/',Fin_shareRetInvoiceToEmail),
     path('update_ret_invoice/',Fin_updateRetInvoice),
 
-    # Recurring Invoice
+    # Credit Note
     path('fetch_credit_notes/<int:id>/',Fin_fetchCreditNotes),
     path('fetch_credit_note_data/<int:id>/',Fin_fetchCreditNoteData),
     path('get_invoice_numbers/',Fin_getInvoiceNumbers),
@@ -345,16 +345,16 @@ urlpatterns = [
     path('fetch_payment_received_data/<int:id>/',Fin_fetchPaymentReceivedData),
     path('check_payment_no/',Fin_checkPaymentNo),
     path('create_new_payment_received/',Fin_createPaymentReceived),
-    # path('fetch_ret_invoice_details/<int:id>/',Fin_fetchRetInvoiceDetails),
-    # path('change_ret_invoice_status/',Fin_changeRetInvoiceStatus),
-    # path('add_ret_invoice_comment/',Fin_addRetInvoiceComment),
-    # path('add_ret_invoice_attachment/',Fin_addRetInvoiceAttachment),
-    # path('delete_ret_invoice_comment/<int:id>/',Fin_deleteRetInvoiceComment),
-    # path('fetch_ret_invoice_history/<int:id>/',Fin_fetchRetInvoiceHistory),
-    # path('delete_ret_invoice/<int:id>/',Fin_deleteRetInvoice),
-    # path('ret_invoice_pdf/',Fin_retInvoicePdf),
-    # path('share_ret_invoice_email/',Fin_shareRetInvoiceToEmail),
-    # path('update_ret_invoice/',Fin_updateRetInvoice),
+    path('fetch_payment_received_details/<int:id>/',Fin_fetchPaymentReceivedDetails),
+    path('change_payment_received_status/',Fin_changePaymentReceivedStatus),
+    path('add_payment_received_comment/',Fin_addPaymentReceivedComment),
+    path('add_payment_received_attachment/',Fin_addPaymentReceivedAttachment),
+    path('delete_payment_received_comment/<int:id>/',Fin_deletePaymentReceivedComment),
+    path('fetch_payment_received_history/<int:id>/',Fin_fetchPaymentReceivedHistory),
+    path('delete_payment_received/<int:id>/',Fin_deletePaymentReceived),
+    path('payment_received_pdf/',Fin_paymentReceivedPdf),
+    path('share_payment_received_email/',Fin_sharePaymentReceivedToEmail),
+    path('update_payment_received/',Fin_updatePaymentReceived),
 
     # Sales order - updation
     path('convert_sales_order_to_invoice/',Fin_convertSalesOrderToInvoice),

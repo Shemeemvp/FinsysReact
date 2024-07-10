@@ -1,20 +1,21 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function AddPaymentReceived() {
+function EditPaymentReceived() {
   const ID = Cookies.get("Login_id");
+  const { paymentId } = useParams();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [terms, setTerms] = useState([]);
   const [banks, setBanks] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
-
+  const [customerValue, setCustomerValue] = useState({});
   const fetchPaymentData = () => {
     axios
       .get(`${config.base_url}/fetch_payment_received_data/${ID}/`)
@@ -42,8 +43,6 @@ function AddPaymentReceived() {
             value: item.id,
           }));
           setCustomers(newCustOptions);
-          setRefNo(res.data.refNo);
-          setNextPaymentNo(res.data.payNo);
         }
       })
       .catch((err) => {
@@ -104,6 +103,72 @@ function AddPaymentReceived() {
     }),
   };
 
+  const fetchPaymentDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_payment_received_details/${paymentId}/`)
+      .then((res) => {
+        if (res.data.status) {
+          var pay = res.data.payment;
+          var itms = res.data.items;
+          var cust = res.data.otherDetails;
+
+          var c = {
+            value: pay.Customer,
+            label: res.data.otherDetails.customerName,
+          };
+          setCustomerValue(c);
+
+          setCustomer(pay.Customer);
+          setEmail(cust.customerEmail);
+          setGstType(cust.gstType);
+          setGstIn(cust.gstIn);
+          setBillingAddress(cust.customerAddress);
+          setRefNo(pay.reference_no);
+          setPaymentNo(pay.payment_no);
+          setDate(pay.payment_date);
+          setPaymentMethod(pay.payment_method);
+          setChequeNumber(pay.cheque_no);
+          setUpiId(pay.upi_no);
+          setAccountNumber(pay.bank_acc_no);
+          setTotalAmount(pay.total_amount)
+          setTotalPayment(pay.total_payment)
+          setTotalBalance(pay.total_balance)
+          setPaymentItems([]);
+          const pyItems = itms.map((i, index) => {
+            return {
+              id: index + 1,
+              date: i.date,
+              dueDate: i.duedate,
+              invoiceType: i.invoice_type,
+              invoiceNumber: i.invoice_no,
+              total: i.invoice_amount,
+              payment: i.invoice_payment,
+              balance: i.invoice_balance
+            };
+          });
+
+          setPaymentItems(pyItems);
+
+          if (pay.payment_method != "null") {
+            paymentMethodChange(pay.payment_method);
+          }
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchPaymentDetails();
+  }, []);
+
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
@@ -115,7 +180,7 @@ function AddPaymentReceived() {
   const [refNo, setRefNo] = useState("");
   const [paymentNo, setPaymentNo] = useState("");
   const [nextPaymentNo, setNextPaymentNo] = useState("");
-  const [date, setDate] = useState(formattedDate);
+  const [date, setDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
   const [upiId, setUpiId] = useState("");
@@ -124,7 +189,6 @@ function AddPaymentReceived() {
   const [totalAmount, setTotalAmount] = useState(0.0);
   const [totalPayment, setTotalPayment] = useState(0.0);
   const [totalBalance, setTotalBalance] = useState(0.0);
-  const [status, setStatus] = useState("Draft");
 
   const [paymentItems, setPaymentItems] = useState([
     {
@@ -152,7 +216,7 @@ function AddPaymentReceived() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("status", status);
+    formData.append("pay_id", paymentId);
     formData.append("Customer", customer);
     formData.append("reference_no", refNo);
     formData.append("payment_no", paymentNo);
@@ -167,14 +231,14 @@ function AddPaymentReceived() {
     formData.append("paymentItems", JSON.stringify(paymentItems));
 
     axios
-      .post(`${config.base_url}/create_new_payment_received/`, formData)
+      .put(`${config.base_url}/update_payment_received/`, formData)
       .then((res) => {
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Payment Created",
+            title: "Payment Updated",
           });
-          navigate("/payment_received");
+          navigate(`/view_payment_received/${paymentId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -923,7 +987,7 @@ function AddPaymentReceived() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/payment_received"}>
+          <Link to={`/view_payment_received/${paymentId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -934,7 +998,7 @@ function AddPaymentReceived() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">NEW PAYMENT RECEIVED</h2>
+                <h2 className="mt-3">EDIT PAYMENT RECEIVED</h2>
               </center>
               <hr />
             </div>
@@ -966,6 +1030,7 @@ function AddPaymentReceived() {
                         name="customer"
                         className="w-100"
                         id="customer"
+                        value={customerValue || null}
                         required
                         onChange={(selectedOption) =>
                           handleCustomerChange(
@@ -1376,15 +1441,14 @@ function AddPaymentReceived() {
                     <input
                       type="submit"
                       className="btn btn-outline-secondary w-50 text-light"
-                      onClick={() => setStatus("Draft")}
-                      value="Draft"
+                      value="Save"
                       style={{ height: "fit-content" }}
                     />
                     <input
-                      type="submit"
+                      type="reset"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => setStatus("Saved")}
-                      value="Save"
+                      onClick={() => navigate(`/view_payment_received/${paymentId}/`)}
+                      value="Cancel"
                       style={{ height: "fit-content" }}
                     />
                   </div>
@@ -2289,4 +2353,4 @@ function AddPaymentReceived() {
   );
 }
 
-export default AddPaymentReceived;
+export default EditPaymentReceived;

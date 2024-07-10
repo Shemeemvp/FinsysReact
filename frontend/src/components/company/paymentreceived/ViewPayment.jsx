@@ -8,12 +8,12 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import "../../styles/SalesOrder.css";
 
-function ViewInvoice() {
+function ViewPayment() {
   const ID = Cookies.get("Login_id");
-  const { invoiceId } = useParams();
-  const [invoiceDetails, setInvoiceDetails] = useState({});
+  const { paymentId } = useParams();
+  const [paymentDetails, setPaymentDetails] = useState({});
   const [otherDetails, setOtherDetails] = useState({});
-  const [invoiceItems, setInvoiceItems] = useState([]);
+  const [paymentItems, setPaymentItems] = useState([]);
   const [comments, setComments] = useState([]);
   const [history, setHistory] = useState({
     action: "",
@@ -23,32 +23,32 @@ function ViewInvoice() {
 
   const [fileUrl, setFileUrl] = useState(null);
 
-  const fetchInvoiceDetails = () => {
+  const fetchPaymentDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_invoice_details/${invoiceId}/`)
+      .get(`${config.base_url}/fetch_payment_received_details/${paymentId}/`)
       .then((res) => {
-        console.log("INV DATA=", res);
+        console.log("PAY DATA=", res);
         if (res.data.status) {
-          var invoice = res.data.invoice;
+          var pay = res.data.payment;
           var hist = res.data.history;
           var cmt = res.data.comments;
           var itms = res.data.items;
           var other = res.data.otherDetails;
-          if (invoice.file) {
-            var url = `${config.base_url}/${invoice.file}`;
+          if (pay.file) {
+            var url = `${config.base_url}/${pay.file}`;
             setFileUrl(url);
           }
 
           setOtherDetails(other);
-          setInvoiceItems([]);
+          setPaymentItems([]);
           setComments([]);
           itms.map((i) => {
-            setInvoiceItems((prevState) => [...prevState, i]);
+            setPaymentItems((prevState) => [...prevState, i]);
           });
           cmt.map((c) => {
             setComments((prevState) => [...prevState, c]);
           });
-          setInvoiceDetails(invoice);
+          setPaymentDetails(pay);
           if (hist) {
             setHistory(hist);
           }
@@ -66,7 +66,7 @@ function ViewInvoice() {
   };
 
   useEffect(() => {
-    fetchInvoiceDetails();
+    fetchPaymentDetails();
   }, []);
 
   const currentUrl = window.location.href;
@@ -76,9 +76,9 @@ function ViewInvoice() {
 
   const navigate = useNavigate();
 
-  function handleConvertInvoice() {
+  function handleConvertPaymentReceived() {
     Swal.fire({
-      title: `Convert Invoice - ${invoiceDetails.invoice_no}?`,
+      title: `Convert Payment Received - ${paymentDetails.payment_no}?`,
       text: "Are you sure you want to convert this.!",
       icon: "warning",
       showCancelButton: true,
@@ -88,17 +88,17 @@ function ViewInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         var st = {
-          id: invoiceId,
+          id: paymentId,
         };
         axios
-          .post(`${config.base_url}/change_invoice_status/`, st)
+          .post(`${config.base_url}/change_payment_received_status/`, st)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
                 icon: "success",
                 title: "Converted",
               });
-              fetchInvoiceDetails();
+              fetchPaymentDetails();
             }
           })
           .catch((err) => {
@@ -109,15 +109,15 @@ function ViewInvoice() {
   }
 
   const [comment, setComment] = useState("");
-  const saveInvoiceComment = (e) => {
+  const savePaymentReceivedComment = (e) => {
     e.preventDefault();
     var cmt = {
       Id: ID,
-      Invoice: invoiceId,
+      Payment: paymentId,
       comments: comment,
     };
     axios
-      .post(`${config.base_url}/add_invoice_comment/`, cmt)
+      .post(`${config.base_url}/add_payment_received_comment/`, cmt)
       .then((res) => {
         console.log(res);
         if (res.data.status) {
@@ -126,7 +126,7 @@ function ViewInvoice() {
             title: "Comment Added",
           });
           setComment("");
-          fetchInvoiceDetails();
+          fetchPaymentDetails();
         }
       })
       .catch((err) => {
@@ -140,9 +140,9 @@ function ViewInvoice() {
       });
   };
 
-  function handleDeleteInvoice(id) {
+  function handleDeletePaymentReceived(id) {
     Swal.fire({
-      title: `Delete Invoice - ${invoiceDetails.invoice_no}?`,
+      title: `Delete Payment Received - ${paymentDetails.payment_no}?`,
       text: "Data cannot be restored.!",
       icon: "warning",
       showCancelButton: true,
@@ -152,15 +152,15 @@ function ViewInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_invoice/${id}/`)
+          .delete(`${config.base_url}/delete_payment_received/${id}/`)
           .then((res) => {
             console.log(res);
 
             Toast.fire({
               icon: "success",
-              title: "Invoice Deleted.",
+              title: "Payment Received Deleted.",
             });
-            navigate("/invoice");
+            navigate("/payment_received");
           })
           .catch((err) => {
             console.log(err);
@@ -181,7 +181,7 @@ function ViewInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_invoice_comment/${id}/`)
+          .delete(`${config.base_url}/delete_payment_received_comment/${id}/`)
           .then((res) => {
             console.log(res);
 
@@ -189,7 +189,7 @@ function ViewInvoice() {
               icon: "success",
               title: "Comment Deleted",
             });
-            fetchInvoiceDetails();
+            fetchPaymentDetails();
           })
           .catch((err) => {
             console.log(err);
@@ -224,7 +224,7 @@ function ViewInvoice() {
     document.getElementById("attachBtn").style.display = "block";
     document.getElementById("historyBtn").style.display = "block";
     document.getElementById("commentBtn").style.display = "block";
-    if (invoiceDetails.status == "Draft") {
+    if (paymentDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "block";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
@@ -248,7 +248,7 @@ function ViewInvoice() {
     document.getElementById("historyBtn").style.display = "none";
     document.getElementById("commentBtn").style.display = "none";
     document.getElementById("slipPdfBtn").style.display = "none";
-    if (invoiceDetails.status == "Draft") {
+    if (paymentDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "none";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
@@ -272,7 +272,7 @@ function ViewInvoice() {
     document.getElementById("attachBtn").style.display = "none";
     document.getElementById("slipPdfBtn").style.display = "block";
     document.getElementById("commentBtn").style.display = "none";
-    if (invoiceDetails.status == "Draft") {
+    if (paymentDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "none";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
@@ -404,11 +404,11 @@ p {
   setInterval(updateDateTime, 1000);
 
   function slipPdf() {
-    var invoiceNo = `${invoiceDetails.invoice_no}`;
+    var payment_received = `${paymentDetails.payment_no}`;
     var element = document.getElementById("slip");
     var opt = {
       margin: 1,
-      filename: "Invoice_Slip_" + invoiceNo + ".pdf",
+      filename: "PaymentReceived_Slip_" + payment_received + ".pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
@@ -435,10 +435,10 @@ p {
   function invoicePdf() {
     var data = {
       Id: ID,
-      inv_id: invoiceId,
+      pay_id: paymentId,
     };
     axios
-      .get(`${config.base_url}/invoice_pdf/`, {
+      .get(`${config.base_url}/payment_received_pdf/`, {
         responseType: "blob",
         params: data,
       })
@@ -449,7 +449,7 @@ p {
         const fileURL = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = fileURL;
-        a.download = `Invoice_${invoiceDetails.invoice_no}.pdf`;
+        a.download = `PaymentReceived_${paymentDetails.payment_no}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -496,13 +496,13 @@ p {
       } else {
         // document.getElementById("share_to_email_form").submit();
         var em = {
-          inv_id: invoiceId,
+          pay_id: paymentId,
           Id: ID,
           email_ids: emailIds,
           email_message: emailMessage,
         };
         axios
-          .post(`${config.base_url}/share_invoice_email/`, em)
+          .post(`${config.base_url}/share_payment_received_email/`, em)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
@@ -536,13 +536,13 @@ p {
     e.preventDefault();
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("inv_id", invoiceId);
+    formData.append("pay_id", paymentId);
     if (file) {
       formData.append("file", file);
     }
 
     axios
-      .post(`${config.base_url}/add_invoice_attachment/`, formData)
+      .post(`${config.base_url}/add_payment_received_attachment/`, formData)
       .then((res) => {
         console.log("FILE RES==", res);
         if (res.data.status) {
@@ -552,7 +552,7 @@ p {
           });
           setFile(null);
           document.getElementById("fileModalDismiss").click();
-          fetchInvoiceDetails();
+          fetchPaymentDetails();
         }
       })
       .catch((err) => {
@@ -577,7 +577,7 @@ p {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to="/invoice"
+          to="/payment_received"
         >
           <i
             className="fa fa-times-circle text-white"
@@ -627,9 +627,9 @@ p {
                   </div>
 
                   <div className="col-md-6 d-flex justify-content-end">
-                    {invoiceDetails.status == "Draft" ? (
+                    {paymentDetails.status == "Draft" ? (
                       <a
-                        onClick={handleConvertInvoice}
+                        onClick={handleConvertPaymentReceived}
                         id="statusBtn"
                         style={{
                           display: "block",
@@ -744,7 +744,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/edit_invoice/${invoiceId}/`}
+                      to={`/edit_payment_received/${paymentId}/`}
                       className="ml-2 fa fa-pencil btn btn-outline-secondary text-grey"
                       id="editBtn"
                       role="button"
@@ -757,7 +757,7 @@ p {
                       id="deleteBtn"
                       role="button"
                       onClick={() =>
-                        handleDeleteInvoice(`${invoiceDetails.id}`)
+                        handleDeletePaymentReceived(`${paymentDetails.id}`)
                       }
                       style={{ height: "fit-content", width: "fit-content" }}
                     >
@@ -819,7 +819,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/invoice_history/${invoiceId}/`}
+                      to={`/payment_received_history/${paymentId}/`}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-history"
                       id="historyBtn"
                       role="button"
@@ -835,7 +835,7 @@ p {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  INVOICE OVERVIEW
+                  PAYMENT RECEIVED OVERVIEW
                 </h3>
               </center>
             </div>
@@ -887,7 +887,7 @@ p {
                         <div className="row">
                           <div className="col mt-3">
                             <h2 className="mb-0">
-                              # {invoiceDetails.invoice_no}
+                              # {paymentDetails.payment_no}
                             </h2>
                           </div>
                         </div>
@@ -958,63 +958,63 @@ p {
                               width: "fit-content",
                             }}
                           >
-                            Invoice Details
+                            Payment Received Details
                           </h5>
                         </div>
                         <div className="col-md-4 mt-3"></div>
                         <div className="col-md-4 mt-3"></div>
 
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Invoice No,</h6>
+                          <h6 className="mb-0">Payment No.</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.invoice_no}
+                            {paymentDetails.payment_no}
                           </p>
                         </div>
 
                         <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">Customer Name</h6>
+                          <h6 className="mb-0">Reference No.</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {otherDetails.customerName}
+                            {paymentDetails.reference_no}
                           </p>
                         </div>
                       </div>
                       <div className="row mb-4 d-flex justify-content-between align-items-center">
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Invoice Date</h6>
+                          <h6 className="mb-0">Payment Date</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.invoice_date}
+                            {paymentDetails.payment_date}
                           </p>
                         </div>
 
-                        <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">Shipment Date</h6>
-                        </div>
-                        <div className="col-md-3 mt-3">
-                          <p className="mb-0 text-right">
-                            {invoiceDetails.duedate}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="row mb-4 d-flex justify-content-start align-items-center">
-                        <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Address</h6>
-                        </div>
-                        <div className="col-md-3 mt-3 vr">
-                          <p className="mb-0">{invoiceDetails.billing_address}</p>
-                        </div>
                         <div className="col-md-3 mt-3 vl">
                           <h6 className="mb-0">Payment Method</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.payment_method}
+                            {paymentDetails.payment_method != "null"
+                              ? paymentDetails.payment_method
+                              : "N/A"}
                           </p>
+                        </div>
+                      </div>
+                      <div className="row mb-4 d-flex justify-content-start align-items-center">
+                        <div className="col-md-3 mt-3">
+                          <h6 className="mb-0">Amount Received</h6>
+                        </div>
+                        <div className="col-md-3 mt-3">
+                          <p className="mb-0 text-right">{paymentDetails.total_payment}</p>
+                        </div>
+                        <div className="col-md-3 mt-3 vl">
+                          <h6 className="mb-0">Balance</h6>
+                        </div>
+                        <div className="col-md-3 mt-3">
+                          <p className="mb-0 text-right">{paymentDetails.total_balance}</p>
                         </div>
                       </div>
 
@@ -1058,18 +1058,18 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0" style={{ textAlign: "right" }}>
-                            {invoiceDetails.gst_type}
+                            {otherDetails.gstType}
                           </p>
                         </div>
 
-                        {invoiceDetails.gstin != "None" && (
+                        {otherDetails.gstIn != "None" && (
                           <>
                             <div className="col-md-3 mt-3 vl">
                               <h6 className="mb-0">GSTIN No</h6>
                             </div>
                             <div className="col-md-3 mt-3">
                               <p className="mb-0 text-right">
-                                {invoiceDetails.gstin}
+                                {otherDetails.gstIn}
                               </p>
                             </div>
                           </>
@@ -1081,7 +1081,7 @@ p {
                         </div>
                         <div className="col-md-3 mt-3 ">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.billing_address}
+                            {otherDetails.customerAddress}
                           </p>
                         </div>
                       </div>
@@ -1096,77 +1096,75 @@ p {
                               width: "fit-content",
                             }}
                           >
-                            Items Details
+                            Payment Invoices
                           </h5>
-                          {invoiceItems &&
-                            invoiceItems.map((itm) => (
+                          {paymentItems &&
+                            paymentItems.map((itm) => (
                               <>
                                 <div className="row mb-4 d-flex justify-content-between align-items-center">
                                   <div className="col-md-3 mt-3">
-                                    <h6 className="mb-0">Name</h6>
+                                    <h6 className="mb-0">Invoice Type</h6>
                                   </div>
                                   <div className="col-md-3 mt-3">
                                     <p className="mb-0 text-right">
-                                      {itm.name}
+                                      {itm.invoice_type}
                                     </p>
                                   </div>
 
                                   <div className="col-md-3 mt-3 vl">
-                                    <h6 className="mb-0">
-                                      {itm.item_type == "Goods" ? "HSN" : "SAC"}
-                                    </h6>
+                                    <h6 className="mb-0">Invoice No.</h6>
                                   </div>
                                   <div className="col-md-3 mt-3">
                                     <p className="mb-0 text-right">
-                                      {itm.item_type == "Goods"
-                                        ? itm.hsn
-                                        : itm.sac}
+                                      {itm.invoice_no != ""
+                                        ? itm.invoice_no
+                                        : "N/A"}
                                     </p>
                                   </div>
                                 </div>
                                 <div className="row mb-4 d-flex justify-content-between align-items-center">
                                   <div className="col-md-3 mt-3">
-                                    <h6 className="mb-0">Price</h6>
+                                    <h6 className="mb-0">Date</h6>
                                   </div>
                                   <div className="col-md-3 mt-3">
                                     <p className="mb-0 text-right">
-                                      {itm.price}
+                                      {itm.date}
                                     </p>
                                   </div>
                                   <div className="col-md-3 mt-3 vl">
-                                    <h6 className="mb-0">Quantity</h6>
+                                    <h6 className="mb-0">Due Date</h6>
                                   </div>
                                   <div className="col-md-3 mt-3">
                                     <p className="mb-0 text-right">
-                                      {itm.quantity}
+                                      {itm.duedate}
                                     </p>
                                   </div>
                                 </div>
                                 <div className="row mb-4 d-flex justify-content-start align-items-center">
                                   <div className="col-md-3 mt-3">
-                                    <h6 className="mb-0">Tax Amount</h6>
+                                    <h6 className="mb-0">Invoice Amount</h6>
                                   </div>
                                   <div className="col-md-3 mt-3">
                                     <p className="mb-0 text-right">
-                                      {itm.tax} %
+                                      {itm.invoice_amount}
                                     </p>
                                   </div>
                                   <div className="col-md-3 mt-3 vl">
-                                    <h6 className="mb-0">Discount</h6>
+                                    <h6 className="mb-0">Invoice Payment</h6>
                                   </div>
                                   <div className="col-md-3 mt-3">
                                     <p className="mb-0 text-right">
-                                      {itm.discount}
+                                      {itm.invoice_payment}
                                     </p>
                                   </div>
                                 </div>
                                 <div className="row mb-4 d-flex justify-content-start align-items-center">
                                   <div className="col-md-3 mt-3">
-                                    <h6 className="mb-0">Total</h6>
+                                    <h6 className="mb-0">Balance</h6>
                                   </div>
                                   <div className="col-md-3 mt-3">
                                     <p className="mb-0 text-right">
-                                      {itm.total}
+                                      {itm.invoice_balance}
                                     </p>
                                   </div>
                                   <div className="col-md-6 mt-3 vl">
@@ -1195,12 +1193,12 @@ p {
                 >
                   <div className="px-3 py-4">
                     <h4 className="fw-bold mb-2 mt-4 pt-1">
-                      Invoice Tax Details
+                      Payment Received Tax Details
                     </h4>
                     <hr className="my-4" />
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Status</h6>
-                      {invoiceDetails.status == "Draft" ? (
+                      {paymentDetails.status == "Draft" ? (
                         <span className="text-info h5 font-weight-bold">
                           DRAFT
                         </span>
@@ -1211,51 +1209,16 @@ p {
                       )}
                     </div>
                     <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">Sub Total</h6>
-                      {invoiceDetails.subtotal}
+                      <h6 className="">Total Amount</h6>
+                      {paymentDetails.total_amount}
                     </div>
                     <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">Tax Amount</h6>
-                      {invoiceDetails.tax_amount}
+                      <h6 className="">Total Payment Received</h6>
+                      {paymentDetails.total_payment}
                     </div>
-                    {invoiceDetails.igst != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">IGST</h6>
-                        {invoiceDetails.igst}
-                      </div>
-                    ) : null}
-                    {invoiceDetails.cgst != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">CGST</h6>
-                        {invoiceDetails.cgst}
-                      </div>
-                    ) : null}
-                    {invoiceDetails.sgst != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">SGST</h6>
-                        {invoiceDetails.sgst}
-                      </div>
-                    ) : null}
-
-                    {invoiceDetails.shipping_charge != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">Shipping Charge</h6>
-                        {invoiceDetails.shipping_charge}
-                      </div>
-                    ) : null}
-
-                    {invoiceDetails.adjustment != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">Adjustment</h6>
-                        {invoiceDetails.adjustment}
-                      </div>
-                    ) : null}
-                    <hr className="my-4" />
                     <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">Grand Total</h6>
-                      <span className="font-weight-bold">
-                        {invoiceDetails.grandtotal}
-                      </span>
+                      <h6 className="">Balance to be received</h6>
+                      {paymentDetails.total_balance}
                     </div>
                   </div>
                 </div>
@@ -1273,30 +1236,27 @@ p {
                         className="tooltip-container ember-view ribbon text-ellipsis"
                       >
                         <div className="ribbon-inner ribbon-open">
-                          {invoiceDetails.status}
+                          {paymentDetails.status}
                         </div>
                       </div>
-                      <section className="top-content bb d-flex justify-content-between">
+                      <section className="top-content bb d-flex justify-content-between p-0">
                         <div className="logo">
                           {/* <!-- <img src="logo.png" alt="" className="img-fluid"> --> */}
                         </div>
                         <div className="top-left">
                           <div className="graphic-path">
-                            <p>Invoice</p>
+                            <p>Payment Received</p>
                           </div>
                           <div className="position-relative">
                             <p>
-                              Invoice No.
-                              <span>{invoiceDetails.invoice_no}</span>
+                              Payment No.
+                              <span>{paymentDetails.payment_no}</span>
                             </p>
-                            {invoiceDetails.salesOrder_no != ""? (
-                              <p>Order No. <span>{invoiceDetails.salesOrder_no}</span></p>
-                            ):null}
                           </div>
                         </div>
                       </section>
 
-                      <section className="store-user mt-5">
+                      <section className="store-user mt-5 p-0">
                         <div className="col-12">
                           <div className="row bb pb-3">
                             <div className="col-7">
@@ -1320,32 +1280,27 @@ p {
                                 style={{ marginLeft: "-14px" }}
                               >
                                 {" "}
-                                {invoiceDetails.billing_address}{" "}
+                                {otherDetails.customerAddress}{" "}
                               </p>
                             </div>
                           </div>
                           <div className="row extra-info pt-3">
                             <div className="col-6">
                               <p>
-                                Invoice Date:{" "}
-                                <span>{invoiceDetails.invoice_date}</span>
+                                Payment Date:{" "}
+                                <span>{paymentDetails.payment_date}</span>
                               </p>
-                              {/* <p>
-                                Payment Method:{" "}
-                                <span>{invoiceDetails.payment_method}</span>
-                              </p> */}
-                            </div>
-                            <div className="col-6">
                               <p>
-                                Expected Shipment Date :{" "}
-                                <span>{invoiceDetails.duedate}</span>
+                                Payment Method:{" "}
+                                <span>{paymentDetails.payment_method}</span>
                               </p>
                             </div>
+                            <div className="col-6"></div>
                           </div>
                         </div>
                       </section>
 
-                      <section className="product-area mt-4">
+                      <section className="product-area mt-4 p-0">
                         <table
                           className=" table table-hover table-bordered "
                           id="table1"
@@ -1359,61 +1314,46 @@ p {
                                   color: "black",
                                 }}
                               >
-                                Items
+                                Payment Type
                               </td>
                               <td
                                 style={{ fontWeight: "bold", color: "black" }}
                               >
-                                HSN/SAC
+                                Date
                               </td>
                               <td
                                 style={{ fontWeight: "bold", color: "black" }}
                               >
-                                Price
+                                Invoice Number
                               </td>
                               <td
                                 style={{ fontWeight: "bold", color: "black" }}
                               >
-                                Quantity
+                                Balance
                               </td>
                               <td
                                 style={{ fontWeight: "bold", color: "black" }}
                               >
-                                Tax
-                              </td>
-                              <td
-                                style={{ fontWeight: "bold", color: "black" }}
-                              >
-                                Discount
-                              </td>
-                              <td
-                                style={{ fontWeight: "bold", color: "black" }}
-                              >
-                                Total
+                                Payment
                               </td>
                             </tr>
                           </thead>
                           <tbody>
-                            {invoiceItems.map((j) => (
+                            {paymentItems.map((j) => (
                               <tr>
-                                <td
-                                  style={{
-                                    color: "black",
-                                    textAlign: "center",
-                                  }}
-                                >
-                                  {j.name}
+                                <td style={{ color: "black" }}>
+                                  {j.invoice_type}
+                                </td>
+                                <td style={{ color: "black" }}>{j.date}</td>
+                                <td style={{ color: "black" }}>
+                                  {j.invoice_no}
                                 </td>
                                 <td style={{ color: "black" }}>
-                                  {j.item_type == "Goods" ? j.hsn : j.sac}
+                                  {j.invoice_balance}
                                 </td>
-                                <td style={{ color: "black" }}>{j.price}</td>
-                                <td style={{ color: "black" }}>{j.quantity}</td>
-                                <td style={{ color: "black" }}>{j.tax} %</td>
                                 <td style={{ color: "black" }}>
-                                  {j.discount}{" "}
+                                  {j.invoice_payment}
                                 </td>
-                                <td style={{ color: "black" }}>{j.total}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1422,119 +1362,38 @@ p {
                         <br />
                       </section>
 
-                      <section className="balance-info">
+                      <section className="balance-info p-0">
                         <div className="row">
                           <div className="col-md-8"></div>
                           <div className="col-md-4">
                             <table className="table table-borderless">
                               <tbody>
                                 <tr>
-                                  <td style={{ color: "#000" }}>Sub Total</td>
+                                  <td style={{ color: "#000" }}>
+                                    Total Payment
+                                  </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.subtotal}
+                                    {paymentDetails.total_payment}
                                   </td>
                                 </tr>
 
-                                {invoiceDetails.igst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>IGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.igst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.cgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>CGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.cgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.sgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>SGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.sgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
                                 <tr>
-                                  <td style={{ color: "#000" }}>Tax Amount</td>
+                                  <td style={{ color: "#000" }}>
+                                    Total Balance
+                                  </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.tax_amount}
+                                    {paymentDetails.total_balance}
                                   </td>
-                                </tr>
-                                {invoiceDetails.shipping_charge != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Shipping Charge
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.shipping_charge}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.adjustment != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Adjustment
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.adjustment}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                              </tbody>
-                            </table>
-                            <hr style={{ backgroundColor: "#000000" }} />
-                            <table className="table table-borderless">
-                              <tbody>
-                                <tr>
-                                  <th style={{ color: "#000" }}>Grand Total</th>
-                                  <th style={{ color: "#000" }}>:</th>
-                                  <th
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {invoiceDetails.grandtotal}
-                                  </th>
                                 </tr>
                               </tbody>
                             </table>
@@ -1568,28 +1427,25 @@ p {
                               backgroundColor: "#999999",
                             }}
                           >
-                            {invoiceDetails.status}
+                            {paymentDetails.status}
                           </div>
                         </div>
                         <div className="col-md-4 d-flex justify-content-center">
                           <center className="h3 text-white">
-                            <b>Invoice</b>
+                            <b>Payment Received</b>
                           </center>
                         </div>
                         <div className="col-md-4 d-flex justify-content-end">
                           <div className="text-white">
                             <p className="mb-0 mt-2">
-                              Invoice No:{" "}
-                              <b>{invoiceDetails.invoice_no}</b>
+                              Payment No:
+                              <b>{paymentDetails.payment_no}</b>
                             </p>
-                            {invoiceDetails.salesOrder_no != ""? (
-                              <p>Order No. <b>{invoiceDetails.salesOrder_no}</b></p>
-                            ):null}
                           </div>
                         </div>
                       </div>
                       <div className="px-5 py-1">
-                        <section className="store-user">
+                        <section className="store-user p-0">
                           <br />
                           <br />
                           <div className="col-12">
@@ -1635,7 +1491,7 @@ p {
                                     borderBottomRightRadius: "4vh",
                                   }}
                                 >
-                                  <b>SHIPPING ADDRESS</b>
+                                  <b>CUSTOMER ADDRESS</b>
                                 </label>
                                 <h5
                                   className="text-secondary"
@@ -1647,14 +1503,14 @@ p {
                                   className="address"
                                   style={{ fontWeight: "bold", color: "#000" }}
                                 >
-                                  {invoiceDetails.billing_address}{" "}
+                                  {otherDetails.customerAddress}{" "}
                                 </p>
                               </div>
                             </div>
                           </div>
                         </section>
 
-                        <section className="product-area mt-2">
+                        <section className="product-area mt-2 p-0">
                           <table
                             className="table table-hover table-bordered  template2table"
                             id="table2"
@@ -1665,93 +1521,68 @@ p {
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Items
+                                  Payment Type
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  HSN/SAC
+                                  Date
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Quantity
+                                  Invoice Number
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Rate
+                                  Balance
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Tax
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Discount
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Total
+                                  Payment
                                 </th>
                               </tr>
                             </thead>
                             <tbody style={{ backgroundColor: "#999999" }}>
-                              {invoiceItems.map((j) => (
+                              {paymentItems.map((j) => (
                                 <tr>
                                   <td
                                     className="text-center"
                                     style={{
                                       color: "black",
-                                      textAlign: "center",
                                     }}
                                   >
-                                    {j.name}
+                                    {j.invoice_type}
                                   </td>
                                   <td
                                     className="text-center"
                                     style={{ color: "black" }}
                                   >
-                                    {j.item_type == "Goods" ? j.hsn : j.sac}
+                                    {j.date}
                                   </td>
                                   <td
                                     className="text-center"
                                     style={{ color: "black" }}
                                   >
-                                    {j.price}
+                                    {j.invoice_no}
                                   </td>
                                   <td
                                     className="text-center"
                                     style={{ color: "black" }}
                                   >
-                                    {j.quantity}
+                                    {j.invoice_balance}
                                   </td>
                                   <td
                                     className="text-center"
                                     style={{ color: "black" }}
                                   >
-                                    {j.tax} %
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.discount}{" "}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.total}
+                                    {j.invoice_payment}
                                   </td>
                                 </tr>
                               ))}
@@ -1759,42 +1590,9 @@ p {
                           </table>
                         </section>
 
-                        <section className="balance-info">
+                        <section className="balance-info p-0">
                           <div className="row mt-3">
-                            <div className="col-4">
-                              <table className="table table-borderless">
-                                <tbody>
-                                  {invoiceDetails.note ? (
-                                    <tr>
-                                      <td
-                                        style={{
-                                          color: "#000",
-                                          textAlign: "left",
-                                        }}
-                                      >
-                                        Note
-                                      </td>
-                                      <td
-                                        style={{
-                                          color: "#000",
-                                          textAlign: "left",
-                                        }}
-                                      >
-                                        :
-                                      </td>
-                                      <th
-                                        style={{
-                                          color: "#000",
-                                          textAlign: "center",
-                                        }}
-                                      >
-                                        {invoiceDetails.note}
-                                      </th>
-                                    </tr>
-                                  ) : null}
-                                </tbody>
-                              </table>
-                            </div>
+                            <div className="col-4"></div>
                             <div className="col-4"></div>
                             <div className="col-4">
                               <br />
@@ -1802,59 +1600,22 @@ p {
                               <table className="table table-borderless">
                                 <tbody>
                                   <tr>
-                                    <td style={{ color: "#000" }}>Sub Total</td>
+                                    <td style={{ color: "#000" }}>
+                                      Total Payment
+                                    </td>
                                     <td style={{ color: "#000" }}>:</td>
                                     <td
                                       className="text-right"
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.subtotal}
+                                      {paymentDetails.total_payment}
                                     </td>
                                   </tr>
 
-                                  {invoiceDetails.igst != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>IGST</td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.igst}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  {invoiceDetails.cgst != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>CGST</td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.cgst}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  {invoiceDetails.sgst != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>SGST</td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.sgst}
-                                      </td>
-                                    </tr>
-                                  ) : null}
                                   <tr>
                                     <td style={{ color: "#000" }}>
-                                      Tax Amount
+                                      Total Balance
                                     </td>
                                     <td style={{ color: "#000" }}>:</td>
                                     <td
@@ -1862,56 +1623,8 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.tax_amount}
+                                      {paymentDetails.total_balance}
                                     </td>
-                                  </tr>
-                                  {invoiceDetails.shipping_charge != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>
-                                        Shipping Charge
-                                      </td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.shipping_charge}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  {invoiceDetails.adjustment != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>
-                                        Adjustment
-                                      </td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {invoiceDetails.adjustment}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                </tbody>
-                              </table>
-                              <hr style={{ backgroundColor: "#000000" }} />
-                              <table className="table table-borderless">
-                                <tbody>
-                                  <tr>
-                                    <th style={{ color: "#000" }}>
-                                      Grand Total
-                                    </th>
-                                    <th style={{ color: "#000" }}>:</th>
-                                    <th
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.grandtotal}
-                                    </th>
                                   </tr>
                                 </tbody>
                               </table>
@@ -1940,7 +1653,7 @@ p {
                           }}
                         >
                           <p style={{ fontSize: "4vh", textAlign: "center" }}>
-                            INVOICE
+                            PAYMENT RECEIVED
                           </p>
                           <p style={{ textAlign: "center" }}>
                             {" "}
@@ -1965,7 +1678,7 @@ p {
                               <br />
                               {otherDetails.customerName}
                               <br />
-                              {invoiceDetails.billing_address}
+                              {otherDetails.customerAddress}
                             </p>
                           </div>
                           <div className="col-md-1"></div>
@@ -1982,14 +1695,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Invoice No.
+                                    Payment No.
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.invoice_no}
+                                    {paymentDetails.payment_no}
                                   </td>
                                 </tr>
 
@@ -2000,32 +1713,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Invoice Date
+                                    Payment Date
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.invoice_date}
-                                  </td>
-                                </tr>
-
-                                <tr>
-                                  <td
-                                    style={{
-                                      color: "#000",
-                                      fontWeight: "bold",
-                                    }}
-                                  >
-                                    Shipment Date
-                                  </td>
-                                  <td style={{ color: "#000" }}>:</td>
-                                  <td
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    {invoiceDetails.duedate}
+                                    {paymentDetails.payment_date}
                                   </td>
                                 </tr>
                                 <tr>
@@ -2042,7 +1737,9 @@ p {
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.payment_method}
+                                    {paymentDetails.payment_method != "null"
+                                      ? paymentDetails.payment_method
+                                      : "N/A"}
                                   </td>
                                 </tr>
                               </tbody>
@@ -2062,93 +1759,66 @@ p {
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Items
+                                  Payment Type
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  HSN/SAC
+                                  Date
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Quantity
+                                  Invoice Number
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Rate
+                                  Balance
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Tax
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Discount
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Total
+                                  Payment
                                 </th>
                               </tr>
                             </thead>
                             <tbody>
-                              {invoiceItems.map((j) => (
+                              {paymentItems.map((j) => (
                                 <tr>
                                   <td
                                     className="text-center"
-                                    style={{
-                                      color: "black",
-                                      textAlign: "center",
-                                    }}
+                                    style={{ color: "black" }}
                                   >
-                                    {j.name}
+                                    {j.invoice_type}
                                   </td>
                                   <td
                                     className="text-center"
                                     style={{ color: "black" }}
                                   >
-                                    {j.item_type == "Goods" ? j.hsn : j.sac}
+                                    {j.date}
                                   </td>
                                   <td
                                     className="text-center"
                                     style={{ color: "black" }}
                                   >
-                                    {j.price}
+                                    {j.invoice_no}
                                   </td>
                                   <td
                                     className="text-center"
                                     style={{ color: "black" }}
                                   >
-                                    {j.quantity}
+                                    {j.invoice_balance}
                                   </td>
                                   <td
                                     className="text-center"
                                     style={{ color: "black" }}
                                   >
-                                    {j.tax} %
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.discount}{" "}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.total}
+                                    {j.invoice_payment}
                                   </td>
                                 </tr>
                               ))}
@@ -2156,7 +1826,7 @@ p {
                           </table>
                         </div>
                       </div>
-                      <section className="balance-info">
+                      <section className="balance-info p-0">
                         <div className="row">
                           <div className="col-md-7"></div>
                           <div className="col-md-4">
@@ -2164,112 +1834,31 @@ p {
                             <table className="table table-borderless">
                               <tbody>
                                 <tr>
-                                  <td style={{ color: "#000" }}>Sub Total</td>
+                                  <td style={{ color: "#000" }}>
+                                    Total Payment
+                                  </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.subtotal}
+                                    {paymentDetails.total_payment}
                                   </td>
                                 </tr>
 
-                                {invoiceDetails.igst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>IGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.igst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.cgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>CGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.cgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.sgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>SGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.sgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
                                 <tr>
-                                  <td style={{ color: "#000" }}>Tax Amount</td>
+                                  <td style={{ color: "#000" }}>
+                                    Total Balance
+                                  </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.tax_amount}
+                                    {paymentDetails.total_balance}
                                   </td>
-                                </tr>
-                                {invoiceDetails.shipping_charge != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Shipping Charge
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.shipping_charge}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {invoiceDetails.adjustment != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Adjustment
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {invoiceDetails.adjustment}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                              </tbody>
-                            </table>
-                            <hr style={{ backgroundColor: "#000000" }} />
-                            <table className="table table-borderless">
-                              <tbody>
-                                <tr>
-                                  <th style={{ color: "#000" }}>Grand Total</th>
-                                  <th style={{ color: "#000" }}>:</th>
-                                  <th
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {invoiceDetails.grandtotal}
-                                  </th>
                                 </tr>
                               </tbody>
                             </table>
@@ -2334,9 +1923,9 @@ p {
 
                   <div className="ml-4 mt-2" style={{ color: "black" }}>
                     <div className="row">
-                      <div className="col-md-6 text-left">Invoice No:</div>
+                      <div className="col-md-6 text-left">Payment No:</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.invoice_no}
+                        {paymentDetails.payment_no}
                       </div>
                     </div>
                     <div className="row">
@@ -2346,229 +1935,37 @@ p {
                       </div>
                     </div>
                     <div className="row">
-                      <div className="col-md-6 text-left">
-                        Invoice Date :
-                      </div>
+                      <div className="col-md-6 text-left">Payment Date :</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.invoice_date}
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6 text-left">Shipment Date:</div>
-                      <div className="col-md-5 text-right">
-                        {invoiceDetails.duedate}
+                        {paymentDetails.payment_date}
                       </div>
                     </div>
                   </div>
-
                   <div className="divider"></div>
-
-                  <div
-                    className="equal-length-container"
-                    style={{ color: "black", fontWeight: "bold" }}
-                  >
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Item
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "95%",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item ml-2"
-                      style={{ textAlign: "center" }}
-                    >
-                      HSN/SAC
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "63%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Qty
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "60%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Rate
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "65%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Tax
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "60%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Total
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "65%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                  </div>
-                  {invoiceItems.map((i) => (
-                    <div
-                      className="equal-length-container"
-                      style={{
-                        color: "black",
-                        fontSize: "small",
-                        wordWrap: "break-word",
-                        marginBottom: "1vh",
-                      }}
-                    >
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center", marginLeft: "2px" }}
-                      >
-                        {i.name}
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "right" }}
-                      >
-                        {i.item_type == "Goods" ? i.hsn : i.sac}
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center" }}
-                      >
-                        {i.quantity}
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center" }}
-                      >
-                        {i.price}
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center" }}
-                      >
-                        {i.tax}%
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center" }}
-                      >
-                        {i.total}
-                      </div>
-                    </div>
-                  ))}
-
                   <div className="subtot mt-5">
                     <div className="subtot-item d-flex justify-content-between">
-                      <span>Subtotal</span>
+                      <span>Total Amount Received</span>
                       <span>
                         <span>&#8377; </span>
-                        {invoiceDetails.subtotal}
+                        {paymentDetails.total_payment}
                       </span>
                     </div>
                     <div className="subtot-item d-flex justify-content-between">
-                      <span>Tax Amount</span>
+                      <span>Balance</span>
                       <span>
                         <span>&#8377; </span>
-                        {invoiceDetails.tax_amount}
+                        {paymentDetails.total_balance}
                       </span>
                     </div>
-
-                    {invoiceDetails.igst == 0 ? (
-                      <>
-                        <div className="subtot-item d-flex justify-content-between">
-                          <span>CGST</span>
-                          <span>
-                            <span>&#8377; </span>
-                            {invoiceDetails.cgst}
-                          </span>
-                        </div>
-                        <div className="subtot-item d-flex justify-content-between">
-                          <span>SGST</span>
-                          <span>
-                            <span>&#8377; </span>
-                            {invoiceDetails.sgst}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="subtot-item d-flex justify-content-between">
-                        <span>IGST</span>
-                        <span>
-                          <span>&#8377; </span>
-                          {invoiceDetails.igst}
-                        </span>
-                      </div>
-                    )}
-
-                    {invoiceDetails.adjustment != 0 ? (
-                      <div className="subtot-item d-flex justify-content-between">
-                        <span>Adjustment</span>
-                        <span>
-                          <span>&#8377; </span>
-                          {invoiceDetails.adjustment}
-                        </span>
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="divider"></div>
-                  <div className="grandtot fw-bold d-flex justify-content-between">
-                    <span>
-                      <strong>TOTAL</strong>
-                    </span>
-                    <span>
-                      <strong>
-                        <span>&#8377; </span>
-                        {invoiceDetails.grandtotal}
-                      </strong>
-                    </span>
                   </div>
                   <div className="divider"></div>
                   <div className="paid-by mb-4 d-flex justify-content-between">
                     <span>Paid By:</span>
-                    <span>{invoiceDetails.payment_method}</span>
+                    <span>
+                      {paymentDetails.payment_method != "null"
+                        ? paymentDetails.payment_method
+                        : "N/A"}
+                    </span>
                   </div>
                   <div className="createdby d-flex justify-content-between">
                     <p className="">Created By:</p>
@@ -2596,7 +1993,7 @@ p {
         <div className="modal-dialog modal-lg">
           <div className="modal-content" style={{ backgroundColor: "#213b52" }}>
             <div className="modal-header">
-              <h5 className="m-3">Share Invoice</h5>
+              <h5 className="m-3">Share Payment Received</h5>
               <button
                 type="button"
                 className="close"
@@ -2636,7 +2033,7 @@ p {
                       rows="4"
                       value={emailMessage}
                       onChange={(e) => setEmailMessage(e.target.value)}
-                      placeholder="This message will be sent along with Invoice details."
+                      placeholder="This message will be sent along with Payment Received details."
                     />
                   </div>
                 </div>
@@ -2683,7 +2080,7 @@ p {
               </button>
             </div>
 
-            <form onSubmit={saveInvoiceComment} className="px-1">
+            <form onSubmit={savePaymentReceivedComment} className="px-1">
               <div className="modal-body w-100">
                 <textarea
                   type="text"
@@ -2813,4 +2210,4 @@ p {
   );
 }
 
-export default ViewInvoice;
+export default ViewPayment;

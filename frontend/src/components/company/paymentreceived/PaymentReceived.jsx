@@ -282,7 +282,7 @@ function PaymentReceived() {
                 {payment &&payment.map((i,index)=>(
                   <tr
                     className="clickable-row"
-                    onClick={()=>navigate(`/view_payment/${i.id}/`)}
+                    onClick={()=>navigate(`/view_payment_received/${i.id}/`)}
                     style={{ cursor: "pointer" }}
                   >
                     <td>{index+1}</td>

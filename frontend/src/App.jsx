@@ -137,6 +137,9 @@ import ConvertSalesOrderToRecInvoice from './components/company/salesorder/Conve
 import ConvertEstimateToSalesOrder from './components/company/estimate/ConvertEstimateToSalesOrder';
 import PaymentReceived from './components/company/paymentreceived/PaymentReceived';
 import AddPaymentReceived from './components/company/paymentreceived/AddPaymentReceived';
+import ViewPayment from './components/company/paymentreceived/ViewPayment';
+import PaymentHistory from './components/company/paymentreceived/PaymentHistory';
+import EditPaymentReceived from './components/company/paymentreceived/EditPaymentReceived';
 
 
 function App() {
@@ -323,6 +326,9 @@ function App() {
             {/* Payment Received */}
             <Route path="/payment_received" element={<PaymentReceived />}></Route>
             <Route path="/add_payment" element={<AddPaymentReceived />}></Route>
+            <Route path="/view_payment_received/:paymentId/" element={<ViewPayment />}></Route>
+            <Route path="/payment_received_history/:paymentId/" element={<PaymentHistory />}></Route>
+            <Route path="/edit_payment_received/:paymentId/" element={<EditPaymentReceived />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

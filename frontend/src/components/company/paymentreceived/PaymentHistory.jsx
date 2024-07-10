@@ -8,19 +8,19 @@ import Swal from "sweetalert2";
 
 function PaymentHistory() {
   const ID = Cookies.get("Login_id");
-  const { invoiceId } = useParams();
+  const { paymentId } = useParams();
   const [history, setHistory] = useState([]);
-  const [invoice, setInvoice] = useState({});
+  const [payment, setPayment] = useState({});
 
   const fetchInvoiceHistory = () => {
     axios
-      .get(`${config.base_url}/fetch_invoice_history/${invoiceId}/`)
+      .get(`${config.base_url}/fetch_payment_received_history/${paymentId}/`)
       .then((res) => {
-        console.log("INV HIST=", res);
+        console.log("PAY HIST=", res);
         if (res.data.status) {
-          var sls = res.data.invoice;
+          var pay = res.data.payment;
           var hist = res.data.history;
-          setInvoice(sls);
+          setPayment(pay);
           setHistory([]);
           hist.map((i) => {
             setHistory((prevState) => [...prevState, i]);
@@ -52,7 +52,7 @@ function PaymentHistory() {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to={`/view_invoice/${invoiceId}/`}
+          to={`/view_payment_received/${paymentId}/`}
         >
           <i
             className="fa fa-times-circle text-white"
@@ -67,9 +67,9 @@ function PaymentHistory() {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  INVOICE TRANSACTIONS
+                  PAYMENT RECEIVED TRANSACTIONS
                 </h3>
-                {invoice.status == "Draft" ? (
+                {payment.status == "Draft" ? (
                   <h6
                     className="blinking-text"
                     style={{ color: "red", width: "140px", fontWeight: "bold" }}
@@ -100,7 +100,7 @@ function PaymentHistory() {
             <div id="history">
               <center>
                 <h3 className="mt-3 text-uppercase">
-                  #{invoice.invoice_no} - TRANSACTIONS
+                  #{payment.payment_no} - TRANSACTIONS
                 </h3>
               </center>
               <div className="table-responsive px-2">
