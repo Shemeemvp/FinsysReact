@@ -1333,7 +1333,7 @@ function FinBase() {
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Expenses == 1 %} */}
-                  <li id="expense"><a href="{% url 'Fin_expense' %}"><i className="bx bx-right-arrow-alt"></i>Expense</a>
+                  <li id="expense"><Link to="/expense"><i className="bx bx-right-arrow-alt"></i>Expense</Link>
                   </li>
                   {/* {% endif %} */}
 
@@ -1348,7 +1348,7 @@ function FinBase() {
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Recurring_Bills == 1 %} */}
-                  <li id="recurringbill"><a href="{% url 'Fin_recurring_bill_list' %}"><i className="bx bx-right-arrow-alt"></i>Recurring Bill</a>
+                  <li id="recurringbill"><Link to="/rec_bill"><i className="bx bx-right-arrow-alt"></i>Recurring Bill</Link>
                   </li>
                   {/* {% endif %} */}
                   

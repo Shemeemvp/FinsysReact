@@ -13072,6 +13072,667 @@ def Fin_updateRetInvoice(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
+#Purchase Order
+@api_view(("GET",))
+def Fin_fetch_purchase_order_data(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        items = Fin_Items.objects.filter(Company = cmp, status = 'Active')
+        cust = Fin_Customers.objects.filter(Company=cmp)
+        trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        bnk = Fin_Banking.objects.filter(company = cmp)
+        lst = Fin_Price_List.objects.filter(Company = cmp, status = 'Active')
+        units = Fin_Units.objects.filter(Company = cmp)
+        acc = Fin_Chart_Of_Account.objects.filter(Q(account_type='Expense') | Q(account_type='Other Expense') | Q(account_type='Cost Of Goods Sold'), Company=cmp).order_by('account_name')
+        custLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='sales', status = 'Active')
+        vendors = Fin_Vendor.objects.filter(Company=cmp)
+        
+        itemSerializer = ItemSerializer(items, many=True)
+        custSerializer = CustomerSerializer(cust, many=True)
+        pTermSerializer = CompanyPaymentTermsSerializer(trms, many=True)
+        bankSerializer = BankSerializer(bnk, many=True)
+        lstSerializer = PriceListSerializer(lst, many=True)
+        clSerializer = PriceListSerializer(custLists, many=True)
+        unitSerializer = ItemUnitSerializer(units, many=True)
+        accSerializer = AccountsSerializer(acc, many=True)
+        vendserializer = VendorSerializer(vendors,many=True)
+        # Fetching last sales order and assigning upcoming ref no as current + 1
+        # Also check for if any bill is deleted and ref no is continuos w r t the deleted sales order
+        latest_so = Fin_Purchase_Order.objects.filter(Company = cmp).order_by('-id').first()
+
+        new_number = int(latest_so.reference_no) + 1 if latest_so else 1
+
+        if Fin_Purchase_Order_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_Purchase_Order_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+        # Finding next SO number w r t last SO number if exists.
+        nxtSO = ""
+        lastSO = Fin_Purchase_Order.objects.filter(Company = cmp).last()
+        if lastSO:
+            salesOrder_no = str(lastSO.purchase_order_no)
+            numbers = []
+            stri = []
+            for word in salesOrder_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            s_order_num = int(num)+1
+
+            if num[0] == '0':
+                if s_order_num <10:
+                    nxtSO = st+'0'+ str(s_order_num)
+                else:
+                    nxtSO = st+ str(s_order_num)
+            else:
+                nxtSO = st+ str(s_order_num)
+
+        return Response(
+            {
+                "status": True,
+                "items": itemSerializer.data,
+                "customers":custSerializer.data,
+                "paymentTerms":pTermSerializer.data,
+                "banks":bankSerializer.data,
+                "priceList":lstSerializer.data,
+                "custPriceList":clSerializer.data,
+                "units":unitSerializer.data,
+                "accounts":accSerializer.data,
+                "refNo": new_number,
+                "soNo": nxtSO,
+                "state": cmp.State,
+                "vendors":vendserializer.data
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        
+@api_view(("GET",))
+def Fin_get_vendor_data(request):
+    try:
+        vId = request.GET['v_id']
+        vend = Fin_Vendor.objects.get(id=vId)
+        details = {
+            'id':vend.id,
+            'gstType': vend.GST_Treatment,
+            'email': vend.Vendor_email,
+            'gstIn': vend.GST_Number if vend.GST_Number else "None",
+            'placeOfSupply': vend.Place_of_supply,
+            'address': f"{vend.Billing_street},{vend.Billing_city}\n{vend.Billing_state}\n{vend.Billing_country}\n{vend.Billing_pincode}"
+        }
+        return Response(
+            {"status": True, "vendorDetails":details}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_create_new_purchase_order(request):
+    try:
+        v_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=v_id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=v_id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=v_id).company_id
+        vn = request.data["Vname"]
+        vmail = request.data["vemail"]
+        vaddress = request.data["vaddress"]
+        vplace = request.data["vplace"]
+        vgst_type = request.data["vgst_type"]
+        vgst_no = request.data["vgst_no"]
+        refno = request.data["refno"]
+        pono = request.data["poNo"]
+        payterm = request.data["payterm"]
+        date = request.data["date"]
+        due_date = request.data["due_date"]
+        cn = request.data["Cname"]
+        Caddress = request.data["Caddress"]
+        Cplace = request.data["Cplace"]
+        Cgst_type = request.data["Cgst_type"]
+        Cemail = request.data["Cemail"]
+        Cgst_no = request.data["Cgst_no"]
+        paymethod = request.data["paymethod"]
+        chequeno = request.data["chequeno"]
+        upiId = request.data["upiId"]
+        accountNumber = request.data["accountNumber"]
+        subtotal = request.data["subtotal"]
+        igst = request.data["igst"]
+        cgst = request.data["cgst"]
+        sgst = request.data["sgst"]
+        taxAmount = request.data["taxAmount"]
+        shippingCharge = request.data["shippingCharge"]
+        adjustment = request.data["adjustment"]
+        grandTotal = request.data["grandTotal"]
+        paid = request.data["paid"]
+        balance = request.data["balance"]
+        description  = request.data["description"]
+        file = request.data["file"]
+        status = request.data["status"]
+        price_list = request.data["price_list"]
+        price_list_applied = request.data["pricelistapplied"]
+        price_List = Fin_Price_List.objects.get(id=price_list)
+        vend = Fin_Vendor.objects.get(id=vn)
+        vend_name = vend.Title +" "+ vend.First_name +" "+ vend.Last_name
+        cust = Fin_Customers.objects.get(id=cn)
+        cust_name = cust.title +" "+ cust.first_name+" "+cust.last_name
+        payt = Fin_Company_Payment_Terms.objects.get(id=payterm)
+        formatted_date = pd.to_datetime(due_date).strftime('%Y-%m-%d')
+        PurchaseO = Fin_Purchase_Order.objects.create(Company=cmp,LoginDetails=data,Vendor=vend,vendor_name=vend_name,vendor_email=vmail,vendor_address=vaddress,vendor_gst_type=vgst_type,                                       
+        vendor_gstin=vgst_no,vendor_source_of_supply=vplace,reference_no=refno,purchase_order_no=pono,payment_terms=payt,purchase_order_date=date,due_date=formatted_date,payment_method=paymethod,
+        cheque_no=chequeno,upi_no=upiId,bank_acc_no=accountNumber,Customer=cust,customer_name=cust_name,customer_email=Cemail,customer_address=Caddress,customer_gst_type=Cgst_type,customer_gstin=Cgst_no,
+        customer_place_of_supply=Cplace,subtotal=subtotal,igst=igst,cgst=cgst,sgst=sgst,tax_amount=taxAmount,adjustment=adjustment,shipping_charge=shippingCharge,grandtotal=grandTotal,
+        paid_off=paid,balance=balance,note=description,file=file,status=status,price_list=price_List)
+        PurchaseO.save()
+
+        purchase_items = request.data["purchaseOrderItems"]
+        for p in purchase_items:
+            item_id = p.get('item')
+            item = Fin_Items.objects.get(id=item_id)
+            hsn = p.get('hsnSac') if item.item_type == 'Goods' else None
+            sac = p.get('hsnSac') if item.item_type != 'Goods' else None
+            quantity = p.get('quantity')
+            # price = p.get('price')
+            # pricelist = p.get('priceListPrice')
+            price = p.get('priceListPrice') if PurchaseO.price_list_applied else p.get('price')
+            tax = p.get('taxGst') if cmp.State == request.data['Cplace'] else p.get('taxIgst')
+            discount = float(p.get('discount')) if p.get('discount') != "" else 0.0
+            total = p.get('total')
+            POitem = Fin_Purchase_Order_Items.objects.create(PurchaseOrder=PurchaseO,Item=item,hsn=hsn,sac=sac,quantity=quantity,price=price,total=total,tax=tax,discount=discount)
+            POitem.save()
+            POhistory = Fin_Purchase_Order_History.objects.create(Company=cmp,LoginDetails=data,PurchaseOrder=PurchaseO,action='Created')
+            POhistory.save()
+        return Response(
+            {"status": True}
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)}
+        )
+    
+@api_view(("GET",))
+def Fin_fetch_purchase_order(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        purchase = Fin_Purchase_Order.objects.filter(Company = com)
+        pur = []
+        for i in purchase:
+            obj = {
+                "id": i.id,
+                "purchase_order_no": i.purchase_order_no,
+                "vendor_name": i.Vendor.First_name+" "+i.Vendor.Last_name,
+                "vendor_mail":i. vendor_email,
+                "grandtotal": i.grandtotal,
+                "status": i.status,
+                "balance": i.balance,
+                "date":i.purchase_order_date,
+            }
+            pur.append(obj)
+        return Response(
+            {"status": True, "purchaseorder": pur}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def Fin_fetch_purchase_order_details(request, id):
+    try:
+        purchase = Fin_Purchase_Order.objects.get(id=id)
+        cmp = purchase.Company
+        hist = Fin_Purchase_Order_History.objects.filter(PurchaseOrder=purchase).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_Purchase_Order_Comments.objects.filter(PurchaseOrder=purchase)
+        itms = Fin_Purchase_Order_Items.objects.filter(PurchaseOrder=purchase)
+        
+        try:
+            created = Fin_Purchase_Order_History.objects.get(PurchaseOrder = purchase, action = 'Created')
+        except:
+            created = None
+        otherDet = {
+            "Company_name": cmp.Company_name,
+            "Email": cmp.Email,
+            "Mobile": cmp.Contact,
+            "Address": cmp.Address,
+            "City": cmp.City,
+            "State": cmp.State,
+            "Pincode": cmp.Pincode,
+            "customerName": purchase.Customer.first_name+' '+purchase.Customer.last_name,
+            "customerEmail": purchase.Customer.email,
+            "createdBy": created.LoginDetails.First_name if created else "",
+            "vendorname":purchase.Vendor.First_name+' '+purchase.Vendor.Last_name,
+            "vendoremail":purchase.Vendor.Vendor_email
+        }
+        items = []
+        for i in itms:
+            obj = {
+                "id":i.id,
+                "itemId": i.Item.id,
+                "sales_price": i.Item.selling_price,
+                'name': i.Item.name,
+                "item_type": i.Item.item_type,
+                "hsn": i.hsn,
+                "sac": i.sac,
+                "quantity": i.quantity,
+                "price": i.price,
+                "tax": i.tax,
+                "discount": i.discount,
+                "total": i.total
+            }
+            items.append(obj)
+        print(items)
+        purchaseSerializer = PurchaseOrderSerializer(purchase)
+        commentsSerializer = PurchaseOrderCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "purchase": purchaseSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": items,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("GET",))
+def Fin_purchase_Order_PDF(request):
+    try:
+        id = request.GET['Id']
+        pId = request.GET['id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        purchaseOrder = Fin_Purchase_Order.objects.get(id=pId)
+        itms = Fin_Purchase_Order_Items.objects.filter(PurchaseOrder=purchaseOrder)
+        context = {'order':purchaseOrder, 'orderItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_Purchase_Order_Pdf.html'
+        fname = 'Purchase_Order_'+purchaseOrder.purchase_order_no
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("POST",))
+def Fin_share_purchase_order_mail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        pId = request.data["id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        purchaseOrder = Fin_Purchase_Order.objects.get(id=pId)
+        itms = Fin_Purchase_Order_Items.objects.filter(PurchaseOrder=purchaseOrder)
+        context = {'order':purchaseOrder, 'orderItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_Purchase_Order_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'PurchaseOrder_{purchaseOrder.purchase_order_no}.pdf'
+        subject = f"PurchaseOrder_{purchaseOrder.purchase_order_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - PURCHASE ORDER-{purchaseOrder.purchase_order_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("DELETE",))
+def Fin_delete_Purchase_Order(request, id):
+    try:
+        purchase = Fin_Purchase_Order.objects.get(id=id)
+        com = purchase.Company
+        Fin_Purchase_Order_Items.objects.filter(PurchaseOrder = purchase).delete()
+        if Fin_Purchase_Order_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_Purchase_Order_Reference.objects.get(Company = com)
+            if int(purchase.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = purchase.reference_no
+                deleted.save()
+        else:
+            Fin_Purchase_Order_Reference.objects.create(Company = com, reference_no = purchase.reference_no)
+        purchase.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_add_purchase_order_comment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        comments = request.data["comments"]
+        Po_id = request.data["id"]
+        po = Fin_Purchase_Order.objects.get(id=Po_id)
+        p_comment = Fin_Purchase_Order_Comments.objects.create(Company=com,comments=comments,PurchaseOrder=po)
+        serializer = PurchaseOrderCommentSerializer(p_comment)
+        p_comment.save()
+        return Response({"status": True,"data":serializer.data}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("PUT",))
+def Fin_Update_purchase_order(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        Po_id = request.data["id"]
+        v_id = request.data["Vname"]
+        cn = request.data["Cname"]
+        vend = Fin_Vendor.objects.get(id=v_id)
+        vend_name = vend.Title +" "+ vend.First_name +" "+ vend.Last_name
+        cust = Fin_Customers.objects.get(id=cn)
+        cust_name = cust.title +" "+ cust.first_name+" "+cust.last_name
+        Purchase_Order = Fin_Purchase_Order.objects.get(id=Po_id)
+        Purchase_Order.vendor_name = vend_name
+        Purchase_Order.vendor_email = request.data["vemail"]
+        Purchase_Order.vendor_address = request.data["vaddress"]
+        Purchase_Order.vendor_gst_type = request.data["vgst_type"]
+        Purchase_Order.vendor_gstin = request.data["vgst_no"]
+        Purchase_Order.vendor_source_of_supply = request.data["vplace"]
+        Purchase_Order.reference_no = request.data["refno"]
+        Purchase_Order.purchase_order_no = request.data["poNo"]
+        Purchase_Order.purchase_order_date = request.data["date"]
+        Purchase_Order.due_date = request.data["due_date"]
+        Purchase_Order.payment_method = request.data["paymethod"]
+        Purchase_Order.cheque_no = request.data["chequeno"]
+        Purchase_Order.upi_no = request.data["upiId"]
+        Purchase_Order.bank_acc_no = request.data["accountNumber"]
+        Purchase_Order.customer_name = cust_name
+        Purchase_Order.customer_email = request.data["Cemail"]
+        Purchase_Order.customer_address = request.data["Caddress"]
+        Purchase_Order.customer_gst_type = request.data["Cgst_type"]
+        Purchase_Order.customer_gstin = request.data["Cgst_no"]
+        Purchase_Order.customer_place_of_supply = request.data["Cplace"]
+        Purchase_Order.subtotal = request.data["subtotal"]
+        Purchase_Order.igst = request.data["igst"]
+        Purchase_Order.cgst = request.data["cgst"]
+        Purchase_Order.sgst = request.data["sgst"]
+        Purchase_Order.tax_amount = request.data["taxAmount"]
+        Purchase_Order.adjustment = request.data["adjustment"]
+        Purchase_Order.shipping_charge = request.data["shippingCharge"]
+        Purchase_Order.grandtotal = request.data["grandTotal"]
+        Purchase_Order.paid_off = request.data["paid"]
+        Purchase_Order.balance = request.data["balance"]
+        Purchase_Order.note = request.data["description"]
+        Purchase_Order.file = request.data["file"]
+        payment_terms = request.data["payterm"]
+        items = request.data["purchaseOrderItems"]
+        price_list = request.data["price_list"]
+        price_List = Fin_Price_List.objects.get(id=price_list)
+        Purchase_Order.price_list= price_List
+        price_list_applied = request.data["pricelistapplied"]
+        pt = Fin_Company_Payment_Terms.objects.get(id=payment_terms)
+        Purchase_Order.payment_terms = pt
+        Purchase_Order.status = request.data["status"]
+        Purchase_Order.save()
+        POitem = Fin_Purchase_Order_Items.objects.filter(PurchaseOrder=Po_id)
+        POitem.delete()
+        for p in items:
+            item_id = p.get('item')
+            item = Fin_Items.objects.get(id=item_id)
+            hsn = p.get('hsnSac') if item.item_type == 'Goods' else None
+            sac = p.get('hsnSac') if item.item_type != 'Goods' else None
+            quantity = p.get('quantity')
+            # price = p.get('price')
+            # pricelist = p.get('priceListPrice')
+            price = p.get('priceListPrice') if Purchase_Order.price_list_applied else p.get('price')
+            tax = p.get('taxGst') if com.State == request.data['Cplace'] else p.get('taxIgst')
+            discount = p.get('discount')
+            total = p.get('total')
+            
+            if item:
+                purchase_order = Fin_Purchase_Order_Items.objects.create(Item=item,hsn=hsn,sac=sac,quantity=quantity,price=price,tax=tax,discount=discount,total=total,PurchaseOrder=Purchase_Order)
+                purchase_order.save()
+
+        POhistory = Fin_Purchase_Order_History.objects.create(Company=com,LoginDetails=data,PurchaseOrder=Purchase_Order,action='Edited')
+        POhistory.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )  
+    
+@api_view(("GET",))
+def Fin_fetch_purchase_order_history(request, id):
+    try:
+        purchase = Fin_Purchase_Order.objects.get(id=id)
+        hist = Fin_Purchase_Order_History.objects.filter(PurchaseOrder=purchase)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        purchaseSerializer = PurchaseOrderSerializer(purchase)
+        return Response(
+            {"status": True, "purchaseOrder": purchaseSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deletePurchaseOrderComment(request, id):
+    try:
+        cmt = Fin_Purchase_Order_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_add_purchase_order_file(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        pId = request.data['purchase_id']
+        purchase = Fin_Purchase_Order.objects.get(id=pId)
+        if request.data['file']:
+            purchase.file = request.data['file']
+        purchase.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(("POST",))
+def Fin_change_purchase_order_status(request):
+    try:
+        Id = request.data["id"]
+        data = Fin_Purchase_Order.objects.get(id=Id)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkPurchaseOrderNo(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        SONo = request.GET['SONum']
+
+        nxtSO = ""
+        lastSOrder = Fin_Purchase_Order.objects.filter(Company = com).last()
+        if lastSOrder:
+            purchaseOrder_no = str(lastSOrder.purchase_order_no)
+            numbers = []
+            stri = []
+            for word in purchaseOrder_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            s_order_num = int(num)+1
+
+            if num[0] == '0':
+                if s_order_num <10:
+                    nxtSO = st+'0'+ str(s_order_num)
+                else:
+                    nxtSO = st+ str(s_order_num)
+            else:
+                nxtSO = st+ str(s_order_num)
+
+        if Fin_Purchase_Order.objects.filter(Company = com, purchase_order_no__iexact = SONo).exists():
+            return Response({'status':False, 'message':'Purchase Order No. already Exists.!'})
+        elif nxtSO != "" and SONo != nxtSO:
+            return Response({'status':False, 'message':'Purchase Order No. is not continuous.!'})
+        else:
+            return Response({'status':True, 'message':'Number is okay.!'})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
 # Credit Note
 
 @api_view(("GET",))

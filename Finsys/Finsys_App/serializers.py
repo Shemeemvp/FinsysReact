@@ -276,6 +276,17 @@ class RetInvoiceCommentSerializer(serializers.ModelSerializer):
         model = Fin_Retainer_Invoice_Comments
         fields = '__all__'
 
+# Purchase Order
+class PurchaseOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Purchase_Order
+        fields = '__all__'
+
+class PurchaseOrderCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Purchase_Order_Comments
+        fields = '__all__'
+
 # Credit Note
 class CreditNoteSerializer(serializers.ModelSerializer):
     class Meta:

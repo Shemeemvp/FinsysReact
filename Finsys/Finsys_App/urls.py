@@ -320,6 +320,23 @@ urlpatterns = [
     path('share_ret_invoice_email/',Fin_shareRetInvoiceToEmail),
     path('update_ret_invoice/',Fin_updateRetInvoice),
 
+    #Purchase Order
+    path('fetch_purchase_order_data/<int:id>/',Fin_fetch_purchase_order_data),
+    path('get_vendor_data/',Fin_get_vendor_data),
+    path('create_new_purchase_order/',Fin_create_new_purchase_order),
+    path('fetch_purchase_order/<int:id>/',Fin_fetch_purchase_order),
+    path('fetch_purchase_order_details/<int:id>/',Fin_fetch_purchase_order_details),
+    path('purchase_Order_PDF/',Fin_purchase_Order_PDF),
+    path('share_purchase_order_mail/',Fin_share_purchase_order_mail),
+    path('delete_Purchase_Order/<int:id>/',Fin_delete_Purchase_Order),
+    path('add_purchase_order_comment/',Fin_add_purchase_order_comment),
+    path('Update_purchase_order/',Fin_Update_purchase_order),
+    path('fetch_purchase_order_history/<int:id>/',Fin_fetch_purchase_order_history),
+    path('delete_purchase_order_comment/<int:id>/',Fin_deletePurchaseOrderComment),
+    path('add_purchase_order_file/',Fin_add_purchase_order_file),
+    path('change_purchase_order_status/',Fin_change_purchase_order_status),
+    path('checkPurchaseOrderNo/',Fin_checkPurchaseOrderNo),
+
     # Credit Note
     path('fetch_credit_notes/<int:id>/',Fin_fetchCreditNotes),
     path('fetch_credit_note_data/<int:id>/',Fin_fetchCreditNoteData),
