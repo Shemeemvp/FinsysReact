@@ -2,23 +2,23 @@ import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
 import * as XLSX from "xlsx";
 import { Link, useNavigate } from "react-router-dom";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 
-function RecBill() {
+function Expense() {
   const navigate = useNavigate();
   function exportToExcel() {
-    const Table = document.getElementById("recBillTable");
+    const Table = document.getElementById("expenseTable");
     const ws = XLSX.utils.table_to_sheet(Table);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-    XLSX.writeFile(wb, "Recurring_Bills.xlsx");
+    XLSX.writeFile(wb, "Expenses.xlsx");
   }
 
   function sortTable(columnIndex) {
     var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementById("recBillTable");
+    table = document.getElementById("expenseTable");
     switching = true;
 
     while (switching) {
@@ -47,14 +47,38 @@ function RecBill() {
     }
   }
 
-  function filterTable(row,filterValue) {
-    var table1 = document.getElementById("recBillTable");
+  function sortAmountAsc() {
+    var table = document.getElementById("expenseTable");
+    var rows = Array.from(table.rows).slice(1);
+
+    rows.sort(function (a, b) {
+      var amt1 = parseFloat(a.cells[4].textContent);
+      var amt2 = parseFloat(b.cells[4].textContent);
+      return amt1 - amt2;
+    });
+
+    // Remove existing rows from the table
+    for (var i = table.rows.length - 1; i > 0; i--) {
+      table.deleteRow(i);
+    }
+
+    // Append the sorted rows back to the table
+    rows.forEach(function (row) {
+      table.tBodies[0].appendChild(row);
+    });
+  }
+
+  function filterTable(row, filterValue) {
+    var table1 = document.getElementById("expenseTable");
     var rows1 = table1.getElementsByTagName("tr");
 
     for (var i = 1; i < rows1.length; i++) {
       var statusCell = rows1[i].getElementsByTagName("td")[row];
 
-      if (filterValue == "all" || statusCell.textContent.toLowerCase() == filterValue) {
+      if (
+        filterValue == "all" ||
+        statusCell.textContent.toLowerCase() == filterValue
+      ) {
         rows1[i].style.display = "";
       } else {
         rows1[i].style.display = "none";
@@ -62,41 +86,46 @@ function RecBill() {
     }
   }
 
-  function searchTable(){
-    var rows = document.querySelectorAll('#recBillTable tbody tr');
-    var val = document.getElementById('search').value.trim().replace(/ +/g, ' ').toLowerCase();
-    rows.forEach(function(row) {
-      var text = row.textContent.replace(/\s+/g, ' ').toLowerCase();
-      row.style.display = text.includes(val) ? '' : 'none';
+  function searchTable() {
+    var rows = document.querySelectorAll("#expenseTable tbody tr");
+    var val = document
+      .getElementById("search")
+      .value.trim()
+      .replace(/ +/g, " ")
+      .toLowerCase();
+    rows.forEach(function (row) {
+      var text = row.textContent.replace(/\s+/g, " ").toLowerCase();
+      row.style.display = text.includes(val) ? "" : "none";
     });
   }
 
-  const ID = Cookies.get('Login_id');
-  const [recBills, setRecBills] = useState([]);
+  const ID = Cookies.get("Login_id");
+  const [expenses, setExpenses] = useState([]);
 
-  const fetchBills = () =>{
-    axios.get(`${config.base_url}/fetch_rec_bills/${ID}/`).then((res)=>{
-      if(res.data.status){
-        var bill = res.data.recBill;
-        setRecBills([])
-        bill.map((i)=>{
-          setRecBills((prevState)=>[
-            ...prevState, i
-          ])
-        })
-      }
-    }).catch((err)=>{
-      console.log('ERR',err)
-    })
-  }
+  const fetchExpenses = () => {
+    axios
+      .get(`${config.base_url}/fetch_expenses/${ID}/`)
+      .then((res) => {
+        if (res.data.status) {
+          var exp = res.data.expense;
+          setExpenses([]);
+          exp.map((i) => {
+            setExpenses((prevState) => [...prevState, i]);
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("ERR", err);
+      });
+  };
 
-  useEffect(()=>{
-    fetchBills();
-  },[])
-  
-  function refreshAll(){
-    setRecBills([])
-    fetchBills();
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+
+  function refreshAll() {
+    setExpenses([]);
+    fetchExpenses();
   }
   return (
     <>
@@ -109,7 +138,7 @@ function RecBill() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">RECURRING BILLS</h2>
+                <h2 className="mt-3">EXPENSES</h2>
               </center>
               <hr />
             </div>
@@ -165,9 +194,9 @@ function RecBill() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(3)}
+                          onClick={sortAmountAsc}
                         >
-                          Vendor Name
+                          Amount
                         </a>
                         <a
                           className="dropdown-item"
@@ -177,9 +206,9 @@ function RecBill() {
                             color: "white",
                             cursor: "pointer",
                           }}
-                          onClick={()=>sortTable(2)}
+                          onClick={() => sortTable(1)}
                         >
-                          Rec. Bill No.
+                          Expense Account
                         </a>
                       </div>
                     </div>
@@ -217,7 +246,7 @@ function RecBill() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'all')}
+                        onClick={() => filterTable(5, "all")}
                       >
                         All
                       </a>
@@ -229,7 +258,7 @@ function RecBill() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'saved')}
+                        onClick={() => filterTable(5, "saved")}
                       >
                         Saved
                       </a>
@@ -241,19 +270,19 @@ function RecBill() {
                           color: "white",
                           cursor: "pointer",
                         }}
-                        onClick={()=>filterTable(6,'draft')}
+                        onClick={() => filterTable(5, "draft")}
                       >
                         Draft
                       </a>
                     </div>
                   </div>
-                  <Link to="/add_rec_bill" className="ml-1">
+                  <Link to="/add_expense" className="ml-1">
                     <button
                       type="button"
                       style={{ width: "fit-content", height: "fit-content" }}
                       className="btn btn-outline-secondary text-grey"
                     >
-                      <i className="fa fa-plus font-weight-light"></i> Rec. Bill
+                      <i className="fa fa-plus font-weight-light"></i> Expense
                     </button>
                   </Link>
                 </div>
@@ -263,38 +292,35 @@ function RecBill() {
           <div className="table-responsive">
             <table
               className="table table-responsive-md table-hover mt-4"
-              id="recBillTable"
+              id="expenseTable"
               style={{ textAlign: "center" }}
             >
               <thead>
                 <tr>
-                  <th>#</th>
                   <th>DATE</th>
-                  <th>REC. BILL NO.</th>
-                  <th>VENDOR NAME</th>
-                  <th>VENDOR MAIL</th>
+                  <th>EXPENSE ACCOUNT</th>
+                  <th>EXPENSE TYPE</th>
+                  <th>PAYMENT METHOD</th>
                   <th>AMOUNT</th>
                   <th>STATUS</th>
-                  <th>BALANCE</th>
                 </tr>
               </thead>
               <tbody>
-                {recBills &&recBills.map((i,index)=>(
-                  <tr
-                    className="clickable-row"
-                    onClick={()=>navigate(`/view_rec_bill/${i.id}/`)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <td>{index+1}</td>
-                    <td>{i.rec_bill_date}</td>
-                    <td>{i.rec_bill_no}</td>
-                    <td>{i.vendor_name}</td>
-                    <td>{i.vendor_email}</td>
-                    <td>{i.grandtotal}</td>
-                    <td>{i.status}</td>
-                    <td>{i.balance}</td>
-                  </tr>
-                ))}
+                {expenses &&
+                  expenses.map((i, index) => (
+                    <tr
+                      className="clickable-row"
+                      onClick={() => navigate(`/view_expense/${i.id}/`)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>{i.expense_date}</td>
+                      <td>{i.expense_account}</td>
+                      <td>{i.expense_type}</td>
+                      <td>{i.payment_method}</td>
+                      <td>{i.amount}</td>
+                      <td>{i.status}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -304,4 +330,4 @@ function RecBill() {
   );
 }
 
-export default RecBill;
+export default Expense;

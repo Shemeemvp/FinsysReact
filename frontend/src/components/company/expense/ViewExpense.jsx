@@ -8,12 +8,12 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import "../../styles/SalesOrder.css";
 
-function ViewRecInvoice() {
+function ViewRecBill() {
   const ID = Cookies.get("Login_id");
-  const { invoiceId } = useParams();
-  const [invoiceDetails, setInvoiceDetails] = useState({});
+  const { billId } = useParams();
+  const [billDetails, setBillDetails] = useState({});
   const [otherDetails, setOtherDetails] = useState({});
-  const [invoiceItems, setInvoiceItems] = useState([]);
+  const [billItems, setBillItems] = useState([]);
   const [comments, setComments] = useState([]);
   const [history, setHistory] = useState({
     action: "",
@@ -23,32 +23,32 @@ function ViewRecInvoice() {
 
   const [fileUrl, setFileUrl] = useState(null);
 
-  const fetchRecInvoiceDetails = () => {
+  const fetchRecBillDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_details/${invoiceId}/`)
+      .get(`${config.base_url}/fetch_rec_bill_details/${billId}/`)
       .then((res) => {
-        console.log("INV DATA=", res);
+        console.log("BL DATA=", res);
         if (res.data.status) {
-          var invoice = res.data.invoice;
+          var bill = res.data.bill;
           var hist = res.data.history;
           var cmt = res.data.comments;
           var itms = res.data.items;
           var other = res.data.otherDetails;
-          if (invoice.file) {
-            var url = `${config.base_url}/${invoice.file}`;
+          if (bill.file) {
+            var url = `${config.base_url}/${bill.file}`;
             setFileUrl(url);
           }
 
           setOtherDetails(other);
-          setInvoiceItems([]);
+          setBillItems([]);
           setComments([]);
           itms.map((i) => {
-            setInvoiceItems((prevState) => [...prevState, i]);
+            setBillItems((prevState) => [...prevState, i]);
           });
           cmt.map((c) => {
             setComments((prevState) => [...prevState, c]);
           });
-          setInvoiceDetails(invoice);
+          setBillDetails(bill);
           if (hist) {
             setHistory(hist);
           }
@@ -66,7 +66,7 @@ function ViewRecInvoice() {
   };
 
   useEffect(() => {
-    fetchRecInvoiceDetails();
+    fetchRecBillDetails();
   }, []);
 
   const currentUrl = window.location.href;
@@ -76,9 +76,9 @@ function ViewRecInvoice() {
 
   const navigate = useNavigate();
 
-  function handleConvertInvoice() {
+  function handleConvertRecBill() {
     Swal.fire({
-      title: `Convert Recurring Invoice - ${invoiceDetails.rec_invoice_no}?`,
+      title: `Convert Recurring Bill - ${billDetails.rec_bill_no}?`,
       text: "Are you sure you want to convert this.!",
       icon: "warning",
       showCancelButton: true,
@@ -88,17 +88,17 @@ function ViewRecInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         var st = {
-          id: invoiceId,
+          id: billId,
         };
         axios
-          .post(`${config.base_url}/change_rec_invoice_status/`, st)
+          .post(`${config.base_url}/change_rec_bill_status/`, st)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
                 icon: "success",
                 title: "Converted",
               });
-              fetchRecInvoiceDetails();
+              fetchRecBillDetails();
             }
           })
           .catch((err) => {
@@ -109,15 +109,15 @@ function ViewRecInvoice() {
   }
 
   const [comment, setComment] = useState("");
-  const saveInvoiceComment = (e) => {
+  const saveBillComment = (e) => {
     e.preventDefault();
     var cmt = {
       Id: ID,
-      RecInvoice: invoiceId,
+      RecBill: billId,
       comments: comment,
     };
     axios
-      .post(`${config.base_url}/add_rec_invoice_comment/`, cmt)
+      .post(`${config.base_url}/add_rec_bill_comment/`, cmt)
       .then((res) => {
         console.log(res);
         if (res.data.status) {
@@ -126,7 +126,7 @@ function ViewRecInvoice() {
             title: "Comment Added",
           });
           setComment("");
-          fetchRecInvoiceDetails();
+          fetchRecBillDetails();
         }
       })
       .catch((err) => {
@@ -140,9 +140,9 @@ function ViewRecInvoice() {
       });
   };
 
-  function handleDeleteRecInvoice(id) {
+  function handleDeleteRecBill(id) {
     Swal.fire({
-      title: `Delete Recurring Invoice - ${invoiceDetails.rec_invoice_no}?`,
+      title: `Delete Recurring Bill - ${billDetails.rec_bill_no}?`,
       text: "Data cannot be restored.!",
       icon: "warning",
       showCancelButton: true,
@@ -152,15 +152,15 @@ function ViewRecInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_rec_invoice/${id}/`)
+          .delete(`${config.base_url}/delete_rec_bill/${id}/`)
           .then((res) => {
             console.log(res);
 
             Toast.fire({
               icon: "success",
-              title: "Rec. Invoice Deleted.",
+              title: "Rec. Bill Deleted.",
             });
-            navigate("/rec_invoice");
+            navigate("/rec_bill");
           })
           .catch((err) => {
             console.log(err);
@@ -181,7 +181,7 @@ function ViewRecInvoice() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_rec_invoice_comment/${id}/`)
+          .delete(`${config.base_url}/delete_rec_bill_comment/${id}/`)
           .then((res) => {
             console.log(res);
 
@@ -189,7 +189,7 @@ function ViewRecInvoice() {
               icon: "success",
               title: "Comment Deleted",
             });
-            fetchRecInvoiceDetails();
+            fetchRecBillDetails();
           })
           .catch((err) => {
             console.log(err);
@@ -224,7 +224,7 @@ function ViewRecInvoice() {
     document.getElementById("attachBtn").style.display = "block";
     document.getElementById("historyBtn").style.display = "block";
     document.getElementById("commentBtn").style.display = "block";
-    if (invoiceDetails.status == "Draft") {
+    if (billDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "block";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
@@ -248,7 +248,7 @@ function ViewRecInvoice() {
     document.getElementById("historyBtn").style.display = "none";
     document.getElementById("commentBtn").style.display = "none";
     document.getElementById("slipPdfBtn").style.display = "none";
-    if (invoiceDetails.status == "Draft") {
+    if (billDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "none";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
@@ -272,7 +272,7 @@ function ViewRecInvoice() {
     document.getElementById("attachBtn").style.display = "none";
     document.getElementById("slipPdfBtn").style.display = "block";
     document.getElementById("commentBtn").style.display = "none";
-    if (invoiceDetails.status == "Draft") {
+    if (billDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "none";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
@@ -404,11 +404,11 @@ p {
   setInterval(updateDateTime, 1000);
 
   function slipPdf() {
-    var invoiceNo = `${invoiceDetails.rec_invoice_no}`;
+    var billNo = `${billDetails.rec_bill_no}`;
     var element = document.getElementById("slip");
     var opt = {
       margin: 1,
-      filename: "RecurringInvoiceSlip_" + invoiceNo + ".pdf",
+      filename: "RecurringBillSlip_" + billNo + ".pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
@@ -435,10 +435,10 @@ p {
   function invoicePdf() {
     var data = {
       Id: ID,
-      inv_id: invoiceId,
+      bill_id: billId,
     };
     axios
-      .get(`${config.base_url}/rec_invoice_pdf/`, {
+      .get(`${config.base_url}/rec_bill_pdf/`, {
         responseType: "blob",
         params: data,
       })
@@ -449,7 +449,7 @@ p {
         const fileURL = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = fileURL;
-        a.download = `RecurringInvoice_${invoiceDetails.rec_invoice_no}.pdf`;
+        a.download = `RecurringBill_${billDetails.rec_bill_no}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -496,13 +496,13 @@ p {
       } else {
         // document.getElementById("share_to_email_form").submit();
         var em = {
-          inv_id: invoiceId,
+          bill_id: billId,
           Id: ID,
           email_ids: emailIds,
           email_message: emailMessage,
         };
         axios
-          .post(`${config.base_url}/share_rec_invoice_email/`, em)
+          .post(`${config.base_url}/share_rec_bill_email/`, em)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
@@ -536,13 +536,13 @@ p {
     e.preventDefault();
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("inv_id", invoiceId);
+    formData.append("bill_id", billId);
     if (file) {
       formData.append("file", file);
     }
 
     axios
-      .post(`${config.base_url}/add_rec_invoice_attachment/`, formData)
+      .post(`${config.base_url}/add_rec_bill_attachment/`, formData)
       .then((res) => {
         console.log("FILE RES==", res);
         if (res.data.status) {
@@ -552,7 +552,7 @@ p {
           });
           setFile(null);
           document.getElementById("fileModalDismiss").click();
-          fetchRecInvoiceDetails();
+          fetchRecBillDetails();
         }
       })
       .catch((err) => {
@@ -577,7 +577,7 @@ p {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to="/rec_invoice"
+          to="/rec_bill"
         >
           <i
             className="fa fa-times-circle text-white"
@@ -627,9 +627,9 @@ p {
                   </div>
 
                   <div className="col-md-6 d-flex justify-content-end">
-                    {invoiceDetails.status == "Draft" ? (
+                    {billDetails.status == "Draft" ? (
                       <a
-                        onClick={handleConvertInvoice}
+                        onClick={handleConvertRecBill}
                         id="statusBtn"
                         style={{
                           display: "block",
@@ -744,7 +744,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/edit_rec_invoice/${invoiceId}/`}
+                      to={`/edit_rec_bill/${billId}/`}
                       className="ml-2 fa fa-pencil btn btn-outline-secondary text-grey"
                       id="editBtn"
                       role="button"
@@ -757,7 +757,7 @@ p {
                       id="deleteBtn"
                       role="button"
                       onClick={() =>
-                        handleDeleteRecInvoice(invoiceId)
+                        handleDeleteRecBill(billId)
                       }
                       style={{ height: "fit-content", width: "fit-content" }}
                     >
@@ -819,7 +819,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/rec_invoice_history/${invoiceId}/`}
+                      to={`/rec_bill_history/${billId}/`}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-history"
                       id="historyBtn"
                       role="button"
@@ -835,7 +835,7 @@ p {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  RECURRING INVOICE OVERVIEW
+                  RECURRING BILL OVERVIEW
                 </h3>
               </center>
             </div>
@@ -887,7 +887,7 @@ p {
                         <div className="row">
                           <div className="col mt-3">
                             <h2 className="mb-0">
-                              # {invoiceDetails.rec_invoice_no}
+                              # {billDetails.rec_bill_no}
                             </h2>
                           </div>
                         </div>
@@ -948,6 +948,63 @@ p {
                       </div>
 
                       <hr className="my-4" />
+                      <div className="row mb-4 d-flex justify-content-between align-items-center">
+                        <div className="col-md-4 mt-3">
+                          <h5
+                            style={{
+                              borderBottom:
+                                "1px solid rgba(128, 128, 128, 0.6)",
+                              width: "fit-content",
+                            }}
+                          >
+                            Vendor Details
+                          </h5>
+                        </div>
+                        <div className="col-md-4 mt-3"></div>
+                        <div className="col-md-4 mt-3"></div>
+
+                        <div className="col-md-3 mt-3 ">
+                          <h6 className="mb-0">Vendor Name</h6>
+                        </div>
+                        <div className="col-md-3 mt-3">
+                          <p className="mb-0 text-right">
+                            {billDetails.vendor_name}
+                          </p>
+                        </div>
+
+                        <div className="col-md-3 mt-3 vl">
+                          <h6 className="mb-0">Vendor Email</h6>
+                        </div>
+                        <div className="col-md-3 mt-3">
+                          <p className="mb-0 text-right">
+                            {billDetails.vendor_email}
+                          </p>
+                        </div>
+
+                        <div className="col-md-3 mt-3">
+                          <h6 className="mb-0">GST Type</h6>
+                        </div>
+                        <div className="col-md-3 mt-3">
+                          <p className="mb-0" style={{ textAlign: "right" }}>
+                            {billDetails.vendor_gst_type}
+                          </p>
+                        </div>
+
+                        {billDetails.vendor_gstin != "None" && (
+                          <>
+                            <div className="col-md-3 mt-3 vl">
+                              <h6 className="mb-0">GSTIN No</h6>
+                            </div>
+                            <div className="col-md-3 mt-3">
+                              <p className="mb-0 text-right">
+                                {billDetails.vendor_gstin}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <hr className="my-4" />
 
                       <div className="row mb-4 d-flex justify-content-between align-items-center">
                         <div className="col-md-4 mt-3">
@@ -958,46 +1015,46 @@ p {
                               width: "fit-content",
                             }}
                           >
-                            Recurring Invoice Details
+                            Recurring Bill Details
                           </h5>
                         </div>
                         <div className="col-md-4 mt-3"></div>
                         <div className="col-md-4 mt-3"></div>
 
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Rec. Invoice No,</h6>
+                          <h6 className="mb-0">Rec. Bill No.</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.rec_invoice_no}
+                            {billDetails.rec_bill_no}
                           </p>
                         </div>
 
                         <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">Customer Name</h6>
+                          <h6 className="mb-0">Payment Terms</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {otherDetails.customerName}
+                            {otherDetails.paymentTerm}
                           </p>
                         </div>
                       </div>
                       <div className="row mb-4 d-flex justify-content-between align-items-center">
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Rec. Invoice Date</h6>
+                          <h6 className="mb-0">Rec. Bill Date</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.start_date}
+                            {billDetails.date}
                           </p>
                         </div>
 
                         <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">End Date</h6>
+                          <h6 className="mb-0">Due Date</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.end_date}
+                            {billDetails.exp_ship_date}
                           </p>
                         </div>
                       </div>
@@ -1009,52 +1066,23 @@ p {
                           <p className="mb-0">{otherDetails.repeatType}</p>
                         </div>
                         <div className="col-md-3 mt-3 vl">
+                          <h6 className="mb-0">Purchase Order No.</h6>
+                        </div>
+                        <div className="col-md-3 mt-3">
+                          <p className="mb-0 text-right">
+                            {billDetails.purchase_order_no != "" ? billDetails.purchase_order_no: 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="row mb-4 d-flex justify-content-start align-items-center">
+                      <div className="col-md-3 mt-3">
                           <h6 className="mb-0">Payment Method</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.payment_method}
+                            {billDetails.payment_method != 'null'? billDetails.payment_method : 'N/A'}
                           </p>
                         </div>
-                      </div>
-                      <div className="row mb-4 d-flex justify-content-start align-items-center">
-                        {invoiceDetails.profile_name ? (
-                          <>
-                            <div className="col-md-3 mt-3">
-                              <h6 className="mb-0">Profile Name</h6>
-                            </div>
-                            <div className="col-md-3 mt-3 vr">
-                              <p className="mb-0">
-                                {invoiceDetails.profile_name}
-                              </p>
-                            </div>
-                          </>
-                        ) : null}
-
-                        {invoiceDetails.entry_type ? (
-                          <>
-                            <div className="col-md-3 mt-3 vl">
-                              <h6 className="mb-0">Entry Type</h6>
-                            </div>
-                            <div className="col-md-3 mt-3">
-                              <p className="mb-0 text-right">
-                                {invoiceDetails.entry_type}
-                              </p>
-                            </div>
-                          </>
-                        ) : null}
-                      </div>
-                      <div className="row mb-4 d-flex justify-content-start align-items-center">
-                        <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Address</h6>
-                        </div>
-                        <div className="col-md-3 mt-3 vr">
-                          <p className="mb-0">
-                            {invoiceDetails.billing_address}
-                          </p>
-                        </div>
-                        <div className="col-md-3 mt-3 vl"></div>
-                        <div className="col-md-3 mt-3"></div>
                       </div>
 
                       <hr />
@@ -1079,7 +1107,7 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {otherDetails.customerName}
+                            {billDetails.customer_name}
                           </p>
                         </div>
 
@@ -1088,7 +1116,7 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {otherDetails.customerEmail}
+                            {billDetails.customer_email}
                           </p>
                         </div>
 
@@ -1097,18 +1125,18 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0" style={{ textAlign: "right" }}>
-                            {invoiceDetails.gst_type}
+                            {billDetails.customer_gst_type}
                           </p>
                         </div>
 
-                        {invoiceDetails.gstin != "None" && (
+                        {billDetails.customer_gstin != "None" && (
                           <>
                             <div className="col-md-3 mt-3 vl">
                               <h6 className="mb-0">GSTIN No</h6>
                             </div>
                             <div className="col-md-3 mt-3">
                               <p className="mb-0 text-right">
-                                {invoiceDetails.gstin}
+                                {billDetails.customer_gstin}
                               </p>
                             </div>
                           </>
@@ -1120,7 +1148,7 @@ p {
                         </div>
                         <div className="col-md-3 mt-3 ">
                           <p className="mb-0 text-right">
-                            {invoiceDetails.billing_address}
+                            {billDetails.customer_billing_address}
                           </p>
                         </div>
                       </div>
@@ -1137,8 +1165,8 @@ p {
                           >
                             Items Details
                           </h5>
-                          {invoiceItems &&
-                            invoiceItems.map((itm) => (
+                          {billItems &&
+                            billItems.map((itm) => (
                               <>
                                 <div className="row mb-4 d-flex justify-content-between align-items-center">
                                   <div className="col-md-3 mt-3">
@@ -1234,12 +1262,12 @@ p {
                 >
                   <div className="px-3 py-4">
                     <h4 className="fw-bold mb-2 mt-4 pt-1">
-                      Recurring Invoice Tax Details
+                      Recurring Bill Tax Details
                     </h4>
                     <hr className="my-4" />
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Status</h6>
-                      {invoiceDetails.status == "Draft" ? (
+                      {billDetails.status == "Draft" ? (
                         <span className="text-info h5 font-weight-bold">
                           DRAFT
                         </span>
@@ -1251,49 +1279,61 @@ p {
                     </div>
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Sub Total</h6>
-                      {invoiceDetails.subtotal}
+                      {billDetails.subtotal}
                     </div>
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Tax Amount</h6>
-                      {invoiceDetails.tax_amount}
+                      {billDetails.tax_amount}
                     </div>
-                    {invoiceDetails.igst != 0 ? (
+                    {billDetails.igst != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">IGST</h6>
-                        {invoiceDetails.igst}
+                        {billDetails.igst}
                       </div>
                     ) : null}
-                    {invoiceDetails.cgst != 0 ? (
+                    {billDetails.cgst != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">CGST</h6>
-                        {invoiceDetails.cgst}
+                        {billDetails.cgst}
                       </div>
                     ) : null}
-                    {invoiceDetails.sgst != 0 ? (
+                    {billDetails.sgst != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">SGST</h6>
-                        {invoiceDetails.sgst}
+                        {billDetails.sgst}
                       </div>
                     ) : null}
 
-                    {invoiceDetails.shipping_charge != 0 ? (
+                    {billDetails.shipping_charge != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">Shipping Charge</h6>
-                        {invoiceDetails.shipping_charge}
+                        {billDetails.shipping_charge}
                       </div>
                     ) : null}
 
-                    {invoiceDetails.adjustment != 0 ? (
+                    {billDetails.adjustment != 0 ? (
                       <div className="d-flex justify-content-between mb-4">
                         <h6 className="">Adjustment</h6>
-                        {invoiceDetails.adjustment}
+                        {billDetails.adjustment}
                       </div>
                     ) : null}
-                    <hr className="my-4" />
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Grand Total</h6>
                       <span className="font-weight-bold">
-                        {invoiceDetails.grandtotal}
+                        {billDetails.grandtotal}
+                      </span>
+                    </div>
+                    <hr className="my-4" />
+                    <div className="d-flex justify-content-between mb-4">
+                      <h6 className="">Paid</h6>
+                      <span className="font-weight-bold">
+                        {billDetails.paid}
+                      </span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-4">
+                      <h6 className="">Balance</h6>
+                      <span className="font-weight-bold">
+                        {billDetails.balance}
                       </span>
                     </div>
                   </div>
@@ -1312,7 +1352,7 @@ p {
                         className="tooltip-container ember-view ribbon text-ellipsis"
                       >
                         <div className="ribbon-inner ribbon-open">
-                          {invoiceDetails.status}
+                          {billDetails.status}
                         </div>
                       </div>
                       <section className="top-content bb d-flex justify-content-between p-0">
@@ -1320,20 +1360,14 @@ p {
                           {/* <!-- <img src="logo.png" alt="" className="img-fluid"> --> */}
                         </div>
                         <div className="top-left">
-                          <div className="graphic-path">
-                            <p>Rec. Invoice</p>
+                          <div className="">
+                            <p style={{fontWeight: "600"}}>Recurring Bill</p>
                           </div>
                           <div className="position-relative">
                             <p>
-                              Rec. Invoice No.
-                              <span>{invoiceDetails.rec_invoice_no}</span>
+                              Rec. Bill No.
+                              <span>{billDetails.rec_bill_no}</span>
                             </p>
-                            {invoiceDetails.salesOrder_no != "" ? (
-                              <p>
-                                Order No.{" "}
-                                <span>{invoiceDetails.salesOrder_no}</span>
-                              </p>
-                            ) : null}
                           </div>
                         </div>
                       </section>
@@ -1356,32 +1390,29 @@ p {
                             </div>
                             <div className="col-5">
                               <p>TO,</p>
-                              <h5>{otherDetails.customerName}</h5>
+                              <h5>{billDetails.vendor_name}</h5>
                               <p
                                 className="address col-9"
                                 style={{ marginLeft: "-14px" }}
                               >
                                 {" "}
-                                {invoiceDetails.billing_address}{" "}
+                                {billDetails.vendor_billing_address}
                               </p>
                             </div>
                           </div>
                           <div className="row extra-info pt-3">
-                            <div className="col-6">
-                              <p>
-                                Rec. Invoice Date:{" "}
-                                <span>{invoiceDetails.start_date}</span>
-                              </p>
-                            </div>
-                            <div className="col-6">
-                              <p>
-                                End Date :<span>{invoiceDetails.end_date}</span>
-                              </p>
-                              <p>
-                                Payment Method:
-                                <span>{invoiceDetails.payment_method}</span>
-                              </p>
-                            </div>
+                              <div className="col-7">
+                                  <p style={{color:"#000"}}>Deliver To Details: </p>
+                                  <p className="address " style={{color:"#000"}}>{billDetails.customer_name}<br />
+                                      {billDetails.customer_email}<br />
+                                      { billDetails.customer_gstin != "" ? billDetails.customer_gstin: ""}
+                                  </p>
+                              </div>
+                              <div className="col-5">
+                                  <p style={{color:"#000"}}>Date : <span>{billDetails.date}</span></p>
+                                  <p style={{color:"#000"}}>Payment Type : <span>{billDetails.payment_method}</span></p>
+                                  
+                              </div>
                           </div>
                         </div>
                       </section>
@@ -1435,7 +1466,7 @@ p {
                             </tr>
                           </thead>
                           <tbody>
-                            {invoiceItems.map((j) => (
+                            {billItems.map((j) => (
                               <tr>
                                 <td
                                   style={{
@@ -1477,11 +1508,11 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.subtotal}
+                                    {billDetails.subtotal}
                                   </td>
                                 </tr>
 
-                                {invoiceDetails.igst != 0 ? (
+                                {billDetails.igst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>IGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -1490,11 +1521,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.igst}
+                                      {billDetails.igst}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.cgst != 0 ? (
+                                {billDetails.cgst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>CGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -1503,11 +1534,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.cgst}
+                                      {billDetails.cgst}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.sgst != 0 ? (
+                                {billDetails.sgst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>SGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -1516,7 +1547,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.sgst}
+                                      {billDetails.sgst}
                                     </td>
                                   </tr>
                                 ) : null}
@@ -1528,10 +1559,10 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.tax_amount}
+                                    {billDetails.tax_amount}
                                   </td>
                                 </tr>
-                                {invoiceDetails.shipping_charge != 0 ? (
+                                {billDetails.shipping_charge != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
                                       Shipping Charge
@@ -1542,11 +1573,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.shipping_charge}
+                                      {billDetails.shipping_charge}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.adjustment != 0 ? (
+                                {billDetails.adjustment != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
                                       Adjustment
@@ -1557,7 +1588,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.adjustment}
+                                      {billDetails.adjustment}
                                     </td>
                                   </tr>
                                 ) : null}
@@ -1574,7 +1605,7 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.grandtotal}
+                                    {billDetails.grandtotal}
                                   </th>
                                 </tr>
                               </tbody>
@@ -1609,23 +1640,23 @@ p {
                               backgroundColor: "#999999",
                             }}
                           >
-                            {invoiceDetails.status}
+                            {billDetails.status}
                           </div>
                         </div>
                         <div className="col-md-4 d-flex justify-content-center">
                           <center className="h3 text-white">
-                            <b>Recurring Invoice</b>
+                            <b>Recurring Bill</b>
                           </center>
                         </div>
                         <div className="col-md-4 d-flex justify-content-end">
                           <div className="text-white">
                             <p className="mb-0 mt-2">
-                              Rec. Invoice No:{" "}
-                              <b>{invoiceDetails.rec_invoice_no}</b>
+                              Rec. Bill No:
+                              <b>{billDetails.rec_bill_no}</b>
                             </p>
-                            {invoiceDetails.salesOrder_no != "" ? (
+                            {billDetails.purchase_order_no != "" ? (
                               <p>
-                                Order No. <b>{invoiceDetails.salesOrder_no}</b>
+                                Order No. <b>{billDetails.purchase_order_no}</b>
                               </p>
                             ) : null}
                           </div>
@@ -1678,19 +1709,19 @@ p {
                                     borderBottomRightRadius: "4vh",
                                   }}
                                 >
-                                  <b>SHIPPING ADDRESS</b>
+                                  <b>VENDOR ADDRESS</b>
                                 </label>
                                 <h5
                                   className="text-secondary"
                                   style={{ fontWeight: "bold" }}
                                 >
-                                  {otherDetails.customerName}
+                                  {billDetails.vendor_name}
                                 </h5>
                                 <p
                                   className="address"
                                   style={{ fontWeight: "bold", color: "#000" }}
                                 >
-                                  {invoiceDetails.billing_address}{" "}
+                                  {billDetails.vendor_billing_address}
                                 </p>
                               </div>
                             </div>
@@ -1698,15 +1729,11 @@ p {
                               <div className="col-12">
                                 <p>
                                   Start Date:{" "}
-                                  <span>{invoiceDetails.start_date}</span>
-                                </p>
-                                <p>
-                                  End Date:{" "}
-                                  <span>{invoiceDetails.end_date}</span>
+                                  <span>{billDetails.date}</span>
                                 </p>
                                 <p>
                                   Payment Method:{" "}
-                                  <span>{invoiceDetails.payment_method}</span>
+                                  <span>{billDetails.payment_method}</span>
                                 </p>
                               </div>
                             </div>
@@ -1765,7 +1792,7 @@ p {
                               </tr>
                             </thead>
                             <tbody style={{ backgroundColor: "#999999" }}>
-                              {invoiceItems.map((j) => (
+                              {billItems.map((j) => (
                                 <tr>
                                   <td
                                     className="text-center"
@@ -1823,7 +1850,7 @@ p {
                             <div className="col-4">
                               <table className="table table-borderless">
                                 <tbody>
-                                  {invoiceDetails.note ? (
+                                  {billDetails.note ? (
                                     <tr>
                                       <td
                                         style={{
@@ -1847,7 +1874,7 @@ p {
                                           textAlign: "center",
                                         }}
                                       >
-                                        {invoiceDetails.note}
+                                        {billDetails.note}
                                       </th>
                                     </tr>
                                   ) : null}
@@ -1868,11 +1895,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.subtotal}
+                                      {billDetails.subtotal}
                                     </td>
                                   </tr>
 
-                                  {invoiceDetails.igst != 0 ? (
+                                  {billDetails.igst != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>IGST</td>
                                       <td style={{ color: "#000" }}>:</td>
@@ -1881,11 +1908,11 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.igst}
+                                        {billDetails.igst}
                                       </td>
                                     </tr>
                                   ) : null}
-                                  {invoiceDetails.cgst != 0 ? (
+                                  {billDetails.cgst != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>CGST</td>
                                       <td style={{ color: "#000" }}>:</td>
@@ -1894,11 +1921,11 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.cgst}
+                                        {billDetails.cgst}
                                       </td>
                                     </tr>
                                   ) : null}
-                                  {invoiceDetails.sgst != 0 ? (
+                                  {billDetails.sgst != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>SGST</td>
                                       <td style={{ color: "#000" }}>:</td>
@@ -1907,7 +1934,7 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.sgst}
+                                        {billDetails.sgst}
                                       </td>
                                     </tr>
                                   ) : null}
@@ -1921,10 +1948,10 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.tax_amount}
+                                      {billDetails.tax_amount}
                                     </td>
                                   </tr>
-                                  {invoiceDetails.shipping_charge != 0 ? (
+                                  {billDetails.shipping_charge != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>
                                         Shipping Charge
@@ -1935,11 +1962,11 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.shipping_charge}
+                                        {billDetails.shipping_charge}
                                       </td>
                                     </tr>
                                   ) : null}
-                                  {invoiceDetails.adjustment != 0 ? (
+                                  {billDetails.adjustment != 0 ? (
                                     <tr>
                                       <td style={{ color: "#000" }}>
                                         Adjustment
@@ -1950,7 +1977,7 @@ p {
                                         style={{ color: "#000" }}
                                       >
                                         <span>&#8377; </span>
-                                        {invoiceDetails.adjustment}
+                                        {billDetails.adjustment}
                                       </td>
                                     </tr>
                                   ) : null}
@@ -1969,7 +1996,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.grandtotal}
+                                      {billDetails.grandtotal}
                                     </th>
                                   </tr>
                                 </tbody>
@@ -1999,7 +2026,7 @@ p {
                           }}
                         >
                           <p style={{ fontSize: "4vh", textAlign: "center" }}>
-                            RECURRING INVOICE
+                            RECURRING BILL
                           </p>
                           <p style={{ textAlign: "center" }}>
                             {" "}
@@ -2022,9 +2049,9 @@ p {
                               {" "}
                               <span style={{ fontWeight: "bold" }}>To: </span>
                               <br />
-                              {otherDetails.customerName}
+                              {billDetails.vendor_name}
                               <br />
-                              {invoiceDetails.billing_address}
+                              {billDetails.vendor_billing_address}
                             </p>
                           </div>
                           <div className="col-md-1"></div>
@@ -2041,14 +2068,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Rec. Invoice No.
+                                    Rec. Bill No.
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.rec_invoice_no}
+                                    {billDetails.rec_bill_no}
                                   </td>
                                 </tr>
 
@@ -2059,14 +2086,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Rec. Invoice Date
+                                    Rec. Bill Date
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.invoice_date}
+                                    {billDetails.date}
                                   </td>
                                 </tr>
 
@@ -2084,7 +2111,7 @@ p {
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.end_date}
+                                    {billDetails.exp_ship_date}
                                   </td>
                                 </tr>
                                 <tr>
@@ -2101,7 +2128,7 @@ p {
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {invoiceDetails.payment_method}
+                                    {billDetails.payment_method}
                                   </td>
                                 </tr>
                               </tbody>
@@ -2162,7 +2189,7 @@ p {
                               </tr>
                             </thead>
                             <tbody>
-                              {invoiceItems.map((j) => (
+                              {billItems.map((j) => (
                                 <tr>
                                   <td
                                     className="text-center"
@@ -2230,11 +2257,11 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.subtotal}
+                                    {billDetails.subtotal}
                                   </td>
                                 </tr>
 
-                                {invoiceDetails.igst != 0 ? (
+                                {billDetails.igst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>IGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -2243,11 +2270,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.igst}
+                                      {billDetails.igst}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.cgst != 0 ? (
+                                {billDetails.cgst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>CGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -2256,11 +2283,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.cgst}
+                                      {billDetails.cgst}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.sgst != 0 ? (
+                                {billDetails.sgst != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>SGST</td>
                                     <td style={{ color: "#000" }}>:</td>
@@ -2269,7 +2296,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.sgst}
+                                      {billDetails.sgst}
                                     </td>
                                   </tr>
                                 ) : null}
@@ -2281,10 +2308,10 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.tax_amount}
+                                    {billDetails.tax_amount}
                                   </td>
                                 </tr>
-                                {invoiceDetails.shipping_charge != 0 ? (
+                                {billDetails.shipping_charge != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
                                       Shipping Charge
@@ -2295,11 +2322,11 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.shipping_charge}
+                                      {billDetails.shipping_charge}
                                     </td>
                                   </tr>
                                 ) : null}
-                                {invoiceDetails.adjustment != 0 ? (
+                                {billDetails.adjustment != 0 ? (
                                   <tr>
                                     <td style={{ color: "#000" }}>
                                       Adjustment
@@ -2310,7 +2337,7 @@ p {
                                       style={{ color: "#000" }}
                                     >
                                       <span>&#8377; </span>
-                                      {invoiceDetails.adjustment}
+                                      {billDetails.adjustment}
                                     </td>
                                   </tr>
                                 ) : null}
@@ -2327,7 +2354,7 @@ p {
                                     style={{ color: "#000" }}
                                   >
                                     <span>&#8377; </span>
-                                    {invoiceDetails.grandtotal}
+                                    {billDetails.grandtotal}
                                   </th>
                                 </tr>
                               </tbody>
@@ -2393,27 +2420,27 @@ p {
 
                   <div className="ml-4 mt-2" style={{ color: "black" }}>
                     <div className="row">
-                      <div className="col-md-6 text-left">Invoice No:</div>
+                      <div className="col-md-6 text-left">Recurring Bill No:</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.rec_invoice_no}
+                        {billDetails.rec_bill_no}
                       </div>
                     </div>
                     <div className="row">
-                      <div className="col-md-6 text-left">Customer Name:</div>
+                      <div className="col-md-6 text-left">Vendor Name:</div>
                       <div className="col-md-5 text-right">
-                        {otherDetails.customerName}
+                        {billDetails.vendor_name}
                       </div>
                     </div>
                     <div className="row">
-                      <div className="col-md-6 text-left">Rec. Invoice Date :</div>
+                      <div className="col-md-6 text-left">Rec. Bill Date :</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.start_date}
+                        {billDetails.date}
                       </div>
                     </div>
                     <div className="row">
                       <div className="col-md-6 text-left">End Date:</div>
                       <div className="col-md-5 text-right">
-                        {invoiceDetails.end_date}
+                        {billDetails.exp_ship_date}
                       </div>
                     </div>
                   </div>
@@ -2508,7 +2535,7 @@ p {
                       />
                     </div>
                   </div>
-                  {invoiceItems.map((i) => (
+                  {billItems.map((i) => (
                     <div
                       className="equal-length-container"
                       style={{
@@ -2562,31 +2589,31 @@ p {
                       <span>Subtotal</span>
                       <span>
                         <span>&#8377; </span>
-                        {invoiceDetails.subtotal}
+                        {billDetails.subtotal}
                       </span>
                     </div>
                     <div className="subtot-item d-flex justify-content-between">
                       <span>Tax Amount</span>
                       <span>
                         <span>&#8377; </span>
-                        {invoiceDetails.tax_amount}
+                        {billDetails.tax_amount}
                       </span>
                     </div>
 
-                    {invoiceDetails.igst == 0 ? (
+                    {billDetails.igst == 0 ? (
                       <>
                         <div className="subtot-item d-flex justify-content-between">
                           <span>CGST</span>
                           <span>
                             <span>&#8377; </span>
-                            {invoiceDetails.cgst}
+                            {billDetails.cgst}
                           </span>
                         </div>
                         <div className="subtot-item d-flex justify-content-between">
                           <span>SGST</span>
                           <span>
                             <span>&#8377; </span>
-                            {invoiceDetails.sgst}
+                            {billDetails.sgst}
                           </span>
                         </div>
                       </>
@@ -2595,17 +2622,17 @@ p {
                         <span>IGST</span>
                         <span>
                           <span>&#8377; </span>
-                          {invoiceDetails.igst}
+                          {billDetails.igst}
                         </span>
                       </div>
                     )}
 
-                    {invoiceDetails.adjustment != 0 ? (
+                    {billDetails.adjustment != 0 ? (
                       <div className="subtot-item d-flex justify-content-between">
                         <span>Adjustment</span>
                         <span>
                           <span>&#8377; </span>
-                          {invoiceDetails.adjustment}
+                          {billDetails.adjustment}
                         </span>
                       </div>
                     ) : null}
@@ -2618,14 +2645,14 @@ p {
                     <span>
                       <strong>
                         <span>&#8377; </span>
-                        {invoiceDetails.grandtotal}
+                        {billDetails.grandtotal}
                       </strong>
                     </span>
                   </div>
                   <div className="divider"></div>
                   <div className="paid-by mb-4 d-flex justify-content-between">
                     <span>Paid By:</span>
-                    <span>{invoiceDetails.payment_method}</span>
+                    <span>{billDetails.payment_method}</span>
                   </div>
                   <div className="createdby d-flex justify-content-between">
                     <p className="">Created By:</p>
@@ -2653,7 +2680,7 @@ p {
         <div className="modal-dialog modal-lg">
           <div className="modal-content" style={{ backgroundColor: "#213b52" }}>
             <div className="modal-header">
-              <h5 className="m-3">Share Invoice</h5>
+              <h5 className="m-3">Share Recurring Bill</h5>
               <button
                 type="button"
                 className="close"
@@ -2693,7 +2720,7 @@ p {
                       rows="4"
                       value={emailMessage}
                       onChange={(e) => setEmailMessage(e.target.value)}
-                      placeholder="This message will be sent along with Recurring Invoice details."
+                      placeholder="This message will be sent along with Recurring Bill details."
                     />
                   </div>
                 </div>
@@ -2740,7 +2767,7 @@ p {
               </button>
             </div>
 
-            <form onSubmit={saveInvoiceComment} className="px-1">
+            <form onSubmit={saveBillComment} className="px-1">
               <div className="modal-body w-100">
                 <textarea
                   type="text"
@@ -2870,4 +2897,4 @@ p {
   );
 }
 
-export default ViewRecInvoice;
+export default ViewRecBill;

@@ -6,21 +6,21 @@ import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 
-function RecInvoiceHistory() {
+function RecBillHistory() {
   const ID = Cookies.get("Login_id");
-  const { invoiceId } = useParams();
+  const { billId } = useParams();
   const [history, setHistory] = useState([]);
-  const [invoice, setInvoice] = useState({});
+  const [bill, setBill] = useState({});
 
-  const fetchRecInvoiceHistory = () => {
+  const fetchRecBillHistory = () => {
     axios
-      .get(`${config.base_url}/fetch_rec_invoice_history/${invoiceId}/`)
+      .get(`${config.base_url}/fetch_rec_bill_history/${billId}/`)
       .then((res) => {
         console.log("INV HIST=", res);
         if (res.data.status) {
-          var sls = res.data.invoice;
+          var bl = res.data.bill;
           var hist = res.data.history;
-          setInvoice(sls);
+          setBill(bl);
           setHistory([]);
           hist.map((i) => {
             setHistory((prevState) => [...prevState, i]);
@@ -39,7 +39,7 @@ function RecInvoiceHistory() {
   };
 
   useEffect(() => {
-    fetchRecInvoiceHistory();
+    fetchRecBillHistory();
   }, []);
 
   return (
@@ -52,7 +52,7 @@ function RecInvoiceHistory() {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to={`/view_rec_invoice/${invoiceId}/`}
+          to={`/view_rec_bill/${billId}/`}
         >
           <i
             className="fa fa-times-circle text-white"
@@ -67,9 +67,9 @@ function RecInvoiceHistory() {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  RECURRING INVOICE TRANSACTIONS
+                  RECURRING BILL TRANSACTIONS
                 </h3>
-                {invoice.status == "Draft" ? (
+                {bill.status == "Draft" ? (
                   <h6
                     className="blinking-text"
                     style={{ color: "red", width: "140px", fontWeight: "bold" }}
@@ -100,7 +100,7 @@ function RecInvoiceHistory() {
             <div id="history">
               <center>
                 <h3 className="mt-3 text-uppercase">
-                  #{invoice.rec_invoice_no} - TRANSACTIONS
+                  #{bill.rec_bill_no} - TRANSACTIONS
                 </h3>
               </center>
               <div className="table-responsive px-2">
@@ -142,4 +142,4 @@ function RecInvoiceHistory() {
   );
 }
 
-export default RecInvoiceHistory;
+export default RecBillHistory;

@@ -140,6 +140,13 @@ import AddPaymentReceived from './components/company/paymentreceived/AddPaymentR
 import ViewPayment from './components/company/paymentreceived/ViewPayment';
 import PaymentHistory from './components/company/paymentreceived/PaymentHistory';
 import EditPaymentReceived from './components/company/paymentreceived/EditPaymentReceived';
+import RecBill from './components/company/recurringbill/RecBill';
+import AddRecBill from './components/company/recurringbill/AddRecBill';
+import ViewRecBill from './components/company/recurringbill/ViewRecBill';
+import RecBillHistory from './components/company/recurringbill/RecBillHistory';
+import EditRecBill from './components/company/recurringbill/EditRecBill';
+import Expense from './components/company/expense/Expense';
+import AddExpense from './components/company/expense/AddExpense';
 
 
 function App() {
@@ -329,6 +336,21 @@ function App() {
             <Route path="/view_payment_received/:paymentId/" element={<ViewPayment />}></Route>
             <Route path="/payment_received_history/:paymentId/" element={<PaymentHistory />}></Route>
             <Route path="/edit_payment_received/:paymentId/" element={<EditPaymentReceived />}></Route>
+
+            {/* Recurring Bills */}
+            <Route path="/rec_bill" element={<RecBill />}></Route>
+            <Route path="/add_rec_bill" element={<AddRecBill />}></Route>
+            <Route path="/view_rec_bill/:billId/" element={<ViewRecBill />}></Route>
+            <Route path="/rec_bill_history/:billId/" element={<RecBillHistory />}></Route>
+            <Route path="/edit_rec_bill/:billId/" element={<EditRecBill />}></Route>
+
+            {/* Expense */}
+            <Route path="/expense" element={<Expense />}></Route>
+            <Route path="/add_expense" element={<AddExpense />}></Route>
+            {/* <Route path="/view_expense/:expenseId/" element={<ViewExpense />}></Route> */}
+            {/* <Route path="/expense_history/:expenseId/" element={<ExpenseHistory />}></Route> */}
+            {/* <Route path="/edit_expense/:expenseId/" element={<EditExpense />}></Route> */}
+
           </Route>
         </Routes>
       </BrowserRouter>

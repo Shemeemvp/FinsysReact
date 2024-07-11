@@ -28,7 +28,7 @@ function Index() {
           <div class="logo">
             <h1>
               <a href="#">
-                FinsYs<span>.</span>
+              Accuhub<span>.</span>
               </a>
             </h1>
           </div>
@@ -96,7 +96,7 @@ function Index() {
               class=" col-lg-6 py-5 py-lg-0 order-2 order-lg-1"
               data-aos="fade-right"
             >
-              <h1>Your new ERP experience with FinsYs</h1>
+              <h1>Your new ERP experience with Accuhub</h1>
               <h2>
                 “The cost of control obviously should not exceed the cost of
                 inaccuracies.” ERP: Making It Happen,{" "}
@@ -410,7 +410,7 @@ function Index() {
                       <i class="bx bx-envelope"></i>
                       <h3>Email Us</h3>
                       <p>
-                        finsys@gmail.com
+                        accuhub@gmail.com
                         <br />
                         infox@gmail.com
                       </p>

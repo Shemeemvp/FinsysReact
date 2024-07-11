@@ -343,7 +343,7 @@ function FinBase() {
               </div>
               <div className="a">
                 <h4>
-                  <b>Fin sYs</b>
+                  <b>Accuhub</b>
                 </h4>
               </div>
               <a

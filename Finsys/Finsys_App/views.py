@@ -23,6 +23,7 @@ from django.core.mail import send_mail, EmailMessage
 from io import BytesIO
 from django.conf import settings
 from datetime import datetime
+import pandas as pd
 
 # Create your views here.
 
@@ -8223,6 +8224,7 @@ def Fin_getCustomerData(request):
         details = {
             'id':cust.id,
             'gstType': cust.gst_type,
+            'name': cust.first_name+' '+cust.last_name,
             'email': cust.email,
             'gstIn': cust.gstin if cust.gstin else "None",
             'placeOfSupply': cust.place_of_supply,
@@ -8910,9 +8912,9 @@ def Fin_add_vendor_new(request):
         st = request.data["status"]
         term = Fin_Company_Payment_Terms.objects.get(id=paymentterm)
         vendor = Fin_Vendor.objects.create(Title=title,First_name=fname,Last_name=lname,Vendor_email=email,Mobile=mobile,Company_Name=company,Location=location,Website=website,
-                                           GST_Treatment=gsttype,GST_Number=gstno,Pan_Number=pan,Opening_balance_type=openingbaltype,Opening_balance=openingbal,Credit_limit=creditlimit,
-                                           Place_of_supply=placeofsupply,Billing_street=bilstr,Billing_city=bilcity,Billing_state=bilstate,Billing_country=bilcountry,Billing_pincode=bilpin,
-                                           Shipping_street=shipstr,Shipping_city=shipcity,Shipping_state=shipstate,Shipping_country=shipcountry,Shipping_pincode=shippin,status=st,Company=com,Login_details=data,currency=currency,payment_terms=term)
+            GST_Treatment=gsttype,GST_Number=gstno,Pan_Number=pan,Opening_balance_type=openingbaltype,Opening_balance=openingbal,Credit_limit=creditlimit,
+            Place_of_supply=placeofsupply,Billing_street=bilstr,Billing_city=bilcity,Billing_state=bilstate,Billing_country=bilcountry,Billing_pincode=bilpin,
+            Shipping_street=shipstr,Shipping_city=shipcity,Shipping_state=shipstate,Shipping_country=shipcountry,Shipping_pincode=shippin,status=st,Company=com,Login_details=data,currency=currency,payment_terms=term)
         vendor.save()
         history = Fin_Vendor_History.objects.create(Company=com,Login_details=data,Vendor=vendor,Action='Created')
         history.save()
@@ -13180,6 +13182,7 @@ def Fin_get_vendor_data(request):
             'id':vend.id,
             'gstType': vend.GST_Treatment,
             'email': vend.Vendor_email,
+            'name': vend.First_name+' '+vend.Last_name,
             'gstIn': vend.GST_Number if vend.GST_Number else "None",
             'placeOfSupply': vend.Place_of_supply,
             'address': f"{vend.Billing_street},{vend.Billing_city}\n{vend.Billing_state}\n{vend.Billing_country}\n{vend.Billing_pincode}"
@@ -15674,6 +15677,1000 @@ def Fin_updatePaymentReceived(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
     except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+# Recurring Bills
+
+@api_view(("GET",))
+def Fin_fetchRecBills(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        bills = Fin_Recurring_Bills.objects.filter(Company = com)
+        bill = []
+        for i in bills:
+            obj = {
+                "id": i.id,
+                "rec_bill_no": i.rec_bill_no,
+                "rec_bill_date": i.date,
+                "vendor_name": i.Vendor.First_name+" "+i.Vendor.Last_name,
+                "vendor_email":i. vendor_email,
+                "grandtotal": i.grandtotal,
+                "status": i.status,
+                "balance": i.balance,
+            }
+            bill.append(obj)
+        return Response(
+            {"status": True, "recBill": bill}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchRecBillData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        items = Fin_Items.objects.filter(Company = cmp, status = 'Active')
+        cust = Fin_Customers.objects.filter(Company=cmp)
+        vend = Fin_Vendor.objects.filter(Company=cmp)
+        trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        bnk = Fin_Banking.objects.filter(company = cmp)
+        lst = Fin_Price_List.objects.filter(Company = cmp, status = 'Active')
+        units = Fin_Units.objects.filter(Company = cmp)
+        acc = Fin_Chart_Of_Account.objects.filter(Q(account_type='Expense') | Q(account_type='Other Expense') | Q(account_type='Cost Of Goods Sold'), Company=cmp).order_by('account_name')
+        custLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='sales', status = 'Active')
+        vendLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='purchase', status = 'Active')
+        repeat = Fin_CompanyRepeatEvery.objects.filter(company = cmp)
+        
+        itemSerializer = ItemSerializer(items, many=True)
+        custSerializer = CustomerSerializer(cust, many=True)
+        vendSerializer = VendorSerializer(vend, many=True)
+        pTermSerializer = CompanyPaymentTermsSerializer(trms, many=True)
+        bankSerializer = BankSerializer(bnk, many=True)
+        lstSerializer = PriceListSerializer(lst, many=True)
+        clSerializer = PriceListSerializer(custLists, many=True)
+        vlSerializer = PriceListSerializer(vendLists, many=True)
+        unitSerializer = ItemUnitSerializer(units, many=True)
+        accSerializer = AccountsSerializer(acc, many=True)
+        rptSerializer = RepeatEverySerializer(repeat, many=True)
+
+        # Fetching last rec bill and assigning upcoming ref no as current + 1
+        # Also check for if any bill is deleted and ref no is continuos w r t the deleted rec bill
+        latest_bill = Fin_Recurring_Bills.objects.filter(Company = cmp).order_by('-id').first()
+
+        new_number = int(latest_bill.reference_no) + 1 if latest_bill else 1
+
+        if Fin_Recurring_Bill_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_Recurring_Bill_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+        # Finding next INV number w r t last INV number if exists.
+        nxtBill = ""
+        lastBILL = Fin_Recurring_Bills.objects.filter(Company = cmp).last()
+        if lastBILL:
+            bill_no = str(lastBILL.rec_bill_no)
+            numbers = []
+            stri = []
+            for word in bill_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            bill_num = int(num)+1
+
+            if num[0] == '0':
+                if bill_num <10:
+                    nxtBill = st+'0'+ str(bill_num)
+                else:
+                    nxtBill = st+ str(bill_num)
+            else:
+                nxtBill = st+ str(bill_num)
+
+        return Response(
+            {
+                "status": True,
+                "items": itemSerializer.data,
+                "customers":custSerializer.data,
+                "vendors":vendSerializer.data,
+                "paymentTerms":pTermSerializer.data,
+                "banks":bankSerializer.data,
+                "priceList":lstSerializer.data,
+                "custPriceList":clSerializer.data,
+                "vendPriceList":vlSerializer.data,
+                "units":unitSerializer.data,
+                "accounts":accSerializer.data,
+                "repeat":rptSerializer.data,
+                "refNo": new_number,
+                "billNo": nxtBill,
+                "state": cmp.State
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getPurchaseTableItemData(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        itemId = request.GET['item']
+        try:
+            priceListId = request.GET['listId']
+        except:
+            priceListId = ""
+        
+        item = Fin_Items.objects.get(id = itemId)
+
+        if priceListId != "":
+            priceList = Fin_Price_List.objects.get(id = int(priceListId))
+
+            if priceList.item_rate == 'Customized individual rate':
+                try:
+                    priceListPrice = float(Fin_PriceList_Items.objects.get(Company = com, list = priceList, item = item).custom_rate)
+                except:
+                    priceListPrice = item.purchase_price
+            else:
+                mark = priceList.up_or_down
+                percentage = float(priceList.percentage)
+                roundOff = priceList.round_off
+
+                if mark == 'Markup':
+                    price = float(item.purchase_price) + float((item.purchase_price) * (percentage/100))
+                else:
+                    price = float(item.purchase_price) - float((item.purchase_price) * (percentage/100))
+
+                if priceList.round_off != 'Never mind':
+                    if roundOff == 'Nearest whole number':
+                        finalPrice = round(price)
+                    else:
+                        finalPrice = int(price) + float(roundOff)
+                else:
+                    finalPrice = price
+
+                priceListPrice = finalPrice
+        else:
+            priceListPrice = None
+
+        context = {
+            'id': item.id,
+            'item_type':item.item_type,
+            'hsnSac':item.hsn if item.item_type == "Goods" else item.sac,
+            'sales_rate':item.selling_price,
+            'purchase_rate':item.purchase_price,
+            'avl':item.current_stock,
+            'tax': True if item.tax_reference == 'taxable' else False,
+            'gst':item.intra_state_tax,
+            'igst':item.inter_state_tax,
+            'PLPrice':priceListPrice
+        }
+        return Response(
+            {"status": True, "itemData":context}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_createRecBill(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        mutable_data["exp_ship_date"] = datetime.strptime(request.data['exp_ship_date'], '%d-%m-%Y').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+        mutable_data["repeat_every"] = None if request.data["repeat_every"] == '' else request.data["repeat_every"]
+
+        # Parse stock_items from JSON
+        billItems = json.loads(request.data['billItems'])
+        BLNum = request.data['rec_bill_no']
+        if Fin_Recurring_Bills.objects.filter(Company = com, rec_bill_no__iexact = BLNum).exists():
+            return Response({'status':False, 'message': f"Rec.Bill Number '{BLNum}' already exists, try another!"})
+        else:
+            serializer = RecBillSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                bill = Fin_Recurring_Bills.objects.get(id=serializer.data['id'])
+
+                for ele in billItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if bill.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['vendor_place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Recurring_Bill_Items.objects.create(RecBill = bill, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock += qty
+                    itm.save()
+            
+                # Save transaction
+                Fin_Recurring_Bill_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    RecBill = bill,
+                    action = 'Created'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkRecBillNo(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        BILno = request.GET['BILLNum']
+
+        nxtBill = ""
+        lastBILL = Fin_Recurring_Bills.objects.filter(Company = com).last()
+        if lastBILL:
+            bill_no = str(lastBILL.rec_bill_no)
+            numbers = []
+            stri = []
+            for word in bill_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            bill_num = int(num)+1
+
+            if num[0] == '0':
+                if bill_num <10:
+                    nxtBill = st+'0'+ str(bill_num)
+                else:
+                    nxtBill = st+ str(bill_num)
+            else:
+                nxtBill = st+ str(bill_num)
+
+        if Fin_Recurring_Bills.objects.filter(Company = com, rec_bill_no__iexact = BILno).exists():
+            return Response({'status':False, 'message':'Rec.Bill No. already Exists.!'})
+        elif nxtBill != "" and BILno != nxtBill:
+            return Response({'status':False, 'message':'Rec.Bill No. is not continuous.!'})
+        else:
+            return Response({'status':True, 'message':'Number is okay.!'})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchRecBillDetails(request, id):
+    try:
+        bill = Fin_Recurring_Bills.objects.get(id=id)
+        cmp = bill.Company
+        hist = Fin_Recurring_Bill_History.objects.filter(RecBill=bill).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_Recurring_Bill_Comments.objects.filter(RecBill=bill)
+        itms = Fin_Recurring_Bill_Items.objects.filter(RecBill=bill)
+        try:
+            created = Fin_Recurring_Bill_History.objects.get(RecBill = bill, action = 'Created')
+        except:
+            created = None
+        otherDet = {
+            "Company_name": cmp.Company_name,
+            "Email": cmp.Email,
+            "Mobile": cmp.Contact,
+            "Address": cmp.Address,
+            "City": cmp.City,
+            "State": cmp.State,
+            "Pincode": cmp.Pincode,
+            "paymentTerm": bill.payment_terms.term_name,
+            "customerName": bill.Customer.first_name+' '+bill.Customer.last_name,
+            "customerEmail": bill.Customer.email,
+            "repeatType": bill.repeat_every.repeat_every,
+            "createdBy": created.LoginDetails.First_name if created else ""
+        }
+        items = []
+        for i in itms:
+            obj = {
+                "id":i.id,
+                "itemId": i.Item.id,
+                "purchase_price": i.Item.purchase_price,
+                'name': i.Item.name,
+                "item_type": i.Item.item_type,
+                "hsn": i.hsn,
+                "sac": i.sac,
+                "quantity": i.quantity,
+                "avl": i.Item.current_stock,
+                "price": i.price,
+                "tax": i.tax,
+                "discount": i.discount,
+                "total": i.total
+            }
+            items.append(obj)
+        billSerializer = RecBillSerializer(bill)
+        commentsSerializer = RecBillCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "bill": billSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": items,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeRecBillStatus(request):
+    try:
+        billId = request.data["id"]
+        data = Fin_Recurring_Bills.objects.get(id=billId)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addRecBillComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = RecBillCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteRecBillComment(request, id):
+    try:
+        cmt = Fin_Recurring_Bill_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchRecBillHistory(request, id):
+    try:
+        bill = Fin_Recurring_Bills.objects.get(id=id)
+        hist = Fin_Recurring_Bill_History.objects.filter(RecBill=bill)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        billSerializer = RecBillSerializer(bill)
+        return Response(
+            {"status": True, "bill": billSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteRecBill(request, id):
+    try:
+        bill = Fin_Recurring_Bills.objects.get(id=id)
+        com = bill.Company
+
+        for i in Fin_Recurring_Bill_Items.objects.filter(RecBill = bill):
+            item = Fin_Items.objects.get(id = i.Item.id)
+            item.current_stock -= i.quantity
+            item.save()
+        
+        Fin_Recurring_Bill_Items.objects.filter(RecBill = bill).delete()
+
+        # Storing ref number to deleted table
+        # if entry exists and lesser than the current, update and save => Only one entry per company
+        if Fin_Recurring_Bill_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_Recurring_Bill_Reference.objects.get(Company = com)
+            if int(bill.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = bill.reference_no
+                deleted.save()
+        else:
+            Fin_Recurring_Bill_Reference.objects.create(Company = com, reference_no = bill.reference_no)
+        
+        bill.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addRecBillAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        billId = request.data['bill_id']
+        bill = Fin_Recurring_Bills.objects.get(id=billId)
+        if request.data['file']:
+            bill.file = request.data['file']
+        bill.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_recBillPdf(request):
+    try:
+        id = request.GET['Id']
+        blId = request.GET['bill_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        bill = Fin_Recurring_Bills.objects.get(id = blId)
+        itms = Fin_Recurring_Bill_Items.objects.filter(RecBill = bill)
+    
+        context = {'recBill':bill, 'recBillItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_RecBill_Pdf.html'
+        fname = 'RecurringBill_'+bill.rec_bill_no
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_shareRecBillToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        blId = request.data["bill_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        bill = Fin_Recurring_Bills.objects.get(id = blId)
+        itms = Fin_Recurring_Bill_Items.objects.filter(RecBill = bill)
+        context = {'recBill':bill, 'recBillItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_RecBill_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'RecurringBill_{bill.rec_bill_no}.pdf'
+        subject = f"RecurringBill_{bill.rec_bill_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - RECURRING BILL-{bill.rec_bill_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkVGstIn(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        gstIn = request.GET['gstin']
+        if Fin_Vendor.objects.filter(Company = cmp, GST_Number__iexact = gstIn).exists():
+            return Response({'is_exist':True, 'message':f'{gstIn} already exists, Try another.!'})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkVPan(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        pan = request.GET['pan']
+        if Fin_Vendor.objects.filter(Company = cmp, Pan_Number__iexact = pan).exists():
+            return Response({'is_exist':True, 'message':f'{pan} already exists, Try another.!'})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkVPhone(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        phn = request.GET['phone']
+        if Fin_Vendor.objects.filter(Company = cmp, Mobile__iexact = phn).exists():
+            return Response({'is_exist':True, 'message':f'{phn} already exists, Try another.!'})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkVEmail(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        eml = request.GET['email']
+        if Fin_Vendor.objects.filter(Company = cmp, Vendor_email__iexact = eml).exists():
+            return Response({'is_exist':True, 'message':f'{eml} already exists, Try another.!'})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkVndName(request):
+    try:
+        data = Fin_Login_Details.objects.get(id=request.GET['Id'])
+        if data.User_Type == 'Company':
+            cmp = Fin_Company_Details.objects.get(Login_Id=data)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id = data).company_id
+        
+        fName = request.GET['fName']
+        lName = request.GET['lName']
+
+        if Fin_Vendor.objects.filter(Company = cmp, First_name__iexact = fName, Last_name__iexact = lName).exists():
+            msg = f'{fName} {lName} already exists, Try another.!'
+            return Response({'is_exist':True, 'message':msg})
+        else:
+            return Response({'is_exist':False})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_updateRecBill(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        bill = Fin_Recurring_Bills.objects.get(id=request.data['bill_id'])
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        try:
+            mutable_data["exp_ship_date"] = datetime.strptime(request.data['exp_ship_date'], '%d-%m-%Y').date()
+        except:
+            mutable_data["exp_ship_date"] = datetime.strptime(request.data['exp_ship_date'], '%Y-%m-%d').date()
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+        mutable_data["repeat_every"] = None if request.data["repeat_every"] == '' else request.data["repeat_every"]
+
+        # Parse stock_items from JSON
+        billItems = json.loads(request.data['billItems'])
+        BLNum = request.data['rec_bill_no']
+        if bill.rec_bill_no != BLNum and  Fin_Recurring_Bills.objects.filter(Company = com, rec_bill_no__iexact = BLNum).exists():
+            return Response({'status':False, 'message': f"Rec.Bill Number '{BLNum}' already exists, try another!"})
+        else:
+            serializer = RecBillSerializer(bill, data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                bill = Fin_Recurring_Bills.objects.get(id=serializer.data['id'])
+
+                for i in Fin_Recurring_Bill_Items.objects.filter(RecBill = bill):
+                    item = Fin_Items.objects.get(id = i.Item.id)
+                    item.current_stock -= i.quantity
+                    item.save()
+
+                Fin_Recurring_Bill_Items.objects.filter(RecBill = bill).delete()
+
+                for ele in billItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    price = ele.get('priceListPrice') if bill.price_list_applied else ele.get('price')
+                    tax = ele.get('taxGst') if com.State == request.data['vendor_place_of_supply'] else ele.get('taxIgst')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Recurring_Bill_Items.objects.create(RecBill = bill, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock += qty
+                    itm.save()
+            
+                # Save transaction
+                Fin_Recurring_Bill_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    RecBill = bill,
+                    action = 'Edited'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+# Expense
+
+@api_view(("GET",))
+def Fin_fetchExpenses(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        exps = Fin_Expense.objects.filter(Company = com)
+        expenses = []
+        for i in exps:
+            obj = {
+                "id": i.id,
+                "expense_date": i.expense_date,
+                "expense_account": i.expense_account,
+                "expense_type":i. expense_type,
+                "amount": i.amount,
+                "status": i.status,
+                "payment_method": i.payment_method
+            }
+            expenses.append(obj)
+        return Response(
+            {"status": True, "expense": expenses}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchExpenseData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        cust = Fin_Customers.objects.filter(Company=cmp)
+        vend = Fin_Vendor.objects.filter(Company=cmp)
+        trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        bnk = Fin_Banking.objects.filter(company = cmp)
+        acc = Fin_Chart_Of_Account.objects.filter(Q(account_type='Expense') | Q(account_type='Other Expense') | Q(account_type='Cost Of Goods Sold'), Company=cmp).order_by('account_name')
+        custLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='sales', status = 'Active')
+        vendLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='purchase', status = 'Active')
+
+        custSerializer = CustomerSerializer(cust, many=True)
+        vendSerializer = VendorSerializer(vend, many=True)
+        pTermSerializer = CompanyPaymentTermsSerializer(trms, many=True)
+        bankSerializer = BankSerializer(bnk, many=True)
+        clSerializer = PriceListSerializer(custLists, many=True)
+        vlSerializer = PriceListSerializer(vendLists, many=True)
+        accSerializer = AccountsSerializer(acc, many=True)
+
+        # Fetching last Expnse and assigning upcoming ref no as current + 1
+        # Also check for if any bill is deleted and ref no is continuos w r t the deleted Expnse
+        latest_exp = Fin_Expense.objects.filter(Company = cmp).order_by('-id').first()
+
+        new_number = int(latest_exp.reference_no) + 1 if latest_exp else 1
+
+        if Fin_Expense_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_Expense_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+        # Finding next EXP number w r t last EXP number if exists.
+        nxtEXP = ""
+        lastEXP = Fin_Expense.objects.filter(Company = cmp).last()
+        if lastEXP:
+            expense_no = str(lastEXP.expense_no)
+            numbers = []
+            stri = []
+            for word in expense_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            exp_num = int(num)+1
+
+            if num[0] == '0':
+                if exp_num <10:
+                    nxtEXP = st+'0'+ str(exp_num)
+                else:
+                    nxtEXP = st+ str(exp_num)
+            else:
+                nxtEXP = st+ str(exp_num)
+
+        return Response(
+            {
+                "status": True,
+                "customers":custSerializer.data,
+                "vendors":vendSerializer.data,
+                "paymentTerms":pTermSerializer.data,
+                "banks":bankSerializer.data,
+                "custPriceList":clSerializer.data,
+                "vendPriceList":vlSerializer.data,
+                "accounts":accSerializer.data,
+                "refNo": new_number,
+                "expNo": nxtEXP,
+                "state": cmp.State
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkExpenseNo(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        ExpNo = request.GET['EXPNum']
+
+        nxtEXP = ""
+        lastEXP = Fin_Expense.objects.filter(Company = com).last()
+        if lastEXP:
+            expense_no = str(lastEXP.expense_no)
+            numbers = []
+            stri = []
+            for word in expense_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            exp_num = int(num)+1
+
+            if num[0] == '0':
+                if exp_num <10:
+                    nxtEXP = st+'0'+ str(exp_num)
+                else:
+                    nxtEXP = st+ str(exp_num)
+            else:
+                nxtEXP = st+ str(exp_num)
+
+        if Fin_Expense.objects.filter(Company = com, expense_no__iexact = ExpNo).exists():
+            return Response({'status':False, 'message':'Expense No. already Exists.!'})
+        elif nxtEXP != "" and ExpNo != nxtEXP:
+            return Response({'status':False, 'message':'Expense No. is not continuous.!'})
+        else:
+            return Response({'status':True, 'message':'Number is okay.!'})
+    except Exception as e:
+        print(e)
         return Response(
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

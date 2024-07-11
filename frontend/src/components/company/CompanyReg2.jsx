@@ -242,7 +242,7 @@ function CompanyReg2() {
               />
             </fieldset>
             <fieldset className="w-100" id="fieldset2">
-              <h2 className="mb-4">Let's Start Building Your FinsYs</h2>
+              <h2 className="mb-4">Let's Start Building Your Accuhub</h2>
               <input
                 type="text"
                 name="bname"

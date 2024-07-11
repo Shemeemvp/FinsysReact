@@ -269,7 +269,7 @@ function StaffReg() {
           <div className="panel left-panel">
             <div className="content">
               <h3>New here ?</h3>
-              <p>Join here to start a business with FinsYs!</p>
+              <p>Join here to start a business with Accuhub!</p>
               <button
                 className="btn transparent"
                 id="sign-up-btn"
@@ -291,7 +291,7 @@ function StaffReg() {
           <div className="panel right-panel">
             <div className="content">
               <h3>One of us ?</h3>
-              <p>click here for work with FinsYs.</p>
+              <p>click here for work with Accuhub.</p>
               <button
                 className="btn transparent"
                 id="sign-in-btn"
