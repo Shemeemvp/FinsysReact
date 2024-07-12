@@ -1605,3 +1605,14 @@ class Fin_Expense_Comments(models.Model):
     Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
     Expense = models.ForeignKey(Fin_Expense,on_delete=models.CASCADE, null=True)
     comments = models.CharField(max_length=500,null=True,blank=True)
+
+
+class Fin_ChartOfAccount_Transactions(models.Model):
+    Company = models.ForeignKey(Fin_Company_Details, on_delete=models.CASCADE, null=True)
+    LoginDetails = models.ForeignKey(Fin_Login_Details, on_delete=models.CASCADE, null=True)
+    account = models.ForeignKey(Fin_Chart_Of_Account, on_delete=models.CASCADE, null=True)
+    expense = models.ForeignKey(Fin_Expense, on_delete=models.CASCADE, null=True)
+    type = models.CharField(max_length=150, null=True, blank=True)
+    debit = models.FloatField(default=0.0, null=True, blank=True)
+    credit = models.FloatField(default=0.0, null=True, blank=True)
+    date = models.DateField(null=True, blank=True)

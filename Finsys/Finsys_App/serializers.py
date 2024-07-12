@@ -319,3 +319,14 @@ class RecBillCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Recurring_Bill_Comments
         fields = '__all__'
+
+# Expense
+class ExpenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Expense
+        fields = '__all__'
+
+class ExpenseCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Expense_Comments
+        fields = '__all__'

@@ -16675,3 +16675,446 @@ def Fin_checkExpenseNo(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_createExpense(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        mutable_data["expense_account"] = Fin_Chart_Of_Account.objects.get(id = request.data['expense_account']).account_name
+        mutable_data["Account"] = request.data['expense_account']
+        mutable_data["hsn_number"] = None if request.data["hsn_number"] == 'null' else request.data["hsn_number"]
+        mutable_data["sac_number"] = None if request.data["sac_number"] == 'null' else request.data["sac_number"]
+
+        vendorSupply = request.data['vendor_place_of_supply']
+        customerSupply = request.data['customer_place_of_supply']
+        mutable_data["tax_rate"] = request.data['tax_rate_gst'] if vendorSupply == customerSupply else request.data['tax_rate_igst']
+
+        expType = request.data['expense_type']
+        HSN = request.data['hsn_number']
+        SAC = request.data['sac_number']
+        EXPNum = request.data['expense_no']
+        if Fin_Expense.objects.filter(Company = com, expense_no__iexact = EXPNum).exists():
+            return Response({'status':False, 'message': f"Expense Number '{EXPNum}' already exists, try another!"})
+        elif expType == 'Goods' and Fin_Expense.objects.filter(Company = com, hsn_number__iexact = HSN).exists():
+            return Response({'status':False, 'message': f"HSN '{HSN}' already exists, try another!"})
+        elif expType == 'Service' and Fin_Expense.objects.filter(Company = com, sac_number__iexact = SAC).exists():
+            return Response({'status':False, 'message': f"SAC '{SAC}' already exists, try another!"})
+        else:
+            serializer = ExpenseSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                exp = Fin_Expense.objects.get(id=serializer.data['id'])
+
+                # Save account transaction
+                db = exp.amount if exp.amount_type == 'Debit' else 0.0
+                cr = exp.amount if exp.amount_type == 'Credit' else 0.0
+
+                Fin_ChartOfAccount_Transactions.objects.create(
+                    Company = com,
+                    LoginDetails = com.Login_Id,
+                    account = exp.Account,
+                    expense = exp,
+                    type = exp.expense_type,
+                    debit = db,
+                    credit = cr,
+                    date = exp.expense_date
+                )
+
+                # Update account balance
+                acnt = exp.Account
+                acnt.balance += float(db)
+                acnt.balance += float(cr)
+                acnt.save()
+            
+                # Save transaction
+                Fin_Expense_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    Expense = exp,
+                    action = 'Created'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchExpenseDetails(request, id):
+    try:
+        expense = Fin_Expense.objects.get(id=id)
+        cmp = expense.Company
+        hist = Fin_Expense_History.objects.filter(Expense=expense).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_Expense_Comments.objects.filter(Expense=expense)
+        try:
+            created = Fin_Expense_History.objects.get(Expense = expense, action = 'Created')
+        except:
+            created = None
+        otherDet = {
+            "Company_name": cmp.Company_name,
+            "Email": cmp.Email,
+            "Mobile": cmp.Contact,
+            "Address": cmp.Address,
+            "City": cmp.City,
+            "State": cmp.State,
+            "Pincode": cmp.Pincode,
+            "customerName": expense.Customer.first_name+' '+expense.Customer.last_name,
+            "customerEmail": expense.Customer.email,
+            "createdBy": created.LoginDetails.First_name if created else ""
+        }
+
+        expSerializer = ExpenseSerializer(expense)
+        commentsSerializer = ExpenseCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "expense": expSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeExpenseStatus(request):
+    try:
+        billId = request.data["id"]
+        data = Fin_Expense.objects.get(id=billId)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addExpenseComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = ExpenseCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteExpenseComment(request, id):
+    try:
+        cmt = Fin_Expense_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchExpenseHistory(request, id):
+    try:
+        bill = Fin_Expense.objects.get(id=id)
+        hist = Fin_Expense_History.objects.filter(Expense=bill)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        billSerializer = ExpenseSerializer(bill)
+        return Response(
+            {"status": True, "expense": billSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteExpense(request, id):
+    try:
+        bill = Fin_Expense.objects.get(id=id)
+        com = bill.Company
+
+        # Storing ref number to deleted table
+        # if entry exists and lesser than the current, update and save => Only one entry per company
+        if Fin_Expense_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_Expense_Reference.objects.get(Company = com)
+            if int(bill.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = bill.reference_no
+                deleted.save()
+        else:
+            Fin_Expense_Reference.objects.create(Company = com, reference_no = bill.reference_no)
+        
+        bill.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addExpenseAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        billId = request.data['exp_id']
+        bill = Fin_Expense.objects.get(id=billId)
+        if request.data['file']:
+            bill.file = request.data['file']
+        bill.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_expensePdf(request):
+    try:
+        id = request.GET['Id']
+        blId = request.GET['exp_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        exp = Fin_Expense.objects.get(id = blId)
+    
+        context = {'expense':exp, 'cmp':com}
+        
+        template_path = 'company/Fin_Expense_Pdf.html'
+        fname = 'Expense_'+exp.expense_no
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_shareExpenseToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        blId = request.data["exp_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+        # print(emails_list)
+
+        exp = Fin_Expense.objects.get(id = blId)
+        context = {'expense':exp, 'cmp':com}
+        
+        template_path = 'company/Fin_Expense_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f"Expense_{exp.expense_no}.pdf"
+        subject = f"Expense_{exp.expense_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - EXPENSE-{exp.expense_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_updateExpense(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        exp = Fin_Expense.objects.get(id=request.data['exp_id'])
+
+        expType = request.data['expense_type']
+        HSN = request.data['hsn_number']
+        SAC = request.data['sac_number']
+        EXPNum = request.data['expense_no']
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["expense_account"] = Fin_Chart_Of_Account.objects.get(id = request.data['expense_account']).account_name
+        mutable_data["Account"] = request.data['expense_account']
+        mutable_data["hsn_number"] = None if request.data["hsn_number"] == 'null' or expType != "Goods" else request.data["hsn_number"]
+        mutable_data["sac_number"] = None if request.data["sac_number"] == 'null' or expType != "Service" else request.data["sac_number"]
+
+        vendorSupply = request.data['vendor_place_of_supply']
+        customerSupply = request.data['customer_place_of_supply']
+        mutable_data["tax_rate"] = request.data['tax_rate_gst'] if vendorSupply == customerSupply else request.data['tax_rate_igst']
+
+        if exp.expense_no != EXPNum and Fin_Expense.objects.filter(Company = com, expense_no__iexact = EXPNum).exists():
+            return Response({'status':False, 'message': f"Expense Number '{EXPNum}' already exists, try another!"})
+        elif exp.hsn_number != HSN and expType == 'Goods' and Fin_Expense.objects.filter(Company = com, hsn_number__iexact = HSN).exists():
+            return Response({'status':False, 'message': f"HSN '{HSN}' already exists, try another!"})
+        elif exp.sac_number != SAC and expType == 'Service' and Fin_Expense.objects.filter(Company = com, sac_number__iexact = SAC).exists():
+            return Response({'status':False, 'message': f"SAC '{SAC}' already exists, try another!"})
+        else:
+            serializer = ExpenseSerializer(exp,data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                exp = Fin_Expense.objects.get(id=serializer.data['id'])
+
+                # delete transactions and update balance
+                trns = Fin_ChartOfAccount_Transactions.objects.get(expense = exp)
+
+                acnt = exp.Account
+                acnt.balance -= float(trns.debit)
+                acnt.balance -= float(trns.credit)
+                acnt.save()
+
+                trns.delete()
+
+                # Save new account transaction
+                db = exp.amount if exp.amount_type == 'Debit' else 0.0
+                cr = exp.amount if exp.amount_type == 'Credit' else 0.0
+
+                Fin_ChartOfAccount_Transactions.objects.create(
+                    Company = com,
+                    LoginDetails = com.Login_Id,
+                    account = exp.Account,
+                    expense = exp,
+                    type = exp.expense_type,
+                    debit = db,
+                    credit = cr,
+                    date = exp.expense_date
+                )
+
+                # Update account balance
+                accnt = exp.Account
+                accnt.balance += float(db)
+                accnt.balance += float(cr)
+                accnt.save()
+            
+                # Save transaction
+                Fin_Expense_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    Expense = exp,
+                    action = 'Edited'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

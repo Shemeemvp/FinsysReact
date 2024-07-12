@@ -147,6 +147,9 @@ import RecBillHistory from './components/company/recurringbill/RecBillHistory';
 import EditRecBill from './components/company/recurringbill/EditRecBill';
 import Expense from './components/company/expense/Expense';
 import AddExpense from './components/company/expense/AddExpense';
+import ViewExpense from './components/company/expense/ViewExpense';
+import ExpenseHistory from './components/company/expense/ExpenseHistory';
+import EditExpense from './components/company/expense/EditExpense';
 
 
 function App() {
@@ -347,9 +350,9 @@ function App() {
             {/* Expense */}
             <Route path="/expense" element={<Expense />}></Route>
             <Route path="/add_expense" element={<AddExpense />}></Route>
-            {/* <Route path="/view_expense/:expenseId/" element={<ViewExpense />}></Route> */}
-            {/* <Route path="/expense_history/:expenseId/" element={<ExpenseHistory />}></Route> */}
-            {/* <Route path="/edit_expense/:expenseId/" element={<EditExpense />}></Route> */}
+            <Route path="/view_expense/:expenseId/" element={<ViewExpense />}></Route>
+            <Route path="/expense_history/:expenseId/" element={<ExpenseHistory />}></Route>
+            <Route path="/edit_expense/:expenseId/" element={<EditExpense />}></Route>
 
           </Route>
         </Routes>

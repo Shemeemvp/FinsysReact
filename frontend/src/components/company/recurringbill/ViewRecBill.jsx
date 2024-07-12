@@ -1062,8 +1062,8 @@ p {
                         <div className="col-md-3 mt-3">
                           <h6 className="mb-0">Repeat Every</h6>
                         </div>
-                        <div className="col-md-3 mt-3 vr">
-                          <p className="mb-0">{otherDetails.repeatType}</p>
+                        <div className="col-md-3 mt-3">
+                          <p className="mb-0 text-right">{otherDetails.repeatType}</p>
                         </div>
                         <div className="col-md-3 mt-3 vl">
                           <h6 className="mb-0">Purchase Order No.</h6>

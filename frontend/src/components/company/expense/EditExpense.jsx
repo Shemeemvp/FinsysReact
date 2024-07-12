@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import Select from "react-select";
 
-function AddExpense() {
+function EditExpense() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
+  const { expenseId } = useParams();
   const [customers, setCustomers] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [terms, setTerms] = useState([]);
@@ -17,6 +18,8 @@ function AddExpense() {
   const [banks, setBanks] = useState([]);
   const [customerPriceLists, setCustomerPriceLists] = useState([]);
   const [vendorPriceLists, setVendorPriceLists] = useState([]);
+  const [customerValue, setCustomerValue] = useState({});
+  const [vendorValue, setVendorValue] = useState({});
 
   const fetchExpenseData = () => {
     axios
@@ -64,8 +67,6 @@ function AddExpense() {
             value: item.id,
           }));
           setVendors(newVendOptions);
-          setRefNo(res.data.refNo);
-          setNextExpenseNo(res.data.expNo);
         }
       })
       .catch((err) => {
@@ -126,6 +127,82 @@ function AddExpense() {
     }),
   };
 
+  const fetchExpenseDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_expense_details/${expenseId}/`)
+      .then((res) => {
+        if (res.data.status) {
+          var exp = res.data.expense;
+
+          var c = {
+            value: exp.Customer,
+            label: exp.customer_name,
+          };
+          setCustomerValue(c);
+
+          var v = {
+            value: exp.Vendor,
+            label: exp.vendor_name,
+          };
+          setVendorValue(v);
+
+          setVendor(exp.Vendor);
+          setVendName(exp.vendor_name);
+          setVendEmail(exp.vendor_email);
+          setVendGstType(exp.vendor_gst_type);
+          setVendGstIn(exp.vendor_gstin);
+          setVendBillingAddress(exp.vendor_address);
+          setVendPlaceOfSupply(exp.vendor_place_of_supply);
+          setCustomer(exp.Customer);
+          setCustName(exp.customer_name);
+          setCustEmail(exp.customer_email);
+          setCustGstType(exp.customer_gst_type);
+          setCustGstIn(exp.customer_gstin);
+          setCustBillingAddress(exp.customer_address);
+          setCustPlaceOfSupply(exp.customer_place_of_supply);
+          setRefNo(exp.reference_no);
+          setExpenseNo(exp.expense_no);
+          setDate(exp.expense_date);
+          setExpenseAccount(exp.Account)
+          setExpenseType(exp.expense_type)
+          setHSN(exp.hsn_number)
+          setSAC(exp.sac_number)
+          setAmountType(exp.amount_type)
+          setAmount(exp.amount)
+          if(exp.customer_place_of_supply == exp.vendor_place_of_supply){
+            setTaxRateGst(exp.tax_rate)
+            setTaxRateIgst("")
+          }else{
+            setTaxRateIgst(exp.tax_rate)
+            setTaxRateGst("")
+          }
+          setPaymentMethod(exp.payment_method);
+          setChequeNumber(exp.cheque_no);
+          setUpiId(exp.upi_no);
+          setAccountNumber(exp.bank_acc_no);
+          setDescription(exp.note);
+
+          if(exp.payment_method != "null"){
+            paymentMethodCheck(exp.payment_method);
+          }
+          checkTax(exp.customer_place_of_supply, exp.vendor_place_of_supply);
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchExpenseDetails();
+  }, []);
+
   var currentDate = new Date();
   var formattedDate = currentDate.toISOString().slice(0, 10);
 
@@ -164,7 +241,6 @@ function AddExpense() {
   const [accountNumber, setAccountNumber] = useState("");
 
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("");
   const [file, setFile] = useState(null);
 
   function checkForNull(val) {
@@ -180,7 +256,7 @@ function AddExpense() {
 
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("status", status);
+    formData.append("exp_id", expenseId);
     formData.append("Vendor", vendor);
     formData.append("vendor_name", vendName);
     formData.append("vendor_email", vendEmail);
@@ -218,15 +294,14 @@ function AddExpense() {
     }
 
     axios
-      .post(`${config.base_url}/create_new_expense/`, formData)
+      .put(`${config.base_url}/update_expense/`, formData)
       .then((res) => {
-        console.log("RBL RES=", res);
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Expense Created",
+            title: "Expense Updated",
           });
-          navigate("/expense");
+          navigate(`/view_expense/${expenseId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -421,6 +496,20 @@ function AddExpense() {
     }
   }
 
+  function checkTax(customerPlace, vendorPlace) {
+    var vendPlace = vendorPlace;
+    var custPlace = customerPlace;
+    if (vendPlace != "" && custPlace != "") {
+      if (vendPlace === custPlace) {
+        document.getElementById("taxGST").style.display = "block";
+        document.getElementById("taxIGST").style.display = "none";
+      } else {
+        document.getElementById("taxGST").style.display = "none";
+        document.getElementById("taxIGST").style.display = "block";
+      }
+    }
+  }
+
   function setAmountValue(value) {
     var amt = value;
     if (amountType == "Credit") {
@@ -514,6 +603,26 @@ function AddExpense() {
         .catch((err) => {
           console.log(err);
         });
+    }
+  }
+
+  function paymentMethodCheck(val) {
+    if (val === "Cash") {
+      document.getElementById("chequediv").style.display = "none";
+      document.getElementById("bnkdiv").style.display = "none";
+      document.getElementById("upidiv").style.display = "none";
+    } else if (val === "Cheque") {
+      document.getElementById("chequediv").style.display = "block";
+      document.getElementById("bnkdiv").style.display = "none";
+      document.getElementById("upidiv").style.display = "none";
+    } else if (val === "UPI") {
+      document.getElementById("chequediv").style.display = "none";
+      document.getElementById("bnkdiv").style.display = "none";
+      document.getElementById("upidiv").style.display = "block";
+    } else {
+      document.getElementById("chequediv").style.display = "none";
+      document.getElementById("bnkdiv").style.display = "block";
+      document.getElementById("upidiv").style.display = "none";
     }
   }
 
@@ -1707,7 +1816,7 @@ function AddExpense() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/expense"}>
+          <Link to={`/view_expense/${expenseId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -1718,7 +1827,7 @@ function AddExpense() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">NEW EXPENSE</h2>
+                <h2 className="mt-3">EDIT EXPENSE</h2>
               </center>
               <hr />
             </div>
@@ -2025,6 +2134,7 @@ function AddExpense() {
                         className="w-100"
                         id="vendor"
                         required
+                        value={vendorValue || null}
                         onChange={(selectedOption) =>
                           handleVendorChange(
                             selectedOption ? selectedOption.value : ""
@@ -2181,6 +2291,7 @@ function AddExpense() {
                         className="w-100"
                         id="customer"
                         required
+                        value={customerValue||null}
                         onChange={(selectedOption) =>
                           handleCustomerChange(
                             selectedOption ? selectedOption.value : ""
@@ -2371,15 +2482,14 @@ function AddExpense() {
                     <input
                       type="submit"
                       className="btn btn-outline-secondary w-50 text-light"
-                      onClick={() => setStatus("Draft")}
-                      value="Draft"
+                      value="Save"
                       style={{ height: "fit-content" }}
                     />
                     <input
                       type="submit"
                       className="btn btn-outline-secondary w-50 ml-1 text-light"
-                      onClick={() => setStatus("Saved")}
-                      value="Save"
+                      onClick={() => navigate(`/view_expense/${expenseId}/`)}
+                      value="Cancel"
                       style={{ height: "fit-content" }}
                     />
                   </div>
@@ -4430,4 +4540,4 @@ function AddExpense() {
   );
 }
 
-export default AddExpense;
+export default EditExpense;

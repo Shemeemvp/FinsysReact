@@ -8,12 +8,11 @@ import config from "../../../functions/config";
 import Swal from "sweetalert2";
 import "../../styles/SalesOrder.css";
 
-function ViewRecBill() {
+function ViewExpense() {
   const ID = Cookies.get("Login_id");
-  const { billId } = useParams();
-  const [billDetails, setBillDetails] = useState({});
+  const { expenseId } = useParams();
+  const [expenseDetails, setExpenseDetails] = useState({});
   const [otherDetails, setOtherDetails] = useState({});
-  const [billItems, setBillItems] = useState([]);
   const [comments, setComments] = useState([]);
   const [history, setHistory] = useState({
     action: "",
@@ -23,32 +22,27 @@ function ViewRecBill() {
 
   const [fileUrl, setFileUrl] = useState(null);
 
-  const fetchRecBillDetails = () => {
+  const fetchExpenseDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_rec_bill_details/${billId}/`)
+      .get(`${config.base_url}/fetch_expense_details/${expenseId}/`)
       .then((res) => {
         console.log("BL DATA=", res);
         if (res.data.status) {
-          var bill = res.data.bill;
+          var exp = res.data.expense;
           var hist = res.data.history;
           var cmt = res.data.comments;
-          var itms = res.data.items;
           var other = res.data.otherDetails;
-          if (bill.file) {
-            var url = `${config.base_url}/${bill.file}`;
+          if (exp.file) {
+            var url = `${config.base_url}/${exp.file}`;
             setFileUrl(url);
           }
 
           setOtherDetails(other);
-          setBillItems([]);
           setComments([]);
-          itms.map((i) => {
-            setBillItems((prevState) => [...prevState, i]);
-          });
           cmt.map((c) => {
             setComments((prevState) => [...prevState, c]);
           });
-          setBillDetails(bill);
+          setExpenseDetails(exp);
           if (hist) {
             setHistory(hist);
           }
@@ -66,7 +60,7 @@ function ViewRecBill() {
   };
 
   useEffect(() => {
-    fetchRecBillDetails();
+    fetchExpenseDetails();
   }, []);
 
   const currentUrl = window.location.href;
@@ -76,9 +70,9 @@ function ViewRecBill() {
 
   const navigate = useNavigate();
 
-  function handleConvertRecBill() {
+  function handleConvertExp() {
     Swal.fire({
-      title: `Convert Recurring Bill - ${billDetails.rec_bill_no}?`,
+      title: `Convert Expense - ${expenseDetails.expense_no}?`,
       text: "Are you sure you want to convert this.!",
       icon: "warning",
       showCancelButton: true,
@@ -88,17 +82,17 @@ function ViewRecBill() {
     }).then((result) => {
       if (result.isConfirmed) {
         var st = {
-          id: billId,
+          id: expenseId,
         };
         axios
-          .post(`${config.base_url}/change_rec_bill_status/`, st)
+          .post(`${config.base_url}/change_expense_status/`, st)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
                 icon: "success",
                 title: "Converted",
               });
-              fetchRecBillDetails();
+              fetchExpenseDetails();
             }
           })
           .catch((err) => {
@@ -109,15 +103,15 @@ function ViewRecBill() {
   }
 
   const [comment, setComment] = useState("");
-  const saveBillComment = (e) => {
+  const saveExpComment = (e) => {
     e.preventDefault();
     var cmt = {
       Id: ID,
-      RecBill: billId,
+      Expense: expenseId,
       comments: comment,
     };
     axios
-      .post(`${config.base_url}/add_rec_bill_comment/`, cmt)
+      .post(`${config.base_url}/add_expense_comment/`, cmt)
       .then((res) => {
         console.log(res);
         if (res.data.status) {
@@ -126,7 +120,7 @@ function ViewRecBill() {
             title: "Comment Added",
           });
           setComment("");
-          fetchRecBillDetails();
+          fetchExpenseDetails();
         }
       })
       .catch((err) => {
@@ -140,9 +134,9 @@ function ViewRecBill() {
       });
   };
 
-  function handleDeleteRecBill(id) {
+  function handleDeleteExp(id) {
     Swal.fire({
-      title: `Delete Recurring Bill - ${billDetails.rec_bill_no}?`,
+      title: `Delete Expense - ${expenseDetails.expense_no}?`,
       text: "Data cannot be restored.!",
       icon: "warning",
       showCancelButton: true,
@@ -152,15 +146,15 @@ function ViewRecBill() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_rec_bill/${id}/`)
+          .delete(`${config.base_url}/delete_expense/${id}/`)
           .then((res) => {
             console.log(res);
 
             Toast.fire({
               icon: "success",
-              title: "Rec. Bill Deleted.",
+              title: "Expense Deleted.",
             });
-            navigate("/rec_bill");
+            navigate("/expense");
           })
           .catch((err) => {
             console.log(err);
@@ -181,7 +175,7 @@ function ViewRecBill() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${config.base_url}/delete_rec_bill_comment/${id}/`)
+          .delete(`${config.base_url}/delete_expense_comment/${id}/`)
           .then((res) => {
             console.log(res);
 
@@ -189,7 +183,7 @@ function ViewRecBill() {
               icon: "success",
               title: "Comment Deleted",
             });
-            fetchRecBillDetails();
+            fetchExpenseDetails();
           })
           .catch((err) => {
             console.log(err);
@@ -213,33 +207,27 @@ function ViewRecBill() {
   function overview() {
     document.getElementById("overview").style.display = "block";
     document.getElementById("template").style.display = "none";
-    document.getElementById("slip").style.display = "none";
     document.getElementById("printBtn").style.display = "none";
-    document.getElementById("slipPrintBtn").style.display = "none";
     document.getElementById("pdfBtn").style.display = "none";
-    document.getElementById("slipPdfBtn").style.display = "none";
     document.getElementById("shareBtn").style.display = "none";
     document.getElementById("editBtn").style.display = "block";
     document.getElementById("deleteBtn").style.display = "block";
     document.getElementById("attachBtn").style.display = "block";
     document.getElementById("historyBtn").style.display = "block";
     document.getElementById("commentBtn").style.display = "block";
-    if (billDetails.status == "Draft") {
+    if (expenseDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "block";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
       "rgba(22,37,50,255)";
     document.getElementById("templateBtn").style.backgroundColor =
       "transparent";
-    document.getElementById("slipBtn").style.backgroundColor = "transparent";
   }
 
   function template() {
     document.getElementById("overview").style.display = "none";
     document.getElementById("template").style.display = "block";
-    document.getElementById("slip").style.display = "none";
     document.getElementById("printBtn").style.display = "block";
-    document.getElementById("slipPrintBtn").style.display = "none";
     document.getElementById("pdfBtn").style.display = "block";
     document.getElementById("shareBtn").style.display = "block";
     document.getElementById("editBtn").style.display = "none";
@@ -247,40 +235,13 @@ function ViewRecBill() {
     document.getElementById("attachBtn").style.display = "none";
     document.getElementById("historyBtn").style.display = "none";
     document.getElementById("commentBtn").style.display = "none";
-    document.getElementById("slipPdfBtn").style.display = "none";
-    if (billDetails.status == "Draft") {
+    if (expenseDetails.status == "Draft") {
       document.getElementById("statusBtn").style.display = "none";
     }
     document.getElementById("overviewBtn").style.backgroundColor =
       "transparent";
     document.getElementById("templateBtn").style.backgroundColor =
       "rgba(22,37,50,255)";
-    document.getElementById("slipBtn").style.backgroundColor = "transparent";
-  }
-
-  function slip() {
-    document.getElementById("overview").style.display = "none";
-    document.getElementById("template").style.display = "none";
-    document.getElementById("slip").style.display = "block";
-    document.getElementById("printBtn").style.display = "none";
-    document.getElementById("slipPrintBtn").style.display = "block";
-    document.getElementById("pdfBtn").style.display = "none";
-    document.getElementById("shareBtn").style.display = "none";
-    document.getElementById("editBtn").style.display = "none";
-    document.getElementById("deleteBtn").style.display = "none";
-    document.getElementById("historyBtn").style.display = "none";
-    document.getElementById("attachBtn").style.display = "none";
-    document.getElementById("slipPdfBtn").style.display = "block";
-    document.getElementById("commentBtn").style.display = "none";
-    if (billDetails.status == "Draft") {
-      document.getElementById("statusBtn").style.display = "none";
-    }
-    document.getElementById("overviewBtn").style.backgroundColor =
-      "transparent";
-    document.getElementById("slipBtn").style.backgroundColor =
-      "rgba(22,37,50,255)";
-    document.getElementById("templateBtn").style.backgroundColor =
-      "transparent";
   }
 
   function printSheet() {
@@ -306,116 +267,6 @@ function ViewRecBill() {
     });
   }
 
-  function printSlip() {
-    var divToPrint = document.getElementById("slip_container");
-    var printWindow = window.open("", "", "height=700,width=1000");
-    var styles = `
-    .slip h5 {
-  font-family: serif;
-}
-p {
-  font-size: 1.2em;
-}
-.address {
-  display: flex;
-  flex-direction: column;
-}
-.address p,
-.slip-footer p {
-  font-size: 1rem;
-  margin: 0;
-}
-.slip-container {
-  width: 105mm;
-  margin: 2rem auto;
-  padding: 2rem;
-  border: 1px dotted black;
-  box-shadow: rgba(60, 64, 67, 0.5) 0px 1px 2px 0px,
-    rgba(60, 64, 67, 0.35) 0px 2px 6px 2px;
-}
-.divider {
-  margin: 1rem 0;
-  border-bottom: 3px dotted black;
-}
-.trns-id p,
-.datetime p,
-.createdby p {
-  font-size: 0.85rem;
-  margin: 0;
-}
-.equal-length-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-left: 2vh;
-  margin-right: 2vh;
-}
-
-.equal-length-item {
-  flex: 1;
-  text-align: center;
-}
-    `;
-
-    printWindow.document.write("<html><head><title></title>");
-    printWindow.document.write(`
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Agbalumo&family=Black+Ops+One&family=Gluten:wght@100..900&family=Playball&display=swap" rel="stylesheet">
-    `);
-    printWindow.document.write("</head>");
-    printWindow.document.write("<body>");
-    printWindow.document.write("<style>");
-    printWindow.document.write(styles);
-    printWindow.document.write("</style>");
-    printWindow.document.write(divToPrint.outerHTML);
-    printWindow.document.write("</body>");
-    printWindow.document.write("</html>");
-    printWindow.document.close();
-    printWindow.print();
-    printWindow.addEventListener("afterprint", function () {
-      printWindow.close();
-    });
-  }
-
-  function updateDateTime() {
-    var currentDate = new Date();
-    var day = currentDate.getDate();
-    var month = currentDate.getMonth() + 1;
-    var year = currentDate.getFullYear();
-    var hours = currentDate.getHours();
-    var minutes = currentDate.getMinutes();
-    var seconds = currentDate.getSeconds();
-    var formattedDay = day < 10 ? `0${day}` : day;
-    var formattedMonth = month < 10 ? `0${month}` : month;
-    var formattedHours = hours < 10 ? `0${hours}` : hours;
-    var formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-    var formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
-    var formattedDateTime = `${formattedDay}/${formattedMonth}/${year} ${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-    try {
-      document.getElementById("dateTimeDisplay").textContent =
-        formattedDateTime;
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  setInterval(updateDateTime, 1000);
-
-  function slipPdf() {
-    var billNo = `${billDetails.rec_bill_no}`;
-    var element = document.getElementById("slip");
-    var opt = {
-      margin: 1,
-      filename: "RecurringBillSlip_" + billNo + ".pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
-    };
-    html2pdf().set(opt).from(element).save();
-  }
-
   function toggleTemplate(templateId, buttonId) {
     document.querySelectorAll(".printTemplates").forEach(function (ele) {
       ele.style.display = "none";
@@ -432,13 +283,13 @@ p {
     document.getElementById("page-content").scrollIntoView();
   }
 
-  function invoicePdf() {
+  function expensePdf() {
     var data = {
       Id: ID,
-      bill_id: billId,
+      exp_id: expenseId,
     };
     axios
-      .get(`${config.base_url}/rec_bill_pdf/`, {
+      .get(`${config.base_url}/expense_pdf/`, {
         responseType: "blob",
         params: data,
       })
@@ -449,7 +300,7 @@ p {
         const fileURL = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = fileURL;
-        a.download = `RecurringBill_${billDetails.rec_bill_no}.pdf`;
+        a.download = `Expense_${expenseDetails.expense_no}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -496,13 +347,13 @@ p {
       } else {
         // document.getElementById("share_to_email_form").submit();
         var em = {
-          bill_id: billId,
+          exp_id: expenseId,
           Id: ID,
           email_ids: emailIds,
           email_message: emailMessage,
         };
         axios
-          .post(`${config.base_url}/share_rec_bill_email/`, em)
+          .post(`${config.base_url}/share_expense_email/`, em)
           .then((res) => {
             if (res.data.status) {
               Toast.fire({
@@ -536,13 +387,13 @@ p {
     e.preventDefault();
     const formData = new FormData();
     formData.append("Id", ID);
-    formData.append("bill_id", billId);
+    formData.append("exp_id", expenseId);
     if (file) {
       formData.append("file", file);
     }
 
     axios
-      .post(`${config.base_url}/add_rec_bill_attachment/`, formData)
+      .post(`${config.base_url}/add_expense_attachment/`, formData)
       .then((res) => {
         console.log("FILE RES==", res);
         if (res.data.status) {
@@ -552,7 +403,7 @@ p {
           });
           setFile(null);
           document.getElementById("fileModalDismiss").click();
-          fetchRecBillDetails();
+          fetchExpenseDetails();
         }
       })
       .catch((err) => {
@@ -577,7 +428,7 @@ p {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to="/rec_bill"
+          to="/expense"
         >
           <i
             className="fa fa-times-circle text-white"
@@ -613,23 +464,12 @@ p {
                     >
                       Templates
                     </a>
-                    <a
-                      style={{
-                        padding: "10px",
-                        cursor: "pointer",
-                        borderRadius: "1vh",
-                      }}
-                      onClick={slip}
-                      id="slipBtn"
-                    >
-                      Slip
-                    </a>
                   </div>
 
                   <div className="col-md-6 d-flex justify-content-end">
-                    {billDetails.status == "Draft" ? (
+                    {expenseDetails.status == "Draft" ? (
                       <a
-                        onClick={handleConvertRecBill}
+                        onClick={handleConvertExp}
                         id="statusBtn"
                         style={{
                           display: "block",
@@ -643,23 +483,10 @@ p {
                       </a>
                     ) : null}
                     <a
-                      onClick={invoicePdf}
+                      onClick={expensePdf}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-file"
                       role="button"
                       id="pdfBtn"
-                      style={{
-                        display: "none",
-                        height: "fit-content",
-                        width: "fit-content",
-                      }}
-                    >
-                      &nbsp;PDF
-                    </a>
-                    <a
-                      onClick={slipPdf}
-                      className="ml-2 btn btn-outline-secondary text-grey fa fa-file"
-                      role="button"
-                      id="slipPdfBtn"
                       style={{
                         display: "none",
                         height: "fit-content",
@@ -678,20 +505,6 @@ p {
                         width: "fit-content",
                       }}
                       onClick={() => printSheet()}
-                    >
-                      &nbsp;Print
-                    </a>
-
-                    <a
-                      className="ml-2 btn btn-outline-secondary text-grey fa fa-print"
-                      role="button"
-                      id="slipPrintBtn"
-                      style={{
-                        display: "none",
-                        height: "fit-content",
-                        width: "fit-content",
-                      }}
-                      onClick={() => printSlip()}
                     >
                       &nbsp;Print
                     </a>
@@ -744,7 +557,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/edit_rec_bill/${billId}/`}
+                      to={`/edit_expense/${expenseId}/`}
                       className="ml-2 fa fa-pencil btn btn-outline-secondary text-grey"
                       id="editBtn"
                       role="button"
@@ -756,9 +569,7 @@ p {
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-trash"
                       id="deleteBtn"
                       role="button"
-                      onClick={() =>
-                        handleDeleteRecBill(billId)
-                      }
+                      onClick={() => handleDeleteExp(expenseId)}
                       style={{ height: "fit-content", width: "fit-content" }}
                     >
                       &nbsp;Delete
@@ -819,7 +630,7 @@ p {
                       </ul>
                     </div>
                     <Link
-                      to={`/rec_bill_history/${billId}/`}
+                      to={`/expense_history/${expenseId}/`}
                       className="ml-2 btn btn-outline-secondary text-grey fa fa-history"
                       id="historyBtn"
                       role="button"
@@ -835,7 +646,7 @@ p {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  RECURRING BILL OVERVIEW
+                  EXPENSE OVERVIEW
                 </h3>
               </center>
             </div>
@@ -887,7 +698,7 @@ p {
                         <div className="row">
                           <div className="col mt-3">
                             <h2 className="mb-0">
-                              # {billDetails.rec_bill_no}
+                              # {expenseDetails.expense_no}
                             </h2>
                           </div>
                         </div>
@@ -968,7 +779,7 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {billDetails.vendor_name}
+                            {expenseDetails.vendor_name}
                           </p>
                         </div>
 
@@ -977,7 +788,7 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {billDetails.vendor_email}
+                            {expenseDetails.vendor_email}
                           </p>
                         </div>
 
@@ -986,18 +797,18 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0" style={{ textAlign: "right" }}>
-                            {billDetails.vendor_gst_type}
+                            {expenseDetails.vendor_gst_type}
                           </p>
                         </div>
 
-                        {billDetails.vendor_gstin != "None" && (
+                        {expenseDetails.vendor_gstin != "None" && (
                           <>
                             <div className="col-md-3 mt-3 vl">
                               <h6 className="mb-0">GSTIN No</h6>
                             </div>
                             <div className="col-md-3 mt-3">
                               <p className="mb-0 text-right">
-                                {billDetails.vendor_gstin}
+                                {expenseDetails.vendor_gstin}
                               </p>
                             </div>
                           </>
@@ -1015,72 +826,90 @@ p {
                               width: "fit-content",
                             }}
                           >
-                            Recurring Bill Details
+                            Expense Details
                           </h5>
                         </div>
                         <div className="col-md-4 mt-3"></div>
                         <div className="col-md-4 mt-3"></div>
 
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Rec. Bill No.</h6>
+                          <h6 className="mb-0">Expense No.</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {billDetails.rec_bill_no}
+                            {expenseDetails.expense_no}
                           </p>
                         </div>
 
                         <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">Payment Terms</h6>
+                          <h6 className="mb-0">Reference No.</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {otherDetails.paymentTerm}
+                            {expenseDetails.reference_no}
                           </p>
                         </div>
                       </div>
                       <div className="row mb-4 d-flex justify-content-between align-items-center">
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Rec. Bill Date</h6>
+                          <h6 className="mb-0">Expense Date</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {billDetails.date}
+                            {expenseDetails.expense_date}
                           </p>
                         </div>
 
                         <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">Due Date</h6>
+                          <h6 className="mb-0">Expense Account</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {billDetails.exp_ship_date}
+                            {expenseDetails.expense_account}
                           </p>
                         </div>
                       </div>
                       <div className="row mb-4 d-flex justify-content-start align-items-center">
                         <div className="col-md-3 mt-3">
-                          <h6 className="mb-0">Repeat Every</h6>
+                          <h6 className="mb-0">
+                            {expenseDetails.expense_type == "Goods"
+                              ? "HSN"
+                              : "SAC"}
+                          </h6>
                         </div>
-                        <div className="col-md-3 mt-3 vr">
-                          <p className="mb-0">{otherDetails.repeatType}</p>
+                        <div className="col-md-3 mt-3">
+                          <p className="mb-0 text-right">
+                            {expenseDetails.expense_type == "Goods"
+                              ? expenseDetails.hsn_number
+                              : expenseDetails.sac_number}
+                          </p>
                         </div>
                         <div className="col-md-3 mt-3 vl">
-                          <h6 className="mb-0">Purchase Order No.</h6>
+                          <h6 className="mb-0">Expense Type</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {billDetails.purchase_order_no != "" ? billDetails.purchase_order_no: 'N/A'}
+                            {expenseDetails.expense_type}
                           </p>
                         </div>
                       </div>
                       <div className="row mb-4 d-flex justify-content-start align-items-center">
-                      <div className="col-md-3 mt-3">
+                        <div className="col-md-3 mt-3">
                           <h6 className="mb-0">Payment Method</h6>
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {billDetails.payment_method != 'null'? billDetails.payment_method : 'N/A'}
+                            {expenseDetails.payment_method != "null"
+                              ? expenseDetails.payment_method
+                              : "N/A"}
+                          </p>
+                        </div>
+                        <div className="col-md-3 mt-3 vl">
+                          <h6 className="mb-0">TAX Rate</h6>
+                        </div>
+                        <div className="col-md-3 mt-3">
+                          <p className="mb-0 text-right">
+                            {expenseDetails.tax_rate}
                           </p>
                         </div>
                       </div>
@@ -1107,7 +936,7 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {billDetails.customer_name}
+                            {expenseDetails.customer_name}
                           </p>
                         </div>
 
@@ -1116,7 +945,7 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0 text-right">
-                            {billDetails.customer_email}
+                            {expenseDetails.customer_email}
                           </p>
                         </div>
 
@@ -1125,18 +954,18 @@ p {
                         </div>
                         <div className="col-md-3 mt-3">
                           <p className="mb-0" style={{ textAlign: "right" }}>
-                            {billDetails.customer_gst_type}
+                            {expenseDetails.customer_gst_type}
                           </p>
                         </div>
 
-                        {billDetails.customer_gstin != "None" && (
+                        {expenseDetails.customer_gstin != "None" && (
                           <>
                             <div className="col-md-3 mt-3 vl">
                               <h6 className="mb-0">GSTIN No</h6>
                             </div>
                             <div className="col-md-3 mt-3">
                               <p className="mb-0 text-right">
-                                {billDetails.customer_gstin}
+                                {expenseDetails.customer_gstin}
                               </p>
                             </div>
                           </>
@@ -1148,106 +977,11 @@ p {
                         </div>
                         <div className="col-md-3 mt-3 ">
                           <p className="mb-0 text-right">
-                            {billDetails.customer_billing_address}
+                            {expenseDetails.customer_address}
                           </p>
                         </div>
                       </div>
                       <hr />
-
-                      <div className="row mb-4 d-flex justify-content-between align-items-center">
-                        <div className="col-md-12 mt-3">
-                          <h5
-                            style={{
-                              borderBottom:
-                                "1px solid rgba(128, 128, 128, 0.6)",
-                              width: "fit-content",
-                            }}
-                          >
-                            Items Details
-                          </h5>
-                          {billItems &&
-                            billItems.map((itm) => (
-                              <>
-                                <div className="row mb-4 d-flex justify-content-between align-items-center">
-                                  <div className="col-md-3 mt-3">
-                                    <h6 className="mb-0">Name</h6>
-                                  </div>
-                                  <div className="col-md-3 mt-3">
-                                    <p className="mb-0 text-right">
-                                      {itm.name}
-                                    </p>
-                                  </div>
-
-                                  <div className="col-md-3 mt-3 vl">
-                                    <h6 className="mb-0">
-                                      {itm.item_type == "Goods" ? "HSN" : "SAC"}
-                                    </h6>
-                                  </div>
-                                  <div className="col-md-3 mt-3">
-                                    <p className="mb-0 text-right">
-                                      {itm.item_type == "Goods"
-                                        ? itm.hsn
-                                        : itm.sac}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="row mb-4 d-flex justify-content-between align-items-center">
-                                  <div className="col-md-3 mt-3">
-                                    <h6 className="mb-0">Price</h6>
-                                  </div>
-                                  <div className="col-md-3 mt-3">
-                                    <p className="mb-0 text-right">
-                                      {itm.price}
-                                    </p>
-                                  </div>
-                                  <div className="col-md-3 mt-3 vl">
-                                    <h6 className="mb-0">Quantity</h6>
-                                  </div>
-                                  <div className="col-md-3 mt-3">
-                                    <p className="mb-0 text-right">
-                                      {itm.quantity}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="row mb-4 d-flex justify-content-start align-items-center">
-                                  <div className="col-md-3 mt-3">
-                                    <h6 className="mb-0">Tax Amount</h6>
-                                  </div>
-                                  <div className="col-md-3 mt-3">
-                                    <p className="mb-0 text-right">
-                                      {itm.tax} %
-                                    </p>
-                                  </div>
-                                  <div className="col-md-3 mt-3 vl">
-                                    <h6 className="mb-0">Discount</h6>
-                                  </div>
-                                  <div className="col-md-3 mt-3">
-                                    <p className="mb-0 text-right">
-                                      {itm.discount}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="row mb-4 d-flex justify-content-start align-items-center">
-                                  <div className="col-md-3 mt-3">
-                                    <h6 className="mb-0">Total</h6>
-                                  </div>
-                                  <div className="col-md-3 mt-3">
-                                    <p className="mb-0 text-right">
-                                      {itm.total}
-                                    </p>
-                                  </div>
-                                  <div className="col-md-6 mt-3 vl">
-                                    <h6 className="mb-0">&nbsp;</h6>
-                                  </div>
-                                </div>
-                                <hr
-                                  className="my-3 mx-auto"
-                                  style={{ width: "50%" }}
-                                />
-                              </>
-                            ))}
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1261,13 +995,11 @@ p {
                   }}
                 >
                   <div className="px-3 py-4">
-                    <h4 className="fw-bold mb-2 mt-4 pt-1">
-                      Recurring Bill Tax Details
-                    </h4>
+                    <h4 className="fw-bold mb-2 mt-4 pt-1">Expense Details</h4>
                     <hr className="my-4" />
                     <div className="d-flex justify-content-between mb-4">
                       <h6 className="">Status</h6>
-                      {billDetails.status == "Draft" ? (
+                      {expenseDetails.status == "Draft" ? (
                         <span className="text-info h5 font-weight-bold">
                           DRAFT
                         </span>
@@ -1278,63 +1010,20 @@ p {
                       )}
                     </div>
                     <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">Sub Total</h6>
-                      {billDetails.subtotal}
+                      <h4 className="">Amount</h4>
+                      {expenseDetails.amount}
                     </div>
                     <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">Tax Amount</h6>
-                      {billDetails.tax_amount}
-                    </div>
-                    {billDetails.igst != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">IGST</h6>
-                        {billDetails.igst}
-                      </div>
-                    ) : null}
-                    {billDetails.cgst != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">CGST</h6>
-                        {billDetails.cgst}
-                      </div>
-                    ) : null}
-                    {billDetails.sgst != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">SGST</h6>
-                        {billDetails.sgst}
-                      </div>
-                    ) : null}
-
-                    {billDetails.shipping_charge != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">Shipping Charge</h6>
-                        {billDetails.shipping_charge}
-                      </div>
-                    ) : null}
-
-                    {billDetails.adjustment != 0 ? (
-                      <div className="d-flex justify-content-between mb-4">
-                        <h6 className="">Adjustment</h6>
-                        {billDetails.adjustment}
-                      </div>
-                    ) : null}
-                    <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">Grand Total</h6>
-                      <span className="font-weight-bold">
-                        {billDetails.grandtotal}
-                      </span>
-                    </div>
-                    <hr className="my-4" />
-                    <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">Paid</h6>
-                      <span className="font-weight-bold">
-                        {billDetails.paid}
-                      </span>
+                      <h6 className="">Vendor</h6>
+                      {expenseDetails.vendor_name}
                     </div>
                     <div className="d-flex justify-content-between mb-4">
-                      <h6 className="">Balance</h6>
-                      <span className="font-weight-bold">
-                        {billDetails.balance}
-                      </span>
+                      <h6 className="">Source Of Supply</h6>
+                      {expenseDetails.vendor_place_of_supply}
+                    </div>
+                    <div className="d-flex justify-content-between mb-4">
+                      <h6 className="">Customer</h6>
+                      {expenseDetails.customer_name}
                     </div>
                   </div>
                 </div>
@@ -1349,11 +1038,9 @@ p {
                     <div className="p-4" id="printdiv1">
                       <div
                         id="ember2512"
-                        className="tooltip-container ember-view ribbon text-ellipsis"
+                        className=""
                       >
-                        <div className="ribbon-inner ribbon-open">
-                          {billDetails.status}
-                        </div>
+                        <div className=""></div>
                       </div>
                       <section className="top-content bb d-flex justify-content-between p-0">
                         <div className="logo">
@@ -1361,12 +1048,12 @@ p {
                         </div>
                         <div className="top-left">
                           <div className="">
-                            <p style={{fontWeight: "600"}}>Recurring Bill</p>
+                            <p style={{ fontWeight: "600" }}>Expense</p>
                           </div>
                           <div className="position-relative">
                             <p>
-                              Rec. Bill No.
-                              <span>{billDetails.rec_bill_no}</span>
+                              Expense No.
+                              <span>{expenseDetails.expense_no}</span>
                             </p>
                           </div>
                         </div>
@@ -1376,7 +1063,7 @@ p {
                         <div className="col-12">
                           <div className="row bb pb-3">
                             <div className="col-7">
-                              <p>FROM,</p>
+                              <p>Company Details,</p>
                               <h5>{otherDetails.Company_name}</h5>
                               <p className="address ">
                                 {" "}
@@ -1389,30 +1076,45 @@ p {
                               </p>
                             </div>
                             <div className="col-5">
-                              <p>TO,</p>
-                              <h5>{billDetails.vendor_name}</h5>
+                              <p>Vendor Details,</p>
+                              <h5>{expenseDetails.vendor_name}</h5>
                               <p
                                 className="address col-9"
                                 style={{ marginLeft: "-14px" }}
                               >
                                 {" "}
-                                {billDetails.vendor_billing_address}
+                                {expenseDetails.vendor_address}
                               </p>
                             </div>
                           </div>
                           <div className="row extra-info pt-3">
-                              <div className="col-7">
-                                  <p style={{color:"#000"}}>Deliver To Details: </p>
-                                  <p className="address " style={{color:"#000"}}>{billDetails.customer_name}<br />
-                                      {billDetails.customer_email}<br />
-                                      { billDetails.customer_gstin != "" ? billDetails.customer_gstin: ""}
-                                  </p>
-                              </div>
-                              <div className="col-5">
-                                  <p style={{color:"#000"}}>Date : <span>{billDetails.date}</span></p>
-                                  <p style={{color:"#000"}}>Payment Type : <span>{billDetails.payment_method}</span></p>
-                                  
-                              </div>
+                            <div className="col-7">
+                              <h4 className="font-weight-bold text-dark">
+                                Expense Details
+                              </h4>
+                              <p>
+                                Expense Date:{" "}
+                                <span>{expenseDetails.expense_date}</span>
+                              </p>
+                              <p>
+                                Tax Rate: <span>{expenseDetails.tax_rate}</span>
+                              </p>
+                              <p>
+                                Payment Method:{" "}
+                                <span>{expenseDetails.payment_method}</span>
+                              </p>
+                            </div>
+                            <div className="col-5">
+                              <p>Customer</p>
+                              <h5>{expenseDetails.customer_name}</h5>
+                              <p
+                                className="address col-9"
+                                style={{ marginLeft: "-14px" }}
+                              >
+                                {" "}
+                                {expenseDetails.customer_address}{" "}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </section>
@@ -1431,187 +1133,53 @@ p {
                                   color: "black",
                                 }}
                               >
-                                Items
+                                Expense Account
                               </td>
                               <td
                                 style={{ fontWeight: "bold", color: "black" }}
                               >
-                                HSN/SAC
+                                Expense Type
                               </td>
                               <td
                                 style={{ fontWeight: "bold", color: "black" }}
                               >
-                                Price
+                                {expenseDetails.expense_type == "Goods"
+                                  ? "HSN"
+                                  : "SAC"}
                               </td>
                               <td
                                 style={{ fontWeight: "bold", color: "black" }}
                               >
-                                Quantity
-                              </td>
-                              <td
-                                style={{ fontWeight: "bold", color: "black" }}
-                              >
-                                Tax
-                              </td>
-                              <td
-                                style={{ fontWeight: "bold", color: "black" }}
-                              >
-                                Discount
-                              </td>
-                              <td
-                                style={{ fontWeight: "bold", color: "black" }}
-                              >
-                                Total
+                                Amount
                               </td>
                             </tr>
                           </thead>
                           <tbody>
-                            {billItems.map((j) => (
-                              <tr>
-                                <td
-                                  style={{
-                                    color: "black",
-                                    textAlign: "center",
-                                  }}
-                                >
-                                  {j.name}
-                                </td>
-                                <td style={{ color: "black" }}>
-                                  {j.item_type == "Goods" ? j.hsn : j.sac}
-                                </td>
-                                <td style={{ color: "black" }}>{j.price}</td>
-                                <td style={{ color: "black" }}>{j.quantity}</td>
-                                <td style={{ color: "black" }}>{j.tax} %</td>
-                                <td style={{ color: "black" }}>
-                                  {j.discount}{" "}
-                                </td>
-                                <td style={{ color: "black" }}>{j.total}</td>
-                              </tr>
-                            ))}
+                            <tr>
+                              <td
+                                style={{
+                                  color: "black",
+                                  textAlign: "center",
+                                }}
+                              >
+                                {expenseDetails.expense_account}
+                              </td>
+                              <td style={{ color: "black" }}>
+                                {expenseDetails.expense_type}
+                              </td>
+                              <td style={{ color: "black" }}>
+                                {expenseDetails.expense_type == "Goods"
+                                  ? expenseDetails.hsn_number
+                                  : expenseDetails.sac_number}
+                              </td>
+                              <td style={{ color: "black" }}>
+                                {expenseDetails.amount}
+                              </td>
+                            </tr>
                           </tbody>
                         </table>
                         <br />
                         <br />
-                      </section>
-
-                      <section className="balance-info p-0">
-                        <div className="row">
-                          <div className="col-md-8"></div>
-                          <div className="col-md-4">
-                            <table className="table table-borderless">
-                              <tbody>
-                                <tr>
-                                  <td style={{ color: "#000" }}>Sub Total</td>
-                                  <td style={{ color: "#000" }}>:</td>
-                                  <td
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {billDetails.subtotal}
-                                  </td>
-                                </tr>
-
-                                {billDetails.igst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>IGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.igst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {billDetails.cgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>CGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.cgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {billDetails.sgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>SGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.sgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                <tr>
-                                  <td style={{ color: "#000" }}>Tax Amount</td>
-                                  <td style={{ color: "#000" }}>:</td>
-                                  <td
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {billDetails.tax_amount}
-                                  </td>
-                                </tr>
-                                {billDetails.shipping_charge != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Shipping Charge
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.shipping_charge}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {billDetails.adjustment != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Adjustment
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.adjustment}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                              </tbody>
-                            </table>
-                            <hr style={{ backgroundColor: "#000000" }} />
-                            <table className="table table-borderless">
-                              <tbody>
-                                <tr>
-                                  <th style={{ color: "#000" }}>Grand Total</th>
-                                  <th style={{ color: "#000" }}>:</th>
-                                  <th
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {billDetails.grandtotal}
-                                  </th>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
                       </section>
                     </div>
                   </div>
@@ -1634,31 +1202,20 @@ p {
                           className="col-md-4 d-flex justify-content-start tooltip-container ember-view ribbon text-ellipsis"
                         >
                           <div
-                            className="text-white d-flex align-items-center px-5"
-                            style={{
-                              borderRadius: "1vh",
-                              backgroundColor: "#999999",
-                            }}
-                          >
-                            {billDetails.status}
-                          </div>
+                            className=""
+                          ></div>
                         </div>
                         <div className="col-md-4 d-flex justify-content-center">
                           <center className="h3 text-white">
-                            <b>Recurring Bill</b>
+                            <b>Expense</b>
                           </center>
                         </div>
                         <div className="col-md-4 d-flex justify-content-end">
                           <div className="text-white">
                             <p className="mb-0 mt-2">
-                              Rec. Bill No:
-                              <b>{billDetails.rec_bill_no}</b>
+                              Expense No:
+                              <b>{expenseDetails.expense_no}</b>
                             </p>
-                            {billDetails.purchase_order_no != "" ? (
-                              <p>
-                                Order No. <b>{billDetails.purchase_order_no}</b>
-                              </p>
-                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -1709,31 +1266,58 @@ p {
                                     borderBottomRightRadius: "4vh",
                                   }}
                                 >
-                                  <b>VENDOR ADDRESS</b>
+                                  <b>VENDOR</b>
                                 </label>
                                 <h5
                                   className="text-secondary"
                                   style={{ fontWeight: "bold" }}
                                 >
-                                  {billDetails.vendor_name}
+                                  {expenseDetails.vendor_name}
                                 </h5>
                                 <p
                                   className="address"
                                   style={{ fontWeight: "bold", color: "#000" }}
                                 >
-                                  {billDetails.vendor_billing_address}
+                                  {expenseDetails.vendor_address}
                                 </p>
                               </div>
                             </div>
-                            <div className="row my-3">
-                              <div className="col-12">
+                            <div className="row extra-info pt-3">
+                              <div className="col-7">
+                                <h4 className="font-weight-bold text-dark">
+                                  Expense Details
+                                </h4>
                                 <p>
-                                  Start Date:{" "}
-                                  <span>{billDetails.date}</span>
+                                  Expense Date:{" "}
+                                  <span>{expenseDetails.expense_date}</span>
+                                </p>
+                                <p>
+                                  Tax Rate:{" "}
+                                  <span>{expenseDetails.tax_rate}</span>
                                 </p>
                                 <p>
                                   Payment Method:{" "}
-                                  <span>{billDetails.payment_method}</span>
+                                  <span>{expenseDetails.payment_method}</span>
+                                </p>
+                              </div>
+                              <div className="col-5">
+                                <label
+                                  className="text-white w-100 p-1"
+                                  style={{
+                                    borderTopRightRadius: "4vh",
+                                    borderBottomRightRadius: "4vh",
+                                    backgroundColor: "#999999",
+                                  }}
+                                >
+                                  <b>Customer</b>
+                                </label>
+                                <h5>{expenseDetails.customer_name}</h5>
+                                <p
+                                  className="address col-9"
+                                  style={{ marginLeft: "-14px" }}
+                                >
+                                  {" "}
+                                  {expenseDetails.customer_address}{" "}
                                 </p>
                               </div>
                             </div>
@@ -1751,258 +1335,64 @@ p {
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Items
+                                  Expense Account
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  HSN/SAC
+                                  HSN/Expense Type
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Quantity
+                                  {expenseDetails.expense_type == "Goods"
+                                    ? "HSN"
+                                    : "SAC"}
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Rate
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Tax
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Discount
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Total
+                                  Amount
                                 </th>
                               </tr>
                             </thead>
                             <tbody style={{ backgroundColor: "#999999" }}>
-                              {billItems.map((j) => (
-                                <tr>
-                                  <td
-                                    className="text-center"
-                                    style={{
-                                      color: "black",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {j.name}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.item_type == "Goods" ? j.hsn : j.sac}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.price}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.quantity}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.tax} %
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.discount}{" "}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.total}
-                                  </td>
-                                </tr>
-                              ))}
+                              <tr>
+                                <td
+                                  className="text-center"
+                                  style={{
+                                    color: "black",
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {expenseDetails.expense_account}
+                                </td>
+                                <td
+                                  className="text-center"
+                                  style={{ color: "black" }}
+                                >
+                                  {expenseDetails.expense_type}
+                                </td>
+                                <td
+                                  className="text-center"
+                                  style={{ color: "black" }}
+                                >
+                                  {expenseDetails.expense_type == "Goods"
+                                    ? expenseDetails.hsn_number
+                                    : expenseDetails.sac_number}
+                                </td>
+                                <td
+                                  className="text-center"
+                                  style={{ color: "black" }}
+                                >
+                                  {expenseDetails.amount}
+                                </td>
+                              </tr>
                             </tbody>
                           </table>
-                        </section>
-
-                        <section className="balance-info p-0">
-                          <div className="row mt-3">
-                            <div className="col-4">
-                              <table className="table table-borderless">
-                                <tbody>
-                                  {billDetails.note ? (
-                                    <tr>
-                                      <td
-                                        style={{
-                                          color: "#000",
-                                          textAlign: "left",
-                                        }}
-                                      >
-                                        Note
-                                      </td>
-                                      <td
-                                        style={{
-                                          color: "#000",
-                                          textAlign: "left",
-                                        }}
-                                      >
-                                        :
-                                      </td>
-                                      <th
-                                        style={{
-                                          color: "#000",
-                                          textAlign: "center",
-                                        }}
-                                      >
-                                        {billDetails.note}
-                                      </th>
-                                    </tr>
-                                  ) : null}
-                                </tbody>
-                              </table>
-                            </div>
-                            <div className="col-4"></div>
-                            <div className="col-4">
-                              <br />
-                              <br />
-                              <table className="table table-borderless">
-                                <tbody>
-                                  <tr>
-                                    <td style={{ color: "#000" }}>Sub Total</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.subtotal}
-                                    </td>
-                                  </tr>
-
-                                  {billDetails.igst != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>IGST</td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {billDetails.igst}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  {billDetails.cgst != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>CGST</td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {billDetails.cgst}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  {billDetails.sgst != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>SGST</td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {billDetails.sgst}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Tax Amount
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.tax_amount}
-                                    </td>
-                                  </tr>
-                                  {billDetails.shipping_charge != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>
-                                        Shipping Charge
-                                      </td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {billDetails.shipping_charge}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                  {billDetails.adjustment != 0 ? (
-                                    <tr>
-                                      <td style={{ color: "#000" }}>
-                                        Adjustment
-                                      </td>
-                                      <td style={{ color: "#000" }}>:</td>
-                                      <td
-                                        className="text-right"
-                                        style={{ color: "#000" }}
-                                      >
-                                        <span>&#8377; </span>
-                                        {billDetails.adjustment}
-                                      </td>
-                                    </tr>
-                                  ) : null}
-                                </tbody>
-                              </table>
-                              <hr style={{ backgroundColor: "#000000" }} />
-                              <table className="table table-borderless">
-                                <tbody>
-                                  <tr>
-                                    <th style={{ color: "#000" }}>
-                                      Grand Total
-                                    </th>
-                                    <th style={{ color: "#000" }}>:</th>
-                                    <th
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.grandtotal}
-                                    </th>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
                         </section>
                       </div>
                     </div>
@@ -2026,7 +1416,7 @@ p {
                           }}
                         >
                           <p style={{ fontSize: "4vh", textAlign: "center" }}>
-                            RECURRING BILL
+                            EXPENSE
                           </p>
                           <p style={{ textAlign: "center" }}>
                             {" "}
@@ -2047,11 +1437,13 @@ p {
                             <br />
                             <p style={{ color: "black" }}>
                               {" "}
-                              <span style={{ fontWeight: "bold" }}>To: </span>
+                              <span style={{ fontWeight: "bold" }}>
+                                Vendor:{" "}
+                              </span>
                               <br />
-                              {billDetails.vendor_name}
+                              {expenseDetails.vendor_name}
                               <br />
-                              {billDetails.vendor_billing_address}
+                              {expenseDetails.vendor_address}
                             </p>
                           </div>
                           <div className="col-md-1"></div>
@@ -2068,14 +1460,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Rec. Bill No.
+                                    Expense No.
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {billDetails.rec_bill_no}
+                                    {expenseDetails.expense_no}
                                   </td>
                                 </tr>
 
@@ -2086,14 +1478,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    Rec. Bill Date
+                                    Expense Date
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {billDetails.date}
+                                    {expenseDetails.expense_date}
                                   </td>
                                 </tr>
 
@@ -2104,14 +1496,14 @@ p {
                                       fontWeight: "bold",
                                     }}
                                   >
-                                    End Date
+                                    Tax Rate
                                   </td>
                                   <td style={{ color: "#000" }}>:</td>
                                   <td
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {billDetails.exp_ship_date}
+                                    {expenseDetails.tax_rate}
                                   </td>
                                 </tr>
                                 <tr>
@@ -2128,7 +1520,7 @@ p {
                                     className="text-right"
                                     style={{ color: "#000" }}
                                   >
-                                    {billDetails.payment_method}
+                                    {expenseDetails.payment_method}
                                   </td>
                                 </tr>
                               </tbody>
@@ -2148,220 +1540,78 @@ p {
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Items
+                                  Expense Account
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  HSN/SAC
+                                  HSN/Expense Type
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Quantity
+                                  {expenseDetails.expense_type == "Goods"
+                                    ? "HSN"
+                                    : "SAC"}
                                 </th>
                                 <th
                                   className="text-center bg-dark"
                                   style={{ color: "black" }}
                                 >
-                                  Rate
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Tax
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Discount
-                                </th>
-                                <th
-                                  className="text-center bg-dark"
-                                  style={{ color: "black" }}
-                                >
-                                  Total
+                                  Amount
                                 </th>
                               </tr>
                             </thead>
                             <tbody>
-                              {billItems.map((j) => (
-                                <tr>
-                                  <td
-                                    className="text-center"
-                                    style={{
-                                      color: "black",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {j.name}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.item_type == "Goods" ? j.hsn : j.sac}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.price}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.quantity}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.tax} %
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.discount}{" "}
-                                  </td>
-                                  <td
-                                    className="text-center"
-                                    style={{ color: "black" }}
-                                  >
-                                    {j.total}
-                                  </td>
-                                </tr>
-                              ))}
+                              <tr>
+                                <td
+                                  className="text-center"
+                                  style={{
+                                    color: "black",
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {expenseDetails.expense_account}
+                                </td>
+                                <td
+                                  className="text-center"
+                                  style={{ color: "black" }}
+                                >
+                                  {expenseDetails.expense_type}
+                                </td>
+                                <td
+                                  className="text-center"
+                                  style={{ color: "black" }}
+                                >
+                                  {expenseDetails.expense_type == "Goods"
+                                    ? expenseDetails.hsn_number
+                                    : expenseDetails.sac_number}
+                                </td>
+                                <td
+                                  className="text-center"
+                                  style={{ color: "black" }}
+                                >
+                                  {expenseDetails.amount}
+                                </td>
+                              </tr>
                             </tbody>
                           </table>
-                        </div>
-                      </div>
-                      <section className="balance-info p-0">
-                        <div className="row">
-                          <div className="col-md-7"></div>
-                          <div className="col-md-4">
-                            <br />
-                            <table className="table table-borderless">
-                              <tbody>
-                                <tr>
-                                  <td style={{ color: "#000" }}>Sub Total</td>
-                                  <td style={{ color: "#000" }}>:</td>
-                                  <td
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {billDetails.subtotal}
-                                  </td>
-                                </tr>
-
-                                {billDetails.igst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>IGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.igst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {billDetails.cgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>CGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.cgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {billDetails.sgst != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>SGST</td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.sgst}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                <tr>
-                                  <td style={{ color: "#000" }}>Tax Amount</td>
-                                  <td style={{ color: "#000" }}>:</td>
-                                  <td
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {billDetails.tax_amount}
-                                  </td>
-                                </tr>
-                                {billDetails.shipping_charge != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Shipping Charge
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.shipping_charge}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                {billDetails.adjustment != 0 ? (
-                                  <tr>
-                                    <td style={{ color: "#000" }}>
-                                      Adjustment
-                                    </td>
-                                    <td style={{ color: "#000" }}>:</td>
-                                    <td
-                                      className="text-right"
-                                      style={{ color: "#000" }}
-                                    >
-                                      <span>&#8377; </span>
-                                      {billDetails.adjustment}
-                                    </td>
-                                  </tr>
-                                ) : null}
-                              </tbody>
-                            </table>
-                            <hr style={{ backgroundColor: "#000000" }} />
-                            <table className="table table-borderless">
-                              <tbody>
-                                <tr>
-                                  <th style={{ color: "#000" }}>Grand Total</th>
-                                  <th style={{ color: "#000" }}>:</th>
-                                  <th
-                                    className="text-right"
-                                    style={{ color: "#000" }}
-                                  >
-                                    <span>&#8377; </span>
-                                    {billDetails.grandtotal}
-                                  </th>
-                                </tr>
-                              </tbody>
-                            </table>
+                          <div className="col-12 mt-4">
+                            <p style={{ color: "black" }}>
+                              {" "}
+                              <span style={{ fontWeight: "bold" }}>
+                                Customer:{" "}
+                              </span>
+                              <br />
+                              {expenseDetails.customer_name}
+                              <br />
+                              {expenseDetails.customer_address}
+                            </p>
                           </div>
                         </div>
-                      </section>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2402,276 +1652,6 @@ p {
                 </button>
               </div>
             </div>
-            <div className="" id="slip" style={{ display: "none" }}>
-              <div className="slip-container bg-white" id="slip_container">
-                <div className="slip text-dark">
-                  <h5 className="font-weight-bold text-center text-dark">
-                    {otherDetails.Company_name}
-                  </h5>
-                  <div className="address text-center">
-                    <p>{otherDetails.Address}</p>
-                    <p>
-                      {otherDetails.State}, {otherDetails.Country}
-                    </p>
-                    <p>{otherDetails.Mobile}</p>
-                  </div>
-
-                  <div className="divider"></div>
-
-                  <div className="ml-4 mt-2" style={{ color: "black" }}>
-                    <div className="row">
-                      <div className="col-md-6 text-left">Recurring Bill No:</div>
-                      <div className="col-md-5 text-right">
-                        {billDetails.rec_bill_no}
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6 text-left">Vendor Name:</div>
-                      <div className="col-md-5 text-right">
-                        {billDetails.vendor_name}
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6 text-left">Rec. Bill Date :</div>
-                      <div className="col-md-5 text-right">
-                        {billDetails.date}
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6 text-left">End Date:</div>
-                      <div className="col-md-5 text-right">
-                        {billDetails.exp_ship_date}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="divider"></div>
-
-                  <div
-                    className="equal-length-container"
-                    style={{ color: "black", fontWeight: "bold" }}
-                  >
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Item
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "95%",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item ml-2"
-                      style={{ textAlign: "center" }}
-                    >
-                      HSN/SAC
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "63%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Qty
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "60%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Rate
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "65%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Tax
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "60%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="equal-length-item"
-                      style={{ textAlign: "center" }}
-                    >
-                      Total
-                      <hr
-                        style={{
-                          borderBottom: "1px solid black",
-                          marginTop: "1vh",
-                          width: "65%",
-                          marginLeft: "10px",
-                        }}
-                      />
-                    </div>
-                  </div>
-                  {billItems.map((i) => (
-                    <div
-                      className="equal-length-container"
-                      style={{
-                        color: "black",
-                        fontSize: "small",
-                        wordWrap: "break-word",
-                        marginBottom: "1vh",
-                      }}
-                    >
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center", marginLeft: "2px" }}
-                      >
-                        {i.name}
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "right" }}
-                      >
-                        {i.item_type == "Goods" ? i.hsn : i.sac}
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center" }}
-                      >
-                        {i.quantity}
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center" }}
-                      >
-                        {i.price}
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center" }}
-                      >
-                        {i.tax}%
-                      </div>
-                      <div
-                        className="equal-length-item"
-                        style={{ textAlign: "center" }}
-                      >
-                        {i.total}
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="subtot mt-5">
-                    <div className="subtot-item d-flex justify-content-between">
-                      <span>Subtotal</span>
-                      <span>
-                        <span>&#8377; </span>
-                        {billDetails.subtotal}
-                      </span>
-                    </div>
-                    <div className="subtot-item d-flex justify-content-between">
-                      <span>Tax Amount</span>
-                      <span>
-                        <span>&#8377; </span>
-                        {billDetails.tax_amount}
-                      </span>
-                    </div>
-
-                    {billDetails.igst == 0 ? (
-                      <>
-                        <div className="subtot-item d-flex justify-content-between">
-                          <span>CGST</span>
-                          <span>
-                            <span>&#8377; </span>
-                            {billDetails.cgst}
-                          </span>
-                        </div>
-                        <div className="subtot-item d-flex justify-content-between">
-                          <span>SGST</span>
-                          <span>
-                            <span>&#8377; </span>
-                            {billDetails.sgst}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="subtot-item d-flex justify-content-between">
-                        <span>IGST</span>
-                        <span>
-                          <span>&#8377; </span>
-                          {billDetails.igst}
-                        </span>
-                      </div>
-                    )}
-
-                    {billDetails.adjustment != 0 ? (
-                      <div className="subtot-item d-flex justify-content-between">
-                        <span>Adjustment</span>
-                        <span>
-                          <span>&#8377; </span>
-                          {billDetails.adjustment}
-                        </span>
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="divider"></div>
-                  <div className="grandtot fw-bold d-flex justify-content-between">
-                    <span>
-                      <strong>TOTAL</strong>
-                    </span>
-                    <span>
-                      <strong>
-                        <span>&#8377; </span>
-                        {billDetails.grandtotal}
-                      </strong>
-                    </span>
-                  </div>
-                  <div className="divider"></div>
-                  <div className="paid-by mb-4 d-flex justify-content-between">
-                    <span>Paid By:</span>
-                    <span>{billDetails.payment_method}</span>
-                  </div>
-                  <div className="createdby d-flex justify-content-between">
-                    <p className="">Created By:</p>
-                    <span>{otherDetails.createdBy}</span>
-                  </div>
-                  <div className="datetime d-flex justify-content-between">
-                    <p className="">Printed On:</p>
-                    <span id="dateTimeDisplay"></span>
-                  </div>
-                  <div className="trns-id d-flex justify-content-between">
-                    <span>Transaction ID:</span>
-                    <span>XXXXXXXXX</span>
-                  </div>
-                  <div className="slip-footer mt-4 text-center">
-                    <p>Thank you for supporting Local business!</p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -2680,7 +1660,7 @@ p {
         <div className="modal-dialog modal-lg">
           <div className="modal-content" style={{ backgroundColor: "#213b52" }}>
             <div className="modal-header">
-              <h5 className="m-3">Share Recurring Bill</h5>
+              <h5 className="m-3">Share Expense</h5>
               <button
                 type="button"
                 className="close"
@@ -2720,7 +1700,7 @@ p {
                       rows="4"
                       value={emailMessage}
                       onChange={(e) => setEmailMessage(e.target.value)}
-                      placeholder="This message will be sent along with Recurring Bill details."
+                      placeholder="This message will be sent along with Expense details."
                     />
                   </div>
                 </div>
@@ -2767,7 +1747,7 @@ p {
               </button>
             </div>
 
-            <form onSubmit={saveBillComment} className="px-1">
+            <form onSubmit={saveExpComment} className="px-1">
               <div className="modal-body w-100">
                 <textarea
                   type="text"
@@ -2897,4 +1877,4 @@ p {
   );
 }
 
-export default ViewRecBill;
+export default ViewExpense;

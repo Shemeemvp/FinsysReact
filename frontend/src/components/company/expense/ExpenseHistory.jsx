@@ -6,21 +6,21 @@ import axios from "axios";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 
-function RecBillHistory() {
+function ExpenseHistory() {
   const ID = Cookies.get("Login_id");
-  const { billId } = useParams();
+  const { expenseId } = useParams();
   const [history, setHistory] = useState([]);
-  const [bill, setBill] = useState({});
+  const [expense, setExpense] = useState({});
 
-  const fetchRecBillHistory = () => {
+  const fetchExpenseHistory = () => {
     axios
-      .get(`${config.base_url}/fetch_rec_bill_history/${billId}/`)
+      .get(`${config.base_url}/fetch_expense_history/${expenseId}/`)
       .then((res) => {
         console.log("INV HIST=", res);
         if (res.data.status) {
-          var bl = res.data.bill;
+          var bl = res.data.expense;
           var hist = res.data.history;
-          setBill(bl);
+          setExpense(bl);
           setHistory([]);
           hist.map((i) => {
             setHistory((prevState) => [...prevState, i]);
@@ -39,7 +39,7 @@ function RecBillHistory() {
   };
 
   useEffect(() => {
-    fetchRecBillHistory();
+    fetchExpenseHistory();
   }, []);
 
   return (
@@ -52,7 +52,7 @@ function RecBillHistory() {
         <Link
           className="d-flex justify-content-end p-2"
           style={{ cursor: "pointer" }}
-          to={`/view_rec_bill/${billId}/`}
+          to={`/view_expense/${expenseId}/`}
         >
           <i
             className="fa fa-times-circle text-white"
@@ -67,9 +67,9 @@ function RecBillHistory() {
                   className="card-title"
                   style={{ textTransform: "Uppercase" }}
                 >
-                  RECURRING BILL TRANSACTIONS
+                  EXPENSE TRANSACTIONS
                 </h3>
-                {bill.status == "Draft" ? (
+                {expense.status == "Draft" ? (
                   <h6
                     className="blinking-text"
                     style={{ color: "red", width: "140px", fontWeight: "bold" }}
@@ -100,7 +100,7 @@ function RecBillHistory() {
             <div id="history">
               <center>
                 <h3 className="mt-3 text-uppercase">
-                  #{bill.rec_bill_no} - TRANSACTIONS
+                  #{expense.expense_no} - TRANSACTIONS
                 </h3>
               </center>
               <div className="table-responsive px-2">
@@ -142,4 +142,4 @@ function RecBillHistory() {
   );
 }
 
-export default RecBillHistory;
+export default ExpenseHistory;
