@@ -14185,8 +14185,6 @@ def Fin_fetchCreditNoteDetails(request, id):
         except:
             created = None
 
-        if cNote.invoice_type == 'Invoice':
-            invNo = Fin_Invoice.objects.get(Company = cmp, invoice_no = cNote.invoice_number).id
         otherDet = {
             "Company_name": cmp.Company_name,
             "Email": cmp.Email,
@@ -14218,7 +14216,7 @@ def Fin_fetchCreditNoteDetails(request, id):
             }
             items.append(obj)
         cnSerializer = CreditNoteSerializer(cNote)
-        commentsSerializer = RetInvoiceCommentSerializer(cmt, many=True)
+        commentsSerializer = CreditNoteCommentSerializer(cmt, many=True)
         return Response(
             {
                 "status": True,
@@ -17102,6 +17100,1494 @@ def Fin_updateExpense(request):
                     Company = com,
                     LoginDetails = data,
                     Expense = exp,
+                    action = 'Edited'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+# Debit Note
+
+@api_view(("GET",))
+def Fin_fetchDebitNotes(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        cNote = Fin_Debit_Note.objects.filter(Company = com)
+        debit = []
+        for i in cNote:
+            obj = {
+                "id": i.id,
+                "debit_note_no": i.debit_note_no,
+                "debit_note_date": i.debit_note_date,
+                "vendor_name": i.Vendor.First_name+" "+i.Vendor.Last_name,
+                "vendor_email":i. vendor_email,
+                "grandtotal": i.grandtotal,
+                "status": i.status,
+                "balance": i.balance,
+            }
+            debit.append(obj)
+        return Response(
+            {"status": True, "debitNote": debit}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchDebitNoteData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        items = Fin_Items.objects.filter(Company = cmp, status = 'Active')
+        vend = Fin_Vendor.objects.filter(Company=cmp)
+        trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        bnk = Fin_Banking.objects.filter(company = cmp)
+        lst = Fin_Price_List.objects.filter(Company = cmp, status = 'Active')
+        units = Fin_Units.objects.filter(Company = cmp)
+        acc = Fin_Chart_Of_Account.objects.filter(Q(account_type='Expense') | Q(account_type='Other Expense') | Q(account_type='Cost Of Goods Sold'), Company=cmp).order_by('account_name')
+        vendLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='purchase', status = 'Active')
+        
+        itemSerializer = ItemSerializer(items, many=True)
+        vendSerializer = VendorSerializer(vend, many=True)
+        pTermSerializer = CompanyPaymentTermsSerializer(trms, many=True)
+        bankSerializer = BankSerializer(bnk, many=True)
+        lstSerializer = PriceListSerializer(lst, many=True)
+        vlSerializer = PriceListSerializer(vendLists, many=True)
+        unitSerializer = ItemUnitSerializer(units, many=True)
+        accSerializer = AccountsSerializer(acc, many=True)
+
+        # Fetching last debit note and assigning upcoming ref no as current + 1
+        # Also check for if any bill is deleted and ref no is continuos w r t the deleted debit note
+        latest_note = Fin_Debit_Note.objects.filter(Company = cmp).order_by('-id').first()
+
+        new_number = int(latest_note.reference_no) + 1 if latest_note else 1
+
+        if Fin_Debit_Note_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_Debit_Note_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+        # Finding next Credit Nt number w r t last Credit Nt number if exists.
+        nxtNot = ""
+        lastNt = Fin_Debit_Note.objects.filter(Company = cmp).last()
+        if lastNt:
+            cn_no = str(lastNt.debit_note_no)
+            numbers = []
+            stri = []
+            for word in cn_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            c_note_num = int(num)+1
+
+            if num[0] == 0:
+                nxtNot = st + num.zfill(len(num))
+            else:
+                nxtNot = st + str(c_note_num).zfill(len(num))
+
+        return Response(
+            {
+                "status": True,
+                "items": itemSerializer.data,
+                "vendors":vendSerializer.data,
+                "paymentTerms":pTermSerializer.data,
+                "banks":bankSerializer.data,
+                "priceList":lstSerializer.data,
+                "vendPriceList":vlSerializer.data,
+                "units":unitSerializer.data,
+                "accounts":accSerializer.data,
+                "refNo": new_number,
+                "dnNo": nxtNot,
+                "state": cmp.State
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getBillNumbers(request):
+    try:
+        ID = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=ID)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=ID)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=ID).company_id
+
+        vend = request.GET['vendId']
+        billType = request.GET['billType']
+
+        bills = []
+        vendor = Fin_Vendor.objects.get(id = vend)
+        if not vendor:
+            return Response({'status':False, 'message':'Vendor Not Found, Try again..'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if billType == 'Bill':
+            invs = Fin_Purchase_Bill.objects.filter(Company = com, Vendor = vendor)
+
+            for option in invs:
+                if not Fin_Debit_Note.objects.filter(Company = com, bill_number__iexact = option.bill_no).exists():
+                    obj = {
+                        "id": option.id,
+                        "number": option.bill_no
+                    }
+                    bills.append(obj)
+                else:
+                    continue
+        
+        if billType == 'Recurring Bill':
+            invs = Fin_Recurring_Bills.objects.filter(Company = com, Vendor = vendor)
+
+            for option in invs:
+                if not Fin_Debit_Note.objects.filter(Company = com, bill_number__iexact = option.rec_bill_no).exists():
+                    obj = {
+                        "id": option.id,
+                        "number": option.rec_bill_no
+                    }
+                    bills.append(obj)
+                else:
+                    continue
+        return Response(
+            {"status": True, "bills": bills}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getBillNumbersEdit(request):
+    try:
+        ID = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=ID)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=ID)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=ID).company_id
+
+        vend = request.GET['vendId']
+        billType = request.GET['billType']
+        billNo = request.GET['billNum']
+
+
+        bills = []
+        vendor = Fin_Vendor.objects.get(id = vend)
+        if not vendor:
+            return Response({'status':False, 'message':'Vendor Not Found, Try again..'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if billType == 'Bill':
+            invs = Fin_Purchase_Bill.objects.filter(Company = com, Vendor = vendor)
+
+            for option in invs:
+                if option.bill_no == billNo:
+                    obj = {
+                        "id": option.id,
+                        "number": option.bill_no
+                    }
+                    bills.append(obj)
+                    continue
+
+                if not Fin_Debit_Note.objects.filter(Company = com, bill_number__iexact = option.bill_no).exists():
+                    obj = {
+                        "id": option.id,
+                        "number": option.bill_no
+                    }
+                    bills.append(obj)
+                else:
+                    continue
+        
+        if billType == 'Recurring Bill':
+            invs = Fin_Recurring_Bills.objects.filter(Company = com, Vendor = vendor)
+
+            for option in invs:
+                if option.rec_bill_no == billNo:
+                    obj = {
+                        "id": option.id,
+                        "number": option.rec_bill_no
+                    }
+                    bills.append(obj)
+                    continue
+
+                if not Fin_Debit_Note.objects.filter(Company = com, bill_number__iexact = option.rec_bill_no).exists():
+                    obj = {
+                        "id": option.id,
+                        "number": option.rec_bill_no
+                    }
+                    bills.append(obj)
+                else:
+                    continue
+        return Response(
+            {"status": True, "bills": bills}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getBillItems(request):
+    try:
+        ID = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=ID)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=ID)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=ID).company_id
+
+        billId = request.GET['id']
+        billType = request.GET['type']
+
+        items = []
+        if billType == 'Bill':
+            inv = Fin_Purchase_Bill.objects.get(Company = com, bill_no = billId)
+            itms = Fin_Purchase_Bill_Items.objects.filter(PurchaseBill = inv)
+            pl = inv.price_list_applied
+            listId = inv.price_list.id if inv.price_list_applied else ""
+            adv = inv.paid_off
+            bal = inv.balance
+            shp = inv.shipping_charge
+            adj = inv.adjustment
+            grnd = inv.grandtotal
+
+        if billType == 'Recurring Bill':
+            inv = Fin_Recurring_Bills.objects.get(Company = com, rec_bill_no = billId)
+            itms = Fin_Recurring_Bill_Items.objects.filter(RecBill = inv)
+            pl = inv.price_list_applied
+            listId = inv.price_list.id if inv.price_list_applied else ""
+            adv = inv.paid
+            bal = inv.balance
+            shp = inv.shipping_charge
+            adj = inv.adjustment
+            grnd = inv.grandtotal
+        if not itms:
+            return Response({'status':False, 'message':'Items Not Found for the selected number,\nAdd Items or Try again..'},status=status.HTTP_400_BAD_REQUEST)
+
+        for item in itms:
+            obj = {
+                "itemId": item.Item.id,
+                "item_type": item.Item.item_type,
+                "hsn": item.Item.hsn,
+                "sac": item.Item.sac,
+                "quantity": item.quantity,
+                "purchase_price": item.Item.purchase_price,
+                "price": item.price,
+                "tax": item.tax,
+                "discount": item.discount,
+                "total": item.total,
+            }
+            items.append(obj)
+
+        return Response(
+            {"status": True, "billItems": items, "priceList":pl, "listId":listId, "advance":adv, "balance":bal, "shippingCharge":shp, "adjustment":adj, "grandTotal":grnd}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_checkDebitNoteNo(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        CNno = request.GET['DNNum']
+
+        nxtNot = ""
+        lastNt = Fin_Debit_Note.objects.filter(Company = com).last()
+        if lastNt:
+            cn_no = str(lastNt.debit_note_no)
+            numbers = []
+            stri = []
+            for word in cn_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            c_note_num = int(num)+1
+
+            if num[0] == 0:
+                nxtNot = st + num.zfill(len(num))
+            else:
+                nxtNot = st + str(c_note_num).zfill(len(num))
+
+        if Fin_Debit_Note.objects.filter(Company = com, debit_note_no__iexact = CNno).exists():
+            return Response({'status':False, 'message':'Debit Note No. already Exists.!'})
+        elif nxtNot != "" and CNno != nxtNot:
+            return Response({'status':False, 'message':'Debit Note No. is not continuous.!'})
+        else:
+            return Response({'status':True, 'message':'Number is okay.!'})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_createDebitNote(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+        mutable_data["bill_type"] = None if request.data["bill_type"] == "" else request.data["bill_type"]
+        mutable_data["bill_number"] = None if request.data["bill_number"] == "" else request.data["bill_number"]
+
+        # Parse stock_items from JSON
+        cNoteItems = json.loads(request.data['debitNoteItems'])
+        CNNum = request.data['debit_note_no']
+        if Fin_Debit_Note.objects.filter(Company = com, debit_note_no__iexact = CNNum).exists():
+            return Response({'status':False, 'message': f"Debit Note Number '{CNNum}' already exists, try another!"})
+        else:
+            serializer = DebitNoteSerializer(data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                note = Fin_Debit_Note.objects.get(id=serializer.data['id'])
+
+                for ele in cNoteItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    price = ele.get('priceListPrice') if note.price_list_applied else ele.get('price')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Debit_Note_Items.objects.create(debitNote = note, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                Fin_Debit_Note_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    debitNote = note,
+                    action = 'Created'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("GET",))
+def Fin_fetchDebitNoteDetails(request, id):
+    try:
+        cNote = Fin_Debit_Note.objects.get(id=id)
+        cmp = cNote.Company
+        hist = Fin_Debit_Note_History.objects.filter(debitNote=cNote).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_Debit_Note_Comments.objects.filter(debitNote=cNote)
+        itms = Fin_Debit_Note_Items.objects.filter(debitNote=cNote)
+        try:
+            created = Fin_Debit_Note_History.objects.get(debitNote = cNote, action = 'Created')
+        except:
+            created = None
+
+        otherDet = {
+            "Company_name": cmp.Company_name,
+            "Email": cmp.Email,
+            "Mobile": cmp.Contact,
+            "Address": cmp.Address,
+            "City": cmp.City,
+            "State": cmp.State,
+            "Pincode": cmp.Pincode,
+            "vendorName": cNote.Vendor.First_name+' '+cNote.Vendor.Last_name,
+            "vendorEmail": cNote.Vendor.Vendor_email,
+            "createdBy": created.LoginDetails.First_name if created else ""
+        }
+        items = []
+        for i in itms:
+            obj = {
+                "id":i.id,
+                "itemId": i.Item.id,
+                "purchase_price": i.Item.purchase_price,
+                'name': i.Item.name,
+                "item_type": i.Item.item_type,
+                "hsn": i.hsn,
+                "sac": i.sac,
+                "quantity": i.quantity,
+                "avl": i.Item.current_stock,
+                "price": i.price,
+                "tax": i.tax,
+                "discount": i.discount,
+                "total": i.total
+            }
+            items.append(obj)
+        cnSerializer = DebitNoteSerializer(cNote)
+        commentsSerializer = DebitNoteCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "debitNote": cnSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": items,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeDebitNoteStatus(request):
+    try:
+        cnId = request.data["id"]
+        data = Fin_Debit_Note.objects.get(id=cnId)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addDebitNoteComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = DebitNoteCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteDebitNoteComment(request, id):
+    try:
+        cmt = Fin_Debit_Note_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchDebitNoteHistory(request, id):
+    try:
+        cNote = Fin_Debit_Note.objects.get(id=id)
+        hist = Fin_Debit_Note_History.objects.filter(debitNote=cNote)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        cnSerializer = DebitNoteSerializer(cNote)
+        return Response(
+            {"status": True, "debitNote": cnSerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteDebitNote(request, id):
+    try:
+        note = Fin_Debit_Note.objects.get(id=id)
+        com = note.Company
+
+        for i in Fin_Debit_Note_Items.objects.filter(debitNote = note):
+            item = Fin_Items.objects.get(id = i.Item.id)
+            item.current_stock += i.quantity
+            item.save()
+        
+        Fin_Debit_Note_Items.objects.filter(debitNote = note).delete()
+
+        # Storing ref number to deleted table
+        # if entry exists and lesser than the current, update and save => Only one entry per company
+        if Fin_Debit_Note_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_Debit_Note_Reference.objects.get(Company = com)
+            if int(note.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = note.reference_no
+                deleted.save()
+        else:
+            Fin_Debit_Note_Reference.objects.create(Company = com, reference_no = note.reference_no)
+        
+        note.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addDebitNoteAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        cnId = request.data['dn_id']
+        note = Fin_Debit_Note.objects.get(id=cnId)
+        if request.data['file']:
+            note.file = request.data['file']
+        note.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_debitNotePdf(request):
+    try:
+        id = request.GET['Id']
+        cnId = request.GET['dn_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        crd = Fin_Debit_Note.objects.get(id = cnId)
+        itms = Fin_Debit_Note_Items.objects.filter(debitNote = crd)
+    
+        context = {'debit':crd, 'debitItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_Debit_NotePdf.html'
+        fname = 'DebitNote_'+crd.debit_note_no
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("POST",))
+def Fin_shareDebitNoteToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        cnId = request.data["dn_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+
+        crd = Fin_Debit_Note.objects.get(id = cnId)
+        itms = Fin_Debit_Note_Items.objects.filter(debitNote = crd)
+    
+        context = {'debit':crd, 'debitItems':itms,'cmp':com}
+        template_path = 'company/Fin_Debit_NotePdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'Debit_Note_{crd.debit_note_no}'
+        subject = f"Debit_Note_{crd.debit_note_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - DEBIT NOTE-{crd.debit_note_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_updateDebitNote(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        cNote = Fin_Debit_Note.objects.get(id=request.data['dn_id'])
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["price_list"] = None if request.data["price_list"] == 'null' else request.data["price_list"]
+        mutable_data["bill_type"] = None if request.data["bill_type"] == "" else request.data["bill_type"]
+        mutable_data["bill_number"] = None if request.data["bill_number"] == "" else request.data["bill_number"]
+
+        # Parse stock_items from JSON
+        cNoteItems = json.loads(request.data['debitNoteItems'])
+        CNNum = request.data['debit_note_no']
+        if cNote.debit_note_no != CNNum and Fin_Debit_Note.objects.filter(Company = com, debit_note_no__iexact = CNNum).exists():
+            return Response({'status':False, 'message': f"Debit Note Number '{CNNum}' already exists, try another!"})
+        else:
+            serializer = DebitNoteSerializer(cNote,data=mutable_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                note = Fin_Debit_Note.objects.get(id=serializer.data['id'])
+
+                for i in Fin_Debit_Note_Items.objects.filter(debitNote = note):
+                    item = Fin_Items.objects.get(id = i.Item.id)
+                    item.current_stock += i.quantity
+                    item.save()
+                
+                Fin_Debit_Note_Items.objects.filter(debitNote = note).delete()
+
+                for ele in cNoteItems:
+                    itm = Fin_Items.objects.get(id = int(ele.get('item')))
+                    qty = int(ele.get('quantity'))
+                    hsn = ele.get('hsnSac') if itm.item_type == 'Goods' else None
+                    sac = ele.get('hsnSac') if itm.item_type != 'Goods' else None
+                    tax = ele.get('taxGst') if com.State == request.data['place_of_supply'] else ele.get('taxIgst')
+                    price = ele.get('priceListPrice') if note.price_list_applied else ele.get('price')
+                    disc = float(ele.get('discount')) if ele.get('discount') != "" else 0.0
+                    Fin_Debit_Note_Items.objects.create(debitNote = note, Item = itm, hsn = hsn,sac=sac, quantity = qty, price = float(price), tax = tax, discount = disc, total = float(ele.get('total')))
+                    
+                    # Reduce item stock
+                    itm.current_stock -= qty
+                    itm.save()
+            
+                # Save transaction
+                Fin_Debit_Note_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    debitNote = note,
+                    action = 'Edited'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+# Payment Made
+
+@api_view(("GET",))
+def Fin_fetchPaymentsMade(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        payments = Fin_PaymentMade.objects.filter(Company = com)
+        pay = []
+        for i in payments:
+            obj = {
+                "id": i.id,
+                "payment_no": i.payment_no,
+                "payment_date": i.payment_date,
+                "vendor_name": i.Vendor.First_name+" "+i.Vendor.Last_name,
+                "vendor_email":i. Vendor.Vendor_email,
+                "total": i.total_amount,
+                "status": i.status,
+                "balance": i.total_balance,
+            }
+            pay.append(obj)
+        return Response(
+            {"status": True, "payments": pay}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getPaymentBills(request):
+    try:
+        id = request.GET['Id']
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        paymentList = []
+
+        totAmount = 0;
+        totPayment = 0;
+        totBalance = 0;
+
+        vendId = request.GET['vendId']
+        vendor = Fin_Vendor.objects.get(id=vendId)
+        if vendor.Opening_balance > 0:
+            dict = {
+                "date": vendor.Date.strftime('%m/%d/%Y'),
+                "dueDate": vendor.Date.strftime('%m/%d/%Y'),
+                "type": "Opening Balance",
+                "number": "",
+                "total": vendor.Opening_balance,
+                "paid": 0,
+                "bal": vendor.Opening_balance
+            }
+            paymentList.append(dict)
+
+            totAmount += validateNum(vendor.Opening_balance)
+            # totBalance += validateNum(vendor.Opening_balance)
+
+        billItems = Fin_Purchase_Bill.objects.filter(Vendor=vendor ,Company =com)
+        recBillItems = Fin_Recurring_Bills.objects.filter(Vendor=vendor ,Company =com)
+        debitItems = Fin_Debit_Note.objects.filter(Vendor=vendor ,Company =com)
+
+
+        if billItems:
+            for inv in billItems:
+                dict = {
+                    "date": inv.bill_date.strftime('%m/%d/%Y'),
+                    "dueDate": inv.due_date.strftime('%m/%d/%Y'),
+                    "type": "Bill",
+                    "number": inv.bill_no,
+                    "total": inv.grandtotal,
+                    "paid": inv.paid_off,
+                    "bal": inv.balance
+                }
+                paymentList.append(dict)
+
+                totAmount += validateNum(inv.grandtotal)
+                totPayment += validateNum(inv.paid_off)
+                # totBalance += validateNum(inv.balance)
+
+        if recBillItems:
+            for recBill in recBillItems:
+                dict = {
+                    "date": recBill.date.strftime('%m/%d/%Y'),
+                    "dueDate": recBill.exp_ship_date.strftime('%m/%d/%Y'),
+                    "type": "Recurring Bill",
+                    "number": recBill.rec_bill_no,
+                    "total": recBill.grandtotal,
+                    "paid": recBill.paid,
+                    "bal": recBill.balance
+                }
+                paymentList.append(dict)
+
+                totAmount += validateNum(recBill.grandtotal)
+                totPayment += validateNum(recBill.paid)
+                # totBalance += validateNum(recInv.balance)
+
+        if debitItems:
+            for crd in debitItems:
+                dict = {
+                    "date": crd.debit_note_date.strftime('%m/%d/%Y'),
+                    "dueDate": crd.debit_note_date.strftime('%m/%d/%Y'),
+                    "type": "Debit Note",
+                    "number": crd.debit_note_no,
+                    "total": crd.grandtotal,
+                    "paid": crd.paid,
+                    "bal": crd.balance
+                }
+                paymentList.append(dict)
+
+                totAmount -= validateNum(crd.grandtotal)
+                totPayment += validateNum(crd.paid)
+                # totBalance += validateNum(crd.balance)
+
+        return Response(
+            {"status": True, "payItems": paymentList, "totalPayment":totPayment, "totalAmount": totAmount, "totalBalance":float(totAmount)-float(totPayment)}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchPaymentMadeData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        vend = Fin_Vendor.objects.filter(Company=cmp)
+        trms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        bnk = Fin_Banking.objects.filter(company = cmp)
+        vendLists = Fin_Price_List.objects.filter(Company = cmp, type__iexact='purchase', status = 'Active')
+        
+        vendSerializer = VendorSerializer(vend, many=True)
+        pTermSerializer = CompanyPaymentTermsSerializer(trms, many=True)
+        bankSerializer = BankSerializer(bnk, many=True)
+        vlSerializer = PriceListSerializer(vendLists, many=True)
+
+        # Fetching last payment and assigning upcoming ref no as current + 1
+        # Also check for if any bill is deleted and ref no is continuos w r t the deleted payment
+        latest_pay = Fin_PaymentMade.objects.filter(Company = cmp).order_by('-id').first()
+
+        new_number = int(latest_pay.reference_no) + 1 if latest_pay else 1
+
+        if Fin_PaymentMade_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_PaymentMade_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+        # Finding next Credit Nt number w r t last Credit Nt number if exists.
+        nxtPay = ""
+        lastPy = Fin_PaymentMade.objects.filter(Company = cmp).last()
+        if lastPy:
+            cn_no = str(lastPy.payment_no)
+            numbers = []
+            stri = []
+            for word in cn_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            pay_num = int(num)+1
+
+            if num[0] == 0:
+                nxtPay = st + num.zfill(len(num))
+            else:
+                nxtPay = st + str(pay_num).zfill(len(num))
+
+        return Response(
+            {
+                "status": True,
+                "vendors":vendSerializer.data,
+                "paymentTerms":pTermSerializer.data,
+                "banks":bankSerializer.data,
+                "vendPriceList":vlSerializer.data,
+                "refNo": new_number,
+                "payNo": nxtPay,
+                "state": cmp.State
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("GET",))
+def Fin_checkPaymentMadeNo(request):
+    try:
+        s_id = request.GET["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        PayNo = request.GET['PAYNum']
+
+        nxtPay = ""
+        lastPy = Fin_PaymentMade.objects.filter(Company = com).last()
+        if lastPy:
+            cn_no = str(lastPy.payment_no)
+            numbers = []
+            stri = []
+            for word in cn_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            py_num = int(num)+1
+
+            if num[0] == 0:
+                nxtPay = st + num.zfill(len(num))
+            else:
+                nxtPay = st + str(py_num).zfill(len(num))
+
+        if Fin_PaymentMade.objects.filter(Company = com, payment_no__iexact = PayNo).exists():
+            return Response({'status':False, 'message':'Payment No. already Exists.!'})
+        elif nxtPay != "" and PayNo != nxtPay:
+            return Response({'status':False, 'message':'Payment No. is not continuous.!'})
+        else:
+            return Response({'status':True, 'message':'Number is okay.!'})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_createPaymentMade(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+        mutable_data["Company"] = com.id
+        mutable_data["LoginDetails"] = com.Login_Id.id
+        
+        # Parse stock_items from JSON
+        payItems = json.loads(request.data['paymentItems'])
+        PayNum = request.data['payment_no']
+        if Fin_PaymentMade.objects.filter(Company = com, payment_no__iexact = PayNum).exists():
+            return Response({'status':False, 'message': f"Payment Number '{PayNum}' already exists, try another!"})
+        else:
+            serializer = PaymentMadeSerializer(data=mutable_data)
+            if serializer.is_valid():
+                serializer.save()
+                pay = Fin_PaymentMade.objects.get(id=serializer.data['id'])
+
+                for ele in payItems:
+                    amt = float(ele.get('total')) if ele.get('total') != "" else 0.0
+                    py = float(ele.get('payment')) if ele.get('payment') != "" else 0.0
+                    bal = float(ele.get('balance')) if ele.get('balance') != "" else 0.0
+                    Fin_PaymentMadeDetails.objects.create(
+                        Payment = pay,
+                        date = datetime.strptime(ele.get('date'), '%m/%d/%Y').date(),
+                        bill_type = ele.get('billType'),
+                        bill_number = ele.get('billNumber'),
+                        total_amount = amt,
+                        payment = py,
+                        balance_amount = bal,
+                        Company = com,
+                        LoginDetails = com.Login_Id
+                    )
+            
+                # Save transaction
+                Fin_PaymentMade_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    Payment = pay,
+                    action = 'Created'
+                )
+
+                return Response(
+                    {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"status": False, "data": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchPaymentMadeDetails(request, id):
+    try:
+        pay = Fin_PaymentMade.objects.get(id=id)
+        cmp = pay.Company
+        hist = Fin_PaymentMade_History.objects.filter(Payment=pay).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Fin_PaymentMade_Comments.objects.filter(Payment=pay)
+        itms = Fin_PaymentMadeDetails.objects.filter(Payment=pay)
+        try:
+            created = Fin_PaymentMade_History.objects.get(Payment = pay, action = 'Created')
+        except:
+            created = None
+        otherDet = {
+            "Company_name": cmp.Company_name,
+            "Email": cmp.Email,
+            "Mobile": cmp.Contact,
+            "Address": cmp.Address,
+            "City": cmp.City,
+            "State": cmp.State,
+            "Pincode": cmp.Pincode,
+            "vendorName": pay.Vendor.First_name+' '+pay.Vendor.Last_name,
+            "vendorEmail": pay.Vendor.Vendor_email,
+            "createdBy": created.LoginDetails.First_name if created else "",
+            'gstType': pay.Vendor.GST_Treatment,
+            'gstIn': pay.Vendor.GST_Number if pay.Vendor.GST_Number else "None",
+            'vendorAddress': f"{pay.Vendor.Billing_street},{pay.Vendor.Billing_city}\n{pay.Vendor.Billing_state}\n{pay.Vendor.Billing_country}\n{pay.Vendor.Billing_pincode}"
+        }
+        items = []
+        for i in itms:
+            obj = {
+                "id":i.id,
+                "date": i.date,
+                "bill_type": i.bill_type,
+                "bill_number": i.bill_number,
+                "total_amount": i.total_amount,
+                "payment": i.payment,
+                "balance_amount": i.balance_amount
+            }
+            items.append(obj)
+        paySerializer = PaymentMadeSerializer(pay)
+        commentsSerializer = PaymentMadeCommentSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "payment": paySerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "items": items,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changePaymentMadeStatus(request):
+    try:
+        pyId = request.data["id"]
+        data = Fin_PaymentMade.objects.get(id=pyId)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addPaymentMadeComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["Company"] = com.id
+        serializer = PaymentMadeCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deletePaymentMadeComment(request, id):
+    try:
+        cmt = Fin_PaymentMade_Comments.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchPaymentMadeHistory(request, id):
+    try:
+        pay = Fin_PaymentMade.objects.get(id=id)
+        hist = Fin_PaymentMade_History.objects.filter(Payment=pay)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        paySerializer = PaymentMadeSerializer(pay)
+        return Response(
+            {"status": True, "payment": paySerializer.data, "history": his},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deletePaymentMade(request, id):
+    try:
+        pay = Fin_PaymentMade.objects.get(id=id)
+        com = pay.Company
+        
+        Fin_PaymentMadeDetails.objects.filter(Payment = pay).delete()
+
+        # Storing ref number to deleted table
+        # if entry exists and lesser than the current, update and save => Only one entry per company
+        if Fin_PaymentMade_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_PaymentMade_Reference.objects.get(Company = com)
+            if int(pay.reference_no) > int(deleted.reference_no):
+                deleted.reference_no = pay.reference_no
+                deleted.save()
+        else:
+            Fin_PaymentMade_Reference.objects.create(Company = com, reference_no = pay.reference_no)
+        
+        pay.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+@parser_classes((MultiPartParser, FormParser))
+def Fin_addPaymentMadeAttachment(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        payId = request.data['pay_id']
+        pay = Fin_PaymentMade.objects.get(id=payId)
+        if request.data['file']:
+            pay.file = request.data['file']
+        pay.save()
+        return Response(
+            {"status": True}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_paymentMadePdf(request):
+    try:
+        id = request.GET['Id']
+        pyId = request.GET['pay_id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        pay = Fin_PaymentMade.objects.get(id = pyId)
+        itms = Fin_PaymentMadeDetails.objects.filter(Payment = pay)
+    
+        context = {'payment':pay, 'payItems':itms,'cmp':com}
+        
+        template_path = 'company/Fin_Payment_Made_Pdf.html'
+        fname = 'PaymentMade_'+pay.payment_no
+        # Create a Django response object, and specify content_type as pdftemp_
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f"attachment; filename = {fname}.pdf"
+        # find the template and render it.
+        template = get_template(template_path)
+        html = template.render(context)
+
+        # create a pdf
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        # if error then show some funny view
+        if pisa_status.err:
+            return HttpResponse("We had some errors <pre>" + html + "</pre>")
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("POST",))
+def Fin_sharePaymentMadeToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        pyId = request.data["pay_id"]
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+
+        pay = Fin_PaymentMade.objects.get(id = pyId)
+        itms = Fin_PaymentMadeDetails.objects.filter(Payment = pay)
+    
+        context = {'payment':pay, 'payItems':itms,'cmp':com}
+        template_path = 'company/Fin_Payment_Made_Pdf.html'
+        template = get_template(template_path)
+
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'PaymentMade_{pay.payment_no}'
+        subject = f"PaymentMade_{pay.payment_no}"
+        email = EmailMessage(
+            subject,
+            f"Hi,\nPlease find the attached details - PAYMENT MADE-{pay.payment_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}",
+            from_email=settings.EMAIL_HOST_USER,
+            to=emails_list,
+        )
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+def Fin_updatePaymentMade(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        payment = Fin_PaymentMade.objects.get(id=request.data['pay_id'])
+
+        # Make a mutable copy of request.data
+        mutable_data = deepcopy(request.data)
+
+        # Parse stock_items from JSON
+        payItems = json.loads(request.data['paymentItems'])
+        PayNum = request.data['payment_no']
+        if payment.payment_no != PayNum and Fin_PaymentMade.objects.filter(Company = com, payment_no__iexact = PayNum).exists():
+            return Response({'status':False, 'message': f"Payment Number '{PayNum}' already exists, try another!"})
+        else:
+            serializer = PaymentSerializer(payment, data=mutable_data)
+            if serializer.is_valid():
+                serializer.save()
+                pay = Fin_PaymentMade.objects.get(id=serializer.data['id'])
+
+                Fin_PaymentMadeDetails.objects.filter(Payment = pay).delete()
+
+                for ele in payItems:
+                    amt = float(ele.get('total')) if ele.get('total') != "" else 0.0
+                    py = float(ele.get('payment')) if ele.get('payment') != "" else 0.0
+                    bal = float(ele.get('balance')) if ele.get('balance') != "" else 0.0
+                    Fin_PaymentMadeDetails.objects.create(
+                        Payment = pay,
+                        date = datetime.strptime(ele.get('date'), '%Y-%m-%d').date(),
+                        bill_type = ele.get('billType'),
+                        bill_number = ele.get('billNumber'),
+                        total_amount = amt,
+                        payment = py,
+                        balance_amount = bal,
+                        Company = com,
+                        LoginDetails = com.Login_Id
+                    )
+            
+                # Save transaction
+                Fin_PaymentMade_History.objects.create(
+                    Company = com,
+                    LoginDetails = data,
+                    Payment = pay,
                     action = 'Edited'
                 )
 

@@ -150,6 +150,16 @@ import AddExpense from './components/company/expense/AddExpense';
 import ViewExpense from './components/company/expense/ViewExpense';
 import ExpenseHistory from './components/company/expense/ExpenseHistory';
 import EditExpense from './components/company/expense/EditExpense';
+import PaymentMade from './components/company/paymentmade/PaymentMade';
+import AddPaymentMade from './components/company/paymentmade/AddPaymentMade';
+import DebitNote from './components/company/debitnote/DebitNote';
+import AddDebitNote from './components/company/debitnote/AddDebitNote';
+import ViewDebitNote from './components/company/debitnote/ViewDebitNote';
+import DebitNoteHistory from './components/company/debitnote/DebitNoteHistory';
+import EditDebitNote from './components/company/debitnote/EditDebitNote';
+import ViewPaymentMade from './components/company/paymentmade/ViewPaymentMade';
+import PaymentMadeHistory from './components/company/paymentmade/PaymentMadeHistory';
+import EditPaymentMade from './components/company/paymentmade/EditPaymentMade';
 
 
 function App() {
@@ -354,6 +364,19 @@ function App() {
             <Route path="/expense_history/:expenseId/" element={<ExpenseHistory />}></Route>
             <Route path="/edit_expense/:expenseId/" element={<EditExpense />}></Route>
 
+            {/* Debit Note */}
+            <Route path="/debit_note" element={<DebitNote />}></Route>
+            <Route path="/add_debit_note" element={<AddDebitNote />}></Route>
+            <Route path="/view_debit_note/:debitNoteId/" element={<ViewDebitNote />}></Route>
+            <Route path="/debit_note_history/:debitNoteId/" element={<DebitNoteHistory />}></Route>
+            <Route path="/edit_debit_note/:debitNoteId/" element={<EditDebitNote />}></Route>
+
+            {/* Payment Made */}
+            <Route path="/payment_made" element={<PaymentMade />}></Route>
+            <Route path="/add_payment_made" element={<AddPaymentMade />}></Route>
+            <Route path="/view_payment_made/:paymentId/" element={<ViewPaymentMade />}></Route>
+            <Route path="/payment_made_history/:paymentId/" element={<PaymentMadeHistory />}></Route>
+            <Route path="/edit_payment_made/:paymentId/" element={<EditPaymentMade />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

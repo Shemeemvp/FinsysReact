@@ -1338,12 +1338,12 @@ function FinBase() {
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Payment_Made == 1 %} */}
-                  <li id="payment"><a href="{% url 'Fin_paymentmade' %}"><i className="bx bx-right-arrow-alt"></i>Payment Made</a>
+                  <li id="payment"><Link to="/payment_made"><i className="bx bx-right-arrow-alt"></i>Payment Made</Link>
                   </li>
                   {/* {% endif %} */}
 
                   {/* {% if allmodules.Debit_Note == 1 %} */}
-                  <li id="debitnote"><a href="{% url 'Fin_debitnotelist' %}"><i className="bx bx-right-arrow-alt"></i>Debit Note</a>
+                  <li id="debitnote"><Link to="/debit_note"><i className="bx bx-right-arrow-alt"></i>Debit Note</Link>
                   </li>
                   {/* {% endif %} */}
 

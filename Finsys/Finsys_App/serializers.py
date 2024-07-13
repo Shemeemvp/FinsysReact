@@ -330,3 +330,25 @@ class ExpenseCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_Expense_Comments
         fields = '__all__'
+
+# Debit Note
+class DebitNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Debit_Note
+        fields = '__all__'
+
+class DebitNoteCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_Debit_Note_Comments
+        fields = '__all__'
+
+# Payment Made
+class PaymentMadeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_PaymentMade
+        fields = '__all__'
+
+class PaymentMadeCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_PaymentMade_Comments
+        fields = '__all__'
