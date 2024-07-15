@@ -1644,7 +1644,7 @@ class Fin_Purchase_Bill(models.Model):
     payment_terms = models.ForeignKey(Fin_Company_Payment_Terms, on_delete = models.SET_NULL,null=True)
     bill_date = models.DateField(null=True, blank=True)
     due_date = models.DateField(null=True,blank=True)
-    purchase_order_no = models.CharField(max_length=100)
+    purchase_order_no = models.CharField(max_length=100,null=True,blank=True)
      
     payment_method = models.CharField(max_length=100, null=True, blank=True)
     cheque_no = models.CharField(max_length=100, null=True, blank=True)
@@ -1727,7 +1727,7 @@ class Fin_PaymentMade(models.Model):
     upi_no = models.CharField(max_length=50, blank=True, null=True)
     bank_acc_no = models.CharField(max_length=50,null=True)
     file = models.FileField(upload_to='payment_made', null=True, default=None)
-    status = models.CharField(max_length=10, choices=[('Draft', 'Draft'), ('Save', 'Save')])
+    status = models.CharField(max_length=10)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)

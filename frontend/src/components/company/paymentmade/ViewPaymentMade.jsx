@@ -936,8 +936,8 @@ function ViewPaymentMade() {
                                   </div>
                                   <div className="col-md-3 mt-3">
                                     <p className="mb-0 text-right">
-                                      {itm.bill_no != ""
-                                        ? itm.bill_no
+                                      {itm.bill_number != ""
+                                        ? itm.bill_number
                                         : "N/A"}
                                     </p>
                                   </div>
