@@ -160,6 +160,8 @@ import EditDebitNote from './components/company/debitnote/EditDebitNote';
 import ViewPaymentMade from './components/company/paymentmade/ViewPaymentMade';
 import PaymentMadeHistory from './components/company/paymentmade/PaymentMadeHistory';
 import EditPaymentMade from './components/company/paymentmade/EditPaymentMade';
+import SalaryDetails from './components/company/salarydetails/SalaryDetails';
+import AddSalaryDetails from './components/company/salarydetails/AddSalaryDetails';
 
 
 function App() {
@@ -377,6 +379,13 @@ function App() {
             <Route path="/view_payment_made/:paymentId/" element={<ViewPaymentMade />}></Route>
             <Route path="/payment_made_history/:paymentId/" element={<PaymentMadeHistory />}></Route>
             <Route path="/edit_payment_made/:paymentId/" element={<EditPaymentMade />}></Route>
+
+            {/* Salary Details */}
+            <Route path="/salary_details" element={<SalaryDetails />}></Route>
+            <Route path="/add_salary_details" element={<AddSalaryDetails />}></Route>
+            {/* <Route path="/view_payment_made/:paymentId/" element={<ViewPaymentMade />}></Route> */}
+            {/* <Route path="/payment_made_history/:paymentId/" element={<PaymentMadeHistory />}></Route> */}
+            {/* <Route path="/edit_payment_made/:paymentId/" element={<EditPaymentMade />}></Route> */}
           </Route>
         </Routes>
       </BrowserRouter>

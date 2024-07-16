@@ -352,3 +352,9 @@ class PaymentMadeCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fin_PaymentMade_Comments
         fields = '__all__'
+
+# Salary Details
+class SalarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fin_SalaryDetails
+        fields = '__all__'

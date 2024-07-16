@@ -458,4 +458,12 @@ urlpatterns = [
     path('payment_made_pdf/',Fin_paymentMadePdf),
     path('share_payment_made_email/',Fin_sharePaymentMadeToEmail),
     path('update_payment_made/',Fin_updatePaymentMade),
+
+    #Salary Details
+    path('fetch_salary_details/<int:id>/',Fin_fetchSalaryDetails),
+    path('fetch_salary_details_data/<int:id>/',Fin_fetchSalaryDetailsData),
+    path('get_employee_data/',Fin_getEmployeeData),
+    path('get_days/',Fin_getDays),
+    path('calculate_salary/',Fin_calculateSalary),
+    path('create_new_salary_details/',Fin_createSalaryDetails),
 ]

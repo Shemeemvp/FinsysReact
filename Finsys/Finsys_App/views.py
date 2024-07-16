@@ -18604,3 +18604,327 @@ def Fin_updatePaymentMade(request):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+# Salary Details
+import calendar
+from calendar import monthrange, month_name
+
+@api_view(("GET",))
+def Fin_fetchSalaryDetails(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        sl = Fin_SalaryDetails.objects.filter(Company = com)
+        salary = []
+        for i in sl:
+            try:
+                month = int(i.month)
+                month_name = calendar.month_name[month]
+            except (ValueError, IndexError):
+                month_name = 'Invalid Month'
+            
+            obj = {
+                "id": i.id,
+                "employee_name": i.Employee.first_name+" "+i.Employee.last_name,
+                "employee_id": i.Employee.employee_number,
+                "amount": i.total_salary,
+                "month": month_name+'-'+str(i.year),
+                "status": i.status,
+            }
+            salary.append(obj)
+        return Response(
+            {"status": True, "salaryDetails": salary}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchSalaryDetailsData(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        months = list(calendar.month_name)[1:]
+        years = list(range(2000, 2030))
+        employees = Employee.objects.filter(company=cmp,employee_status='Active')
+        holiday = Holiday.objects.filter(company=cmp)
+        
+        empSerializer = EmployeeSerializer(employees, many=True)
+
+        return Response(
+            {
+                "status": True,
+                "employees": empSerializer.data,
+                "months": months,
+                "years": years,
+                "leave": 0,
+                "holiday": 0,
+                "working_days": 0,
+
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getEmployeeData(request):
+    try:
+        empId = request.GET['e_id']
+        emp = Employee.objects.get(id=empId)
+        sal_obj = Fin_SalaryDetails.objects.filter(Employee=emp).last()
+
+        employee_mail = emp.employee_mail
+        employee_number = emp.employee_number
+        date_of_joining = emp.date_of_joining
+        salary_amount = emp.salary_amount
+        employee_designation = emp.employee_designation
+        hra = 0
+
+        if sal_obj is not None:
+            if sal_obj.hra:   
+                hra = sal_obj.hra  
+        details = {
+            'id':emp.id,
+            'email': employee_mail,
+            'employee_no': employee_number,
+            'join_date': date_of_joining,
+            'salary': salary_amount,
+            'designation': employee_designation,
+            'hra': hra,
+        }
+        return Response(
+            {"status": True, "employeeDetails":details}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_getDays(request):
+    try:
+        s_id = request.GET['Id']
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        employee_id = request.GET['id']
+        empid = Employee.objects.get(id=employee_id)
+        mnt = request.GET['month']
+        yr = request.GET['year']
+        month = int(mnt)
+        year = int(yr)
+
+        try:
+            result = Fin_SalaryDetails.objects.get(Employee=empid, month=month, year=year)
+            if result:
+                return Response({'status':False, 'message': 'Salary Already Executed.'})
+        except Fin_SalaryDetails.DoesNotExist:
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                end_date = datetime(year, month % 12 + 1, 1) - timedelta(days=1)
+            start_date = start_date.strftime("%Y-%m-%d")
+            end_date = end_date.strftime("%Y-%m-%d")
+
+            leave_count = Fin_Attendances.objects.filter(
+                employee=empid,
+                company=cmp,
+                start_date__range=(start_date, end_date),
+                status='Leave'
+            )
+
+            # Clculating leave days ----------------
+            count_leave = 0
+
+            for i in leave_count:
+                x = i.end_date - i.start_date
+                leave_days = x.days
+                if leave_days == 0:
+                    leave_days = 1
+                else:
+                    leave_days = leave_days + 1
+                count_leave = int(count_leave + leave_days)
+
+
+
+            holidays_count = Holiday.objects.filter(company=cmp,start_date__range=(start_date, end_date)).count()
+
+            _, num_days = calendar.monthrange(year, month)
+            working_days = num_days - holidays_count
+            
+            try:
+                return Response({'status': True,
+                    'month': MONTH_NAMES.get(month, ''),
+                    'holiday': holidays_count,
+                    'leave': count_leave,
+                    'working_days' : working_days,
+                })
+            except Employee.DoesNotExist:
+                return Response({'status':False, 'message': 'Selected employee not found.'})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+MONTH_NAMES = {
+    1: 'January',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'August',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December',
+}
+
+@api_view(("GET",))
+def Fin_calculateSalary(request):
+    try:
+        s_id = request.GET['Id']
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            cmp = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            cmp = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        salary = Decimal(request.GET.get('salary', 0))        
+        casual_leave = int(request.GET.get('casual_leave',0))
+        other_cuttings = Decimal(request.GET.get('other_cuttings', 0))
+        add_bonus = Decimal(request.GET.get('add_bonus', 0))
+        leave = int(request.GET.get('attendance', 0))
+        holiday = int(request.GET.get('holiday', 0))
+        month = int(request.GET.get('month'))
+        year = int(request.GET.get('year', 0))
+        
+        hra_str = request.GET.get('hra', '0')
+        hra_float = float(hra_str)
+        hra = int(round(hra_float)) 
+
+        Other_Allowance_str = request.GET.get('Other_Allowance')
+        Other_Allowance_float = float(Other_Allowance_str)
+        Other_Allowance = int(round(Other_Allowance_float)) 
+
+        Conveyance_Allowance_str = request.GET.get('Conveyance_Allowance')
+        Conveyance_Allowance_float = float(Conveyance_Allowance_str)
+        Conveyance_Allowance = int(round(Conveyance_Allowance_float)) 
+
+        _, num_days = monthrange(year, month)
+        wg = salary / num_days
+        s1 = wg * leave
+        leave_deduction = round((leave - casual_leave) * wg, 2)
+        monthly_salary = (salary - s1 - other_cuttings) + (add_bonus + hra + Other_Allowance + Conveyance_Allowance)
+        monthly_salary = int(monthly_salary)
+        if leave == 0:
+            pass
+        else:
+            monthly_salary += (casual_leave * wg)
+
+        return Response({'status':True, 'monthly_salary': monthly_salary, 'leave_deduction': leave_deduction})
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_createSalaryDetails(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        employee_id = request.data.get('Employee')
+        selected_employee = Employee.objects.get(id=employee_id)
+
+        casual_leave = int(request.data.get('casual_leave', 0))
+        other_cuttings = Decimal(request.data.get('other_cuttings', 0))
+        add_bonus = Decimal(request.data.get('add_bonus', 0))
+        salary_str = request.data.get('salary', '0')
+        leaves_str = request.data.get('attendance', '0')
+        leave = Decimal(leaves_str)
+        holiday = int(request.data.get('holidays', 0))
+        total_working_days = int(request.data.get('working_days', 0))
+        monthly_salary_str = request.data.get('monthly_salary', '0')
+        monthly_salary = Decimal(monthly_salary_str)
+        month = int(request.data.get('month', 0))
+        year = int(request.data.get('year', 0))
+        hra = int(request.data.get('HRA', 0))
+        other_allowance = int(request.data.get('Other_Allowance', 0))
+        conveyance_allowance = int(request.data.get('Conveyance_Allowance', 0))
+        status = request.data.get('status')
+
+        if selected_employee.salary_amount:
+            _, num_days = monthrange(year, month)
+            selected_employee_amount = Decimal(selected_employee.salary_amount)
+            daily_wage = selected_employee_amount / num_days
+            leave_deduction = round((leave - casual_leave) * daily_wage)
+        else:
+            leave_deduction = 0
+        
+        if not Fin_SalaryDetails.objects.filter(Employee=selected_employee, month=month, year=year).exists():
+            salary_detail = Fin_SalaryDetails(
+                Employee=selected_employee,
+                Company=com,
+                salary_date=request.data.get('salary_date'),
+                month=month,
+                year=year,
+                casual_leave=casual_leave,
+                leave=leave,
+                holiday=holiday,
+                other_cuttings=other_cuttings,
+                add_bonus=add_bonus,
+                description=request.data.get('description'),
+                total_salary=monthly_salary,
+                total_working_days=total_working_days,
+                leave_deduction=leave_deduction,
+                status=status,
+                hra=hra,
+                other_allowance=other_allowance,
+                conveyance_allowance=conveyance_allowance,
+            )
+            salary_detail.save()
+
+            sal_history_obj = Fin_SalaryDetailsHistory()
+            sal_history_obj.Company = com
+            sal_history_obj.LoginDetails = data
+            sal_history_obj.Salary = salary_detail
+            sal_history_obj.date = date.today()
+            sal_history_obj.action = 'Created'
+            sal_history_obj.save()
+
+            return Response({'status':True, 'message':'Salary Details Created.'})
+        else:
+            return Response({'status':False, 'message':'Salary Already Executed.'})
+    except Exception as e:
+        return Response({"status": False, "message": str(e)})

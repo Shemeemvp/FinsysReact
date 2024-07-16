@@ -1540,7 +1540,7 @@ function FinBase() {
                   <li><a href="{% url 'Fin_Attendance' %}"><i className="bx bx-right-arrow-alt"></i>Attendance</a> </li>
                   {/* {% endif %} */}
                   {/* {% if allmodules.Salary_Details == 1 %} */}
-                  <li><a href="{% url 'Fin_salary_details' %}"><i className="bx bx-right-arrow-alt"></i>Salary Details</a> </li>
+                  <li><Link to="/salary_details"><i className="bx bx-right-arrow-alt"></i>Salary Details</Link></li>
                   {/* {% endif %} */}
                 </ul>
               </li>
