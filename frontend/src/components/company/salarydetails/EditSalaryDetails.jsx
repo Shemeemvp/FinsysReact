@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from "react";
 import FinBase from "../FinBase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import Select from "react-select";
 import config from "../../../functions/config";
 import Swal from "sweetalert2";
 
-function AddSalaryDetails() {
+function EditSalaryDetails() {
   const ID = Cookies.get("Login_id");
   const navigate = useNavigate();
 
   const [employees, setEmployees] = useState([]);
   const [months, setMonths] = useState([]);
   const [years, setYears] = useState([]);
+  const { salaryId } = useParams();
+  const [employeeValue, setEmployeeValue] = useState({});
 
   const fetchSalaryDetailsData = () => {
     axios
@@ -78,6 +80,60 @@ function AddSalaryDetails() {
     }),
   };
 
+  const fetchSalaryDetails = () => {
+    axios
+      .get(`${config.base_url}/fetch_salary_details/${salaryId}/`)
+      .then((res) => {
+        console.log("SLRY DET=", res);
+        if (res.data.status) {
+          var sal = res.data.salary;
+          var details = res.data.otherDetails;
+
+          var c = {
+            value: sal.Employee,
+            label: res.data.otherDetails.employeeName,
+          };
+          setEmployeeValue(c);
+
+          setEmployee(sal.Employee);
+          setEmpId(details.employeeId);
+          setJoiningDate(details.joiningDate);
+          setEmail(details.email);
+          setDesignation(details.designation);
+          setSalary(details.salary);
+          setMonth(sal.month);
+          setYear(sal.year);
+          setSalaryDate(sal.salary_date);
+          setLeave(sal.leave);
+          setHoliday(sal.holiday);
+          setWorkingDays(sal.total_working_days);
+          setHra(parseInt(sal.hra));
+          setCasualLeave(sal.casual_leave);
+          setBasicSalary(sal.basic_salary);
+          setConveyanceAllowance(parseInt(sal.conveyance_allowance));
+          setOtherAllowance(parseInt(sal.other_allowance));
+          setOtherCutting(parseInt(sal.other_cuttings));
+          setBonus(parseInt(sal.add_bonus));
+          setLeaveDeduction(sal.leave_deduction);
+          setTotalSalary(sal.total_salary);
+          setDescription(sal.description);
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR=", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetchSalaryDetails();
+  }, []);
+
   const [employee, setEmployee] = useState("");
   const [empId, setEmpId] = useState("");
   const [joiningDate, setJoiningDate] = useState("");
@@ -100,13 +156,13 @@ function AddSalaryDetails() {
   const [leaveDeduction, setLeaveDeduction] = useState(0);
   const [totalSalary, setTotalSalary] = useState(0);
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     var dt = {
       Id: ID,
+      sal_id: salaryId,
       Employee: employee,
       salary_date: salaryDate,
       casual_leave: casualLeave,
@@ -126,18 +182,17 @@ function AddSalaryDetails() {
       description: description,
       monthly_salary: totalSalary,
       leave_deduction: leaveDeduction,
-      status: status,
     };
 
     axios
-      .post(`${config.base_url}/create_new_salary_details/`, dt)
+      .put(`${config.base_url}/update_salary_details/`, dt)
       .then((res) => {
         if (res.data.status) {
           Toast.fire({
             icon: "success",
-            title: "Salary Created",
+            title: "Salary Updated",
           });
-          navigate("/salary_details");
+          navigate(`/view_salary_details/${salaryId}/`);
         }
         if (!res.data.status && res.data.message != "") {
           Swal.fire({
@@ -495,7 +550,7 @@ function AddSalaryDetails() {
             icon: "success",
             title: "Employee Created",
           });
-          document.getElementById('closeEmployeeModal').click();
+          document.getElementById("closeEmployeeModal").click();
           fetchSalaryDetailsData();
         }
         if (!res.data.status && res.data.message != "") {
@@ -810,7 +865,7 @@ function AddSalaryDetails() {
         style={{ backgroundColor: "#2f516f", minHeight: "100vh" }}
       >
         <div className="d-flex justify-content-end mb-1">
-          <Link to={"/salary_details"}>
+          <Link to={`/view_salary_details/${salaryId}/`}>
             <i
               className="fa fa-times-circle text-white mx-4 p-1"
               style={{ fontSize: "1.2rem", marginRight: "0rem !important" }}
@@ -821,7 +876,7 @@ function AddSalaryDetails() {
           <div className="row">
             <div className="col-md-12">
               <center>
-                <h2 className="mt-3">ADD SALARY DETAILS</h2>
+                <h2 className="mt-3">EDIT SALARY DETAILS</h2>
               </center>
               <hr />
             </div>
@@ -845,6 +900,7 @@ function AddSalaryDetails() {
                       className="w-100"
                       id="employee"
                       required
+                      value={employeeValue || null}
                       onChange={(selectedOption) =>
                         handleEmployeeChange(
                           selectedOption ? selectedOption.value : ""
@@ -1143,17 +1199,15 @@ function AddSalaryDetails() {
                   <input
                     type="submit"
                     className="btn btn-outline-secondary w-100 text-light"
-                    name="Draft"
-                    onClick={() => setStatus("Draft")}
-                    value="Draft"
+                    name=""
+                    value="Save"
                     style={{ width: "fit-content", height: "fit-content" }}
                   />
                   <input
-                    type="submit"
+                    type="reset"
                     className="btn btn-outline-secondary w-100 ml-1 text-light"
-                    name="Save"
-                    onClick={() => setStatus("Saved")}
-                    value="Save"
+                    onClick={() => navigate(`/view_salary_details/${salaryId}/`)}
+                    value="Cancel"
                     style={{ width: "fit-content", height: "fit-content" }}
                   />
                 </div>
@@ -1241,7 +1295,12 @@ function AddSalaryDetails() {
             </div>
             <div className="modal-body w-100">
               <div className="card p-3">
-                <form method="post" id="newEmployeeForm" className="px-1" onSubmit={handleEmployeeModalSubmit}>
+                <form
+                  method="post"
+                  id="newEmployeeForm"
+                  className="px-1"
+                  onSubmit={handleEmployeeModalSubmit}
+                >
                   <div className="row w-100">
                     <div className="col-md-6">
                       <div className="form-group">
@@ -2078,4 +2137,4 @@ function AddSalaryDetails() {
   );
 }
 
-export default AddSalaryDetails;
+export default EditSalaryDetails;

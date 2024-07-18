@@ -18,6 +18,28 @@ function FinBase() {
   const [custCreditLimitAlerts, setCustCreditLimitAlerts] = useState([]);
   const [notificationCount, setNotificationCount] = useState(0);
 
+  const [modules, setModules] = useState({});
+
+  const fetchModules = () => {
+    axios
+      .get(`${config.base_url}/get_modules/${ID}/`)
+      .then((res) => {
+        console.log("MODULES==", res);
+        if (res.data.status) {
+          const modules = res.data.modules;
+
+          setModules(modules);
+        }
+      })
+      .catch((err) => {
+        console.log("MODULES ERROR==", err);
+      });
+  };
+
+  useEffect(() => {
+    fetchModules();
+  }, []);
+
   const fetchNotifications = () => {
     axios
       .get(`${config.base_url}/fetch_notifications/${ID}/`)
@@ -120,10 +142,10 @@ function FinBase() {
       item.style.display = "none";
     });
   }
-  function hideMenus(menuId){
+  function hideMenus(menuId) {
     try {
-      document.querySelectorAll("ul.submenu").forEach(element => {
-        if(element.id != menuId){
+      document.querySelectorAll("ul.submenu").forEach((element) => {
+        if (element.id != menuId) {
           element.classList.remove("mm-show");
           element.classList.add("mm-collapse");
         }
@@ -133,7 +155,7 @@ function FinBase() {
     }
   }
   const showMenu = (menuId) => {
-    hideMenus(menuId)
+    hideMenus(menuId);
     const element = document.getElementById(menuId);
     if (element) {
       if (element.classList.contains("mm-show")) {
@@ -146,10 +168,10 @@ function FinBase() {
     }
   };
 
-  function hideRepSubMenus(menuId){
+  function hideRepSubMenus(menuId) {
     try {
-      document.querySelectorAll("ul.reportSub").forEach(element => {
-        if(element.id != menuId){
+      document.querySelectorAll("ul.reportSub").forEach((element) => {
+        if (element.id != menuId) {
           element.classList.remove("mm-show");
           element.classList.add("mm-collapse");
         }
@@ -160,7 +182,7 @@ function FinBase() {
   }
 
   const showRepSubMenu = (menuId) => {
-    hideRepSubMenus(menuId)
+    hideRepSubMenus(menuId);
     const element = document.getElementById(menuId);
     if (element) {
       if (element.classList.contains("mm-show")) {
@@ -188,7 +210,7 @@ function FinBase() {
 
   useEffect(() => {
     try {
-      document.querySelectorAll("ul.submenu").forEach(element => {
+      document.querySelectorAll("ul.submenu").forEach((element) => {
         element.classList.add("mm-collapse");
       });
     } catch (error) {
@@ -196,7 +218,7 @@ function FinBase() {
     }
 
     try {
-      document.querySelectorAll("ul.reportSub").forEach(element => {
+      document.querySelectorAll("ul.reportSub").forEach((element) => {
         element.classList.add("mm-collapse");
       });
     } catch (error) {
@@ -346,10 +368,7 @@ function FinBase() {
                   <b>Accuhub</b>
                 </h4>
               </div>
-              <a
-                href="javascript:;"
-                className="toggle-btn ml-lg-auto p-0"
-              >
+              <a href="javascript:;" className="toggle-btn ml-lg-auto p-0">
                 <i
                   className="bx bx-menu text-white"
                   style={{ fontSize: "28px" }}
@@ -845,10 +864,7 @@ function FinBase() {
                         {noti ? (
                           <>
                             {notification.map((item) => (
-                              <a
-                                className="dropdown-item w-100"
-                                href="#"
-                              >
+                              <a className="dropdown-item w-100" href="#">
                                 <div className="media align-items-center w-100">
                                   <div className="notify bg-light-primary text-primary">
                                     <i className="bx bx-file"></i>
@@ -866,10 +882,7 @@ function FinBase() {
                               </a>
                             ))}
                             {stockAlerts.map((item) => (
-                              <a
-                                className="dropdown-item w-100"
-                                href="#"
-                              >
+                              <a className="dropdown-item w-100" href="#">
                                 <div className="media align-items-center w-100">
                                   <div className="notify bg-light-primary text-primary">
                                     <i className="bx bx-file"></i>
@@ -887,10 +900,7 @@ function FinBase() {
                               </a>
                             ))}
                             {custCreditLimitAlerts.map((item) => (
-                              <a
-                                className="dropdown-item w-100"
-                                href="#"
-                              >
+                              <a className="dropdown-item w-100" href="#">
                                 <div className="media align-items-center w-100">
                                   <div className="notify bg-light-primary text-primary">
                                     <i className="bx bx-file"></i>
@@ -951,10 +961,7 @@ function FinBase() {
                       </a>
                       <div className="header-notifications-list">
                         {stockAlerts.map((item) => (
-                          <a
-                            className="dropdown-item w-100"
-                            href="#"
-                          >
+                          <a className="dropdown-item w-100" href="#">
                             <div className="media align-items-center w-100">
                               <div className="notify bg-light-primary text-primary">
                                 <i className="bx bx-file"></i>
@@ -972,10 +979,7 @@ function FinBase() {
                           </a>
                         ))}
                         {custCreditLimitAlerts.map((item) => (
-                          <a
-                            className="dropdown-item w-100"
-                            href="#"
-                          >
+                          <a className="dropdown-item w-100" href="#">
                             <div className="media align-items-center w-100">
                               <div className="notify bg-light-primary text-primary">
                                 <i className="bx bx-file"></i>
@@ -1168,7 +1172,7 @@ function FinBase() {
                   <a
                     href="javascript:;"
                     className="has-arrow"
-                    onClick={() => showMenu('staffSubmenu')}
+                    onClick={() => showMenu("staffSubmenu")}
                   >
                     <div className="parent-icon">
                       <i className="bx bxs-user"></i>
@@ -1190,358 +1194,773 @@ function FinBase() {
                 </li>
               ) : null}
               <li>
-                <a href="javascript:;" className="has-arrow" onClick={()=>{showMenu('itemsSubmenu')}}>
-                  <div className="parent-icon"><i className='bx bxs-package'></i></div>
+                <a
+                  href="javascript:;"
+                  className="has-arrow"
+                  onClick={() => {
+                    showMenu("itemsSubmenu");
+                  }}
+                >
+                  <div className="parent-icon">
+                    <i className="bx bxs-package"></i>
+                  </div>
                   <div className="menu-title">Item</div>
                 </a>
                 <ul className="submenu" id="itemsSubmenu">
-                  {/* {% if allmodules.Items == 1 %} */}
-                  <li id="items"><Link to="/items"><i className="bx bx-right-arrow-alt"></i>Items</Link></li>
-                  {/* {% endif %} */}
-
-                  {/* {% if allmodules.Price_List == 1 %} */}
-                  <li id="pricelist">
-                    <Link to="/price_list"><i className="bx bx-right-arrow-alt"></i>Price Lists</Link>
-                  </li>
-                  {/* {% endif %} */}
-
-                  {/* {% if allmodules.Stock_Adjustment == 1 %} */}
-                  <li id="stockadjustment"><Link to="/stock_adjust"><i className="bx bx-right-arrow-alt"></i>Stock Adjustments</Link></li>
-                  {/* {% endif %} */}
+                  {modules.Items == 1 ? (
+                    <li id="items">
+                      <Link to="/items">
+                        <i className="bx bx-right-arrow-alt"></i>Items
+                      </Link>
+                    </li>
+                  ) : null}
+                  {modules.Price_List == 1 ? (
+                    <li id="pricelist">
+                      <Link to="/price_list">
+                        <i className="bx bx-right-arrow-alt"></i>Price Lists
+                      </Link>
+                    </li>
+                  ) : null}
+                  {modules.Stock_Adjustment == 1 ? (
+                    <li id="stockadjustment">
+                      <Link to="/stock_adjust">
+                        <i className="bx bx-right-arrow-alt"></i>Stock
+                        Adjustments
+                      </Link>
+                    </li>
+                  ) : null}
                 </ul>
               </li>
               <li>
-                <a href="javascript:;" className="has-arrow" onClick={()=>{showMenu('cashBankSubmenu')}}>
-                  <div className="parent-icon"><i className="bx bx-home-alt"></i>
+                <a
+                  href="javascript:;"
+                  className="has-arrow"
+                  onClick={() => {
+                    showMenu("cashBankSubmenu");
+                  }}
+                >
+                  <div className="parent-icon">
+                    <i className="bx bx-home-alt"></i>
                   </div>
-                  <div className="menu-title" style={{marginRight: "20px"}}>Cash&Bank</div>
+                  <div className="menu-title" style={{ marginRight: "20px" }}>
+                    Cash&Bank
+                  </div>
                 </a>
                 <ul className="submenu" id="cashBankSubmenu">
-                  {/* {% if allmodules.Offline_Banking == 1 %} */}
-                  
-                  <li id="Offlinebanking"><Link to="/banking"><i className="bx bx-right-arrow-alt"></i>Offline
-                      Banking</Link>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Offline_Banking == 1 ? (
+                    <li id="Offlinebanking">
+                      <Link to="/banking">
+                        <i className="bx bx-right-arrow-alt"></i>Offline Banking
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  
+                  {modules.Bank_Holders == 1 ? (
+                    <li id="bank_holder">
+                      <Link to="/banklist">
+                        <i className="bx bx-right-arrow-alt"></i>Bank Holders
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Bank_Holders == 1 %} */}
-                 
-                  <li id="bank_holder"><Link to="/banklist"><i className="bx bx-right-arrow-alt"></i>Bank Holders</Link></li>
-                  {/* {% endif %} */}
+                  {modules.Cash_i == 1 ? (
+                    <li id="cashinhands">
+                      <a href="{% url 'Fin_cashInHand' %}">
+                        <i className="bx bx-right-arrow-alt"></i>Cash In Hand
+                      </a>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Cash_in_hand == 1 %} */}
-                  <li id="cashinhands"><a href="{% url 'Fin_cashInHand' %}"><i className="bx bx-right-arrow-alt"></i>Cash
-                      In Hand</a>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Cheque == 1 ? (
+                    <li id="cheques">
+                      <a href="{% url 'Fin_cheques' %}">
+                        <i className="bx bx-right-arrow-alt"></i>Cheques
+                      </a>
+                    </li>
+                  ) : null}
+                  {modules.Loan_Account == 1 ? (
+                    <li>
+                      <a href="{% url 'loan_ac_listoutpage' %}">
+                        <i className="bx bx-right-arrow-alt"></i>Loan Account
+                      </a>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Cheque == 1 %} */}
-                  <li id="cheques"><a href="{% url 'Fin_cheques' %}"><i className="bx bx-right-arrow-alt"></i>Cheques
-                    </a>
-                  </li>
-                  {/* {% endif %} */}
-
-                  {/* {% if allmodules.Loan_Account == 1 %} */}
-                  <li><a href="{% url 'loan_ac_listoutpage' %}"><i className="bx bx-right-arrow-alt"></i>Loan Account</a></li>
-                  {/* {% endif %} */}
-
-                  {/* {% if allmodules.UPI == 1 %} */}
-                  <li><a href="{% url 'Fin_upiPayments' %}"><i className="bx bx-right-arrow-alt"></i>UPI</a></li>
-                  {/* {% endif %} */}
+                  {modules.UPI == 1 ? (
+                    <li>
+                      <a href="{% url 'Fin_upiPayments' %}">
+                        <i className="bx bx-right-arrow-alt"></i>UPI
+                      </a>
+                    </li>
+                  ) : null}
                 </ul>
               </li>
               <li>
-                <a href="javascript:;" className="has-arrow" onClick={()=>{showMenu('salesSubmenu')}}>
-                  <div className="parent-icon"><i className="bx bx-file"></i>
+                <a
+                  href="javascript:;"
+                  className="has-arrow"
+                  onClick={() => {
+                    showMenu("salesSubmenu");
+                  }}
+                >
+                  <div className="parent-icon">
+                    <i className="bx bx-file"></i>
                   </div>
                   <div className="menu-title">Sales</div>
                 </a>
                 <ul className="submenu" id="salesSubmenu">
-                  {/* {% if allmodules.Customers == 1 %} */}
-                  <li id="customers"><Link to="/customers"><i className="bx bx-right-arrow-alt"></i>Customers</Link>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Customers == 1 ? (
+                    <li id="customers">
+                      <Link to="/customers">
+                        <i className="bx bx-right-arrow-alt"></i>Customers
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Estimate == 1 %} */}
+                  {modules.Estimate == 1 ? (
+                    <li id="estimate">
+                      <Link to="/Estimate">
+                        <i className="bx bx-right-arrow-alt"></i>Estimate
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  <li id="estimate"><Link to="/Estimate"><i className="bx bx-right-arrow-alt"></i>Estimate</Link>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Sales_Order == 1 ? (
+                    <li id="salesorder">
+                      <Link to="/sales_order">
+                        <i className="bx bx-right-arrow-alt"></i>Sales Order
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Sales_Order == 1 %} */}
-                  <li id="salesorder"><Link to="/sales_order"><i className="bx bx-right-arrow-alt"></i>Sales Order</Link>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Invoice == 1 ? (
+                    <li id="invoices">
+                      <Link to="/invoice">
+                        <i className="bx bx-right-arrow-alt"></i>Invoices
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Invoice == 1 %} */}
-                  
-                  <li id="invoices"><Link to="/invoice"><i className="bx bx-right-arrow-alt"></i>Invoices</Link>
-                  </li>
-                  {/* {% endif %} */}
-            
+                  {modules.Credit_Note == 1 ? (
+                    <li id="creditnote">
+                      <Link to="/credit_note">
+                        <i className="bx bx-right-arrow-alt"></i>Credit Note
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Credit_Note == 1 %} */}
-                  <li id="creditnote">
-                    <Link to="/credit_note"><i className="bx bx-right-arrow-alt"></i>Credit Note</Link>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Payment_Received == 1 ? (
+                    <li id="paymentsreceived">
+                      <Link to="/payment_received">
+                        <i className="bx bx-right-arrow-alt"></i>Payments
+                        Received
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Payment_Received == 1 %} */}
-                  <li id="paymentsreceived"><Link to="/payment_received"><i className="bx bx-right-arrow-alt"></i>Payments Received</Link>
-                  </li>
-                  {/* {% endif %} */}
-          
-                  {/* {% if allmodules.Retainer_Invoice == 1 %} */}
-                  <li id="retainerinvoices"><Link to="/ret_invoice"><i className="bx bx-right-arrow-alt"></i>Retainer Invoices</Link>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Retainer_Invoice == 1 ? (
+                    <li id="retainerinvoices">
+                      <Link to="/ret_invoice">
+                        <i className="bx bx-right-arrow-alt"></i>Retainer
+                        Invoices
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Delivery_Challan == 1 %} */}
-                  <li id="deliverychallan"><Link to="/delivery_challan"><i className="bx bx-right-arrow-alt"></i> Delivery Challan</Link>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Delivery_Challan == 1 ? (
+                    <li id="deliverychallan">
+                      <Link to="/delivery_challan">
+                        <i className="bx bx-right-arrow-alt"></i> Delivery
+                        Challan
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Recurring_Invoice == 1 %} */}
-                  <li id="reccuringinvoices"><Link to="/rec_invoice"><i className="bx bx-right-arrow-alt"></i> Recurring Invoices</Link>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Recurring_Invoice == 1 ? (
+                    <li id="reccuringinvoices">
+                      <Link to="/rec_invoice">
+                        <i className="bx bx-right-arrow-alt"></i> Recurring
+                        Invoices
+                      </Link>
+                    </li>
+                  ) : null}
                 </ul>
               </li>
               <li>
-                <a href="javascript:;" className="has-arrow" onClick={()=>{showMenu('purchaseSubmenu')}}>
-                  <div className="parent-icon"><i className='bx bx-briefcase-alt'></i>
+                <a
+                  href="javascript:;"
+                  className="has-arrow"
+                  onClick={() => {
+                    showMenu("purchaseSubmenu");
+                  }}
+                >
+                  <div className="parent-icon">
+                    <i className="bx bx-briefcase-alt"></i>
                   </div>
                   <div className="menu-title">Purchase</div>
                 </a>
                 <ul className="submenu" id="purchaseSubmenu">
-                  {/* {% if allmodules.Vendors == 1 %} */}
-                  {/* <li id="vendor"><a href="{% url 'Fin_vendors' %}"><i className="bx bx-right-arrow-alt"></i>Vendor</a> */}
-                  <li id="vendor"><Link to="/vendors"><i className="bx bx-right-arrow-alt"></i>Vendor</Link>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Vendors == 1 ? (
+                    <li id="vendor">
+                      <Link to="/vendors">
+                        <i className="bx bx-right-arrow-alt"></i>Vendor
+                      </Link>
+                    </li>
+                  ) : null}
+                  {modules.Purchase_Order == 1 ? (
+                    <li id="purchaseorder">
+                      <Link to="/purchase_order">
+                        <i className="bx bx-right-arrow-alt"></i>Purchase Order
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Purchase_Order == 1 %} */}
-                  <li id="purchaseorder"><a href="{% url 'Fin_purchaseOrder' %}"><i className="bx bx-right-arrow-alt"></i>Purchase Order</a>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Bills == 1 ? (
+                    <li id="bill">
+                      <Link to="/Bill">
+                        <i className="bx bx-right-arrow-alt"></i>Bill
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Bills == 1 %} */}
-                  <li id="bill"><a href="{% url 'Fin_List_Purchase_Bill' %}"><i className="bx bx-right-arrow-alt"></i>Bill</a>
-                  </li>
-                  {/* {% endif %} */}
+                  {modules.Expenses == 1 ? (
+                    <li id="expense">
+                      <Link to="/expense">
+                        <i className="bx bx-right-arrow-alt"></i>Expense
+                      </Link>
+                    </li>
+                  ) : null}
+                  {modules.Payment_Made == 1 ? (
+                    <li id="payment">
+                      <Link to="/payment_made">
+                        <i className="bx bx-right-arrow-alt"></i>Payment Made
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Expenses == 1 %} */}
-                  <li id="expense"><Link to="/expense"><i className="bx bx-right-arrow-alt"></i>Expense</Link>
-                  </li>
-                  {/* {% endif %} */}
-
-                  {/* {% if allmodules.Payment_Made == 1 %} */}
-                  <li id="payment"><Link to="/payment_made"><i className="bx bx-right-arrow-alt"></i>Payment Made</Link>
-                  </li>
-                  {/* {% endif %} */}
-
-                  {/* {% if allmodules.Debit_Note == 1 %} */}
-                  <li id="debitnote"><Link to="/debit_note"><i className="bx bx-right-arrow-alt"></i>Debit Note</Link>
-                  </li>
-                  {/* {% endif %} */}
-
-                  {/* {% if allmodules.Recurring_Bills == 1 %} */}
-                  <li id="recurringbill"><Link to="/rec_bill"><i className="bx bx-right-arrow-alt"></i>Recurring Bill</Link>
-                  </li>
-                  {/* {% endif %} */}
-                  
+                  {modules.Debit_Note == 1 ? (
+                    <li id="debitnote">
+                      <Link to="/debit_note">
+                        <i className="bx bx-right-arrow-alt"></i>Debit Note
+                      </Link>
+                    </li>
+                  ) : null}
+                  {modules.Recurring_Bills == 1 ? (
+                    <li id="recurringbill">
+                      <Link to="/rec_bill">
+                        <i className="bx bx-right-arrow-alt"></i>Recurring Bill
+                      </Link>
+                    </li>
+                  ) : null}
                 </ul>
               </li>
               <li>
-                <a href="javascript:;" className="has-arrow" onClick={()=>showMenu('reportsSubmenu')}>
-                  <div className="parent-icon"><i className="bx bx-comment-edit"></i></div>
+                <a
+                  href="javascript:;"
+                  className="has-arrow"
+                  onClick={() => showMenu("reportsSubmenu")}
+                >
+                  <div className="parent-icon">
+                    <i className="bx bx-comment-edit"></i>
+                  </div>
                   <div className="menu-title">Reports</div>
                 </a>
                 <ul className="submenu" id="reportsSubmenu">
-                  <li id="transactonreport" onClick={()=>showRepSubMenu('transSub')}>
-                    <a><i className="bx bx-right-arrow-alt"></i>Transaction Reports</a>
+                  <li
+                    id="transactonreport"
+                    onClick={() => showRepSubMenu("transSub")}
+                  >
+                    <a>
+                      <i className="bx bx-right-arrow-alt"></i>Transaction
+                      Reports
+                    </a>
                     <ul className="px-4 reportSub" id="transSub">
-                      <li><a href=""><i className="bx bx-right-arrow-alt"></i>Sales</a></li>
+                      <li>
+                        <a href="">
+                          <i className="bx bx-right-arrow-alt"></i>Sales
+                        </a>
+                      </li>
                       <ul className="px-4">
-                        <li><a href="{% url 'Fin_salesByCustomerReport' %}"><i className="bx bx-right-arrow-alt"></i>Sales by Customer</a></li>
-                        <li><a href="{% url 'Fin_salesByItemReport' %}"><i className="bx bx-right-arrow-alt"></i>Sales By Item</a></li>
+                        <li>
+                          <a href="{% url 'Fin_salesByCustomerReport' %}">
+                            <i className="bx bx-right-arrow-alt"></i>Sales by
+                            Customer
+                          </a>
+                        </li>
+                        <li>
+                          <a href="{% url 'Fin_salesByItemReport' %}">
+                            <i className="bx bx-right-arrow-alt"></i>Sales By
+                            Item
+                          </a>
+                        </li>
                       </ul>
-                      <li><a href=""><i className="bx bx-right-arrow-alt"></i>Purchase</a></li>
+                      <li>
+                        <a href="">
+                          <i className="bx bx-right-arrow-alt"></i>Purchase
+                        </a>
+                      </li>
                       <ul className="px-4">
-                        <li><a href="{% url 'Fin_purchase_report_vendor' %}"><i className="bx bx-right-arrow-alt"></i>Purchase by Vendor</a></li>
-                        <li><a href="{% url 'Fin_purchase_report_item' %}"><i className="bx bx-right-arrow-alt"></i>Purchase By Item</a></li>
+                        <li>
+                          <a href="{% url 'Fin_purchase_report_vendor' %}">
+                            <i className="bx bx-right-arrow-alt"></i>Purchase by
+                            Vendor
+                          </a>
+                        </li>
+                        <li>
+                          <a href="{% url 'Fin_purchase_report_item' %}">
+                            <i className="bx bx-right-arrow-alt"></i>Purchase By
+                            Item
+                          </a>
+                        </li>
                       </ul>
-                      <li><a href="{% url 'alltransactions' %}"><i className="bx bx-right-arrow-alt"></i>All Transactions</a></li>
-                      <li><a href="{% url 'Fin_cashFlowReport' %}"><i className="bx bx-right-arrow-alt"></i>Cash Flow</a></li>
-                      <li><a href="{% url 'Fin_dayBookReport' %}"><i className="bx bx-right-arrow-alt"></i>Day Book</a></li>
-                      <li><a href="{% url 'Fin_trial_balance' %}"><i className="bx bx-right-arrow-alt"></i>Trial Balance</a></li>
-                      <li><a href=""><i className="bx bx-right-arrow-alt"></i>Profit and Loss</a></li>
-                      <li><a href=""><i className="bx bx-right-arrow-alt"></i>Balance Sheet</a></li>
+                      <li>
+                        <a href="{% url 'alltransactions' %}">
+                          <i className="bx bx-right-arrow-alt"></i>All
+                          Transactions
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_cashFlowReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Cash Flow
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_dayBookReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Day Book
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_trial_balance' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Trial Balance
+                        </a>
+                      </li>
+                      <li>
+                        <a href="">
+                          <i className="bx bx-right-arrow-alt"></i>Profit and
+                          Loss
+                        </a>
+                      </li>
+                      <li>
+                        <a href="">
+                          <i className="bx bx-right-arrow-alt"></i>Balance Sheet
+                        </a>
+                      </li>
                     </ul>
                   </li>
-                  <li id="stock" onClick={()=>showRepSubMenu('stockSub')}>
-                    <a><i className="bx bx-right-arrow-alt"></i>Stock Reports </a>
+                  <li id="stock" onClick={() => showRepSubMenu("stockSub")}>
+                    <a>
+                      <i className="bx bx-right-arrow-alt"></i>Stock Reports{" "}
+                    </a>
                     <ul className="px-4 reportSub" id="stockSub">
-                      <li><a href=""><i className="bx bx-right-arrow-alt"></i>Stock Summary </a></li>
-                      <li><a href="{% url 'Fin_stockDetailsReport' %}"><i className="bx bx-right-arrow-alt"></i>Stock Details</a></li>
-                      <li><a href="{%url 'Fin_InventoryItemReport' %}"><i className="bx bx-right-arrow-alt"></i>Stock Valuation Summary</a></li>
-                      <li><a href="{% url 'Fin_lowstockDetailsReport' %}"><i className="bx bx-right-arrow-alt"></i> Low Stock Details</a></li>
-                      <li><a href="{% url 'Fin_sales_item_DiscountReport' %}"><i className="bx bx-right-arrow-alt"></i>Sales Item Discount Details</a></li>
-                      <li><a href="{% url 'Fin_itemReportByParty' %}"><i className="bx bx-right-arrow-alt"></i>Item Report by Party</a></li>
+                      <li>
+                        <a href="">
+                          <i className="bx bx-right-arrow-alt"></i>Stock Summary{" "}
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_stockDetailsReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Stock Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{%url 'Fin_InventoryItemReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Stock
+                          Valuation Summary
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_lowstockDetailsReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Low Stock
+                          Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_sales_item_DiscountReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Sales Item
+                          Discount Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_itemReportByParty' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Item Report
+                          by Party
+                        </a>
+                      </li>
                     </ul>
                   </li>
-                  <li id="party" onClick={()=>showRepSubMenu('partySub')}>
-                    <a><i className="bx bx-right-arrow-alt"></i>Party Reports</a>
+                  <li id="party" onClick={() => showRepSubMenu("partySub")}>
+                    <a>
+                      <i className="bx bx-right-arrow-alt"></i>Party Reports
+                    </a>
                     <ul className="px-4 reportSub" id="partySub">
-                      <li><a href="{% url 'Fin_partyStatementReport' %}"><i className="bx bx-right-arrow-alt"></i>Party Statements</a></li>
-                      <li><a href="{% url 'Fin_allPartiesReport' %}"><i className="bx bx-right-arrow-alt"></i>All Parties</a></li>
-                      <li><a href="{% url 'Fin_partyReportByItem' %}"><i className="bx bx-right-arrow-alt"></i>Party Report by Item</a></li>
-                      <li><a href="{% url 'Fin_salespurchasebypartyReport' %}"><i className="bx bx-right-arrow-alt"></i>Sale purchase By Party </a></li>
+                      <li>
+                        <a href="{% url 'Fin_partyStatementReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Party
+                          Statements
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_allPartiesReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>All Parties
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_partyReportByItem' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Party Report
+                          by Item
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_salespurchasebypartyReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Sale purchase
+                          By Party{" "}
+                        </a>
+                      </li>
                     </ul>
                   </li>
-                  <li id="gstreports" onClick={()=>showRepSubMenu('gstrSub')}>
-                    <a><i className="bx bx-right-arrow-alt"></i>GST Reports</a>
+                  <li id="gstreports" onClick={() => showRepSubMenu("gstrSub")}>
+                    <a>
+                      <i className="bx bx-right-arrow-alt"></i>GST Reports
+                    </a>
                     <ul className="px-4 reportSub" id="gstrSub">
-                      <li><a href="{% url 'gstr1' %}">GSTR-1</a></li>
-                      <li><a href="{% url 'gstr2' %}">GSTR-2</a></li>
-                      <li><a href="">GSTR-3B</a></li>
-                      <li><a href="">GSTR-9</a></li>
-                      <li><a href="{% url 'sale_summary_byHSN' %}">Sale Summary by HSN</a></li>
+                      <li>
+                        <a href="{% url 'gstr1' %}">GSTR-1</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'gstr2' %}">GSTR-2</a>
+                      </li>
+                      <li>
+                        <a href="">GSTR-3B</a>
+                      </li>
+                      <li>
+                        <a href="">GSTR-9</a>
+                      </li>
+                      <li>
+                        <a href="{% url 'sale_summary_byHSN' %}">
+                          Sale Summary by HSN
+                        </a>
+                      </li>
                     </ul>
                   </li>
-                  <li id="accountsreceivables" onClick={()=>showRepSubMenu('receivableSub')}>
-                    <a><i className="bx bx-right-arrow-alt"></i>Accounts Receivable</a>
+                  <li
+                    id="accountsreceivables"
+                    onClick={() => showRepSubMenu("receivableSub")}
+                  >
+                    <a>
+                      <i className="bx bx-right-arrow-alt"></i>Accounts
+                      Receivable
+                    </a>
                     <ul className="px-4 reportSub" id="receivableSub">
-                      <li><a href="{% url 'Fin_customerbalence' %}"><i className="bx bx-right-arrow-alt"></i>Customer Balances</a></li>
-                      <li><a href="{% url 'Fin_aging_summary' %}"><i className="bx bx-right-arrow-alt"></i>Aging Summary</a></li>
-                      <li><a href="{% url 'Fin_aging_details' %}"><i className="bx bx-right-arrow-alt"></i>Aging Details</a></li>
-                      <li><a href="{% url 'Fin_Invoice_Report' %}"><i className="bx bx-right-arrow-alt"></i> Invoice Details </a></li>
-                      <li><a href="{% url 'Fin_recInvoice_report' %}"><i className="bx bx-right-arrow-alt"></i>Recurring Invoice Details</a></li>
-                      <li><a href="{% url 'Fin_Retainer_Report' %}"><i className="bx bx-right-arrow-alt"></i>Retainer Invoice Details </a></li>
-                      <li><a href="{% url 'Fin_salesOrderDetailsReport' %}"><i className="bx bx-right-arrow-alt"></i>Sales Order Details</a></li>
-                      <li><a href="{% url 'Fin_sales_order_item_details' %}"><i className="bx bx-right-arrow-alt"></i>Sales Order Item </a></li>
-                      <li><a href="{% url 'Fin_estimate_report' %}"><i className="bx bx-right-arrow-alt"></i>Estimate Details</a></li>
-                      <li><a href="{% url 'Fin_report_account_outstanding_receivable' %}"><i className="bx bx-right-arrow-alt"></i> Outstanding Receivables </a></li>
+                      <li>
+                        <a href="{% url 'Fin_customerbalence' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Customer
+                          Balances
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_aging_summary' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Aging Summary
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_aging_details' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Aging Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_Invoice_Report' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Invoice
+                          Details{" "}
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_recInvoice_report' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Recurring
+                          Invoice Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_Retainer_Report' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Retainer
+                          Invoice Details{" "}
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_salesOrderDetailsReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Sales Order
+                          Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_sales_order_item_details' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Sales Order
+                          Item{" "}
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_estimate_report' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Estimate
+                          Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_report_account_outstanding_receivable' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Outstanding
+                          Receivables{" "}
+                        </a>
+                      </li>
                     </ul>
                   </li>
 
-                  <li id="crd" onClick={()=>showRepSubMenu('paymentSub')}>
-                    <a><i className="bx bx-right-arrow-alt"></i>Payments Received </a>
+                  <li id="crd" onClick={() => showRepSubMenu("paymentSub")}>
+                    <a>
+                      <i className="bx bx-right-arrow-alt"></i>Payments Received{" "}
+                    </a>
                     <ul className="px-4 reportSub" id="paymentSub">
-                      <li><a href="{%url 'Fin_paymentRecivedReport' %}"><i className="bx bx-right-arrow-alt"></i> Payments Received Summary</a></li>
-                      <li><a href="{% url 'Fin_PaymentReceived_report' %}"><i className="bx bx-right-arrow-alt"></i> Payments Received </a></li>
-                      <li><a href="{% url 'Fin_creditnoteReport' %}"><i className="bx bx-right-arrow-alt"></i>Credit Note Details</a></li>
+                      <li>
+                        <a href="{%url 'Fin_paymentRecivedReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Payments
+                          Received Summary
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_PaymentReceived_report' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Payments
+                          Received{" "}
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_creditnoteReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Credit Note
+                          Details
+                        </a>
+                      </li>
                     </ul>
                   </li>
 
-                  <li id="accountspayables" onClick={()=>showRepSubMenu('payableSub')}>
-                    <a><i className="bx bx-right-arrow-alt"></i>Accounts Payable</a>
+                  <li
+                    id="accountspayables"
+                    onClick={() => showRepSubMenu("payableSub")}
+                  >
+                    <a>
+                      <i className="bx bx-right-arrow-alt"></i>Accounts Payable
+                    </a>
                     <ul className="px-4 reportSub" id="payableSub">
-                      <li><a href="{% url 'Fin_venderbalance' %}"><i className="bx bx-right-arrow-alt"></i>Vendor Balances</a></li>
-                      <li><a href="{% url 'Fin_report_bill_details' %}"><i className="bx bx-right-arrow-alt"></i> Bill Details</a></li>
-                      <li><a href="{% url 'Fin_recBill_report' %}"><i className="bx bx-right-arrow-alt"></i>Recurring Bill Details</a></li>
-                      <li><a href="{% url 'Fin_purchaseOrderDetailsReport' %}"><i className="bx bx-right-arrow-alt"></i> Purchase Order Details</a></li>
-                      <li><a href="{% url 'Fin_purchase_order_item_details' %}"><i className="bx bx-right-arrow-alt"></i>Purchase Order Item </a></li>
-                      <li><a href="{% url 'Fin_paymentMadeSummaryReport' %}"><i className="bx bx-right-arrow-alt"></i>Payments Made Summary</a></li>
-                      <li><a href="{% url 'Fin_Paymentmade_report' %}"><i className="bx bx-right-arrow-alt"></i>Payments Made</a></li>
-                      <li><a href="{% url 'Fin_debitnotereport' %}"><i className="bx bx-right-arrow-alt"></i> Debit Note Details</a></li>
-                      <li><a href="{% url 'Fin_report_account_outstanding_payables' %}"><i className="bx bx-right-arrow-alt"></i> Outstanding Payables </a></li>
+                      <li>
+                        <a href="{% url 'Fin_venderbalance' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Vendor
+                          Balances
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_report_bill_details' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Bill Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_recBill_report' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Recurring
+                          Bill Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_purchaseOrderDetailsReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Purchase
+                          Order Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_purchase_order_item_details' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Purchase
+                          Order Item{" "}
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_paymentMadeSummaryReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Payments Made
+                          Summary
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_Paymentmade_report' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Payments Made
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_debitnotereport' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Debit Note
+                          Details
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_report_account_outstanding_payables' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Outstanding
+                          Payables{" "}
+                        </a>
+                      </li>
                     </ul>
                   </li>
-                  
-                  <li id="stocksummary"><a href="{% url 'stocksummary' %}"><i className="bx bx-right-arrow-alt"></i>Stock Summary </a></li>
-                    {/* <!-- <li id="stockvaluation"><a href=""><i className="bx bx-right-arrow-alt"></i>Stock Valuation</a></li> -->  */}
-                    {/* <!-- <li id="salessummaryreport"><a href=""><i className="bx bx-right-arrow-alt"></i>Sales Summary Report</a></li>
+
+                  <li id="stocksummary">
+                    <a href="{% url 'stocksummary' %}">
+                      <i className="bx bx-right-arrow-alt"></i>Stock Summary{" "}
+                    </a>
+                  </li>
+                  {/* <!-- <li id="stockvaluation"><a href=""><i className="bx bx-right-arrow-alt"></i>Stock Valuation</a></li> -->  */}
+                  {/* <!-- <li id="salessummaryreport"><a href=""><i className="bx bx-right-arrow-alt"></i>Sales Summary Report</a></li>
                     <li id="salessummaryreport"><a href=""><i className="bx bx-right-arrow-alt"></i>Purchase Order Details</a></li>
                     <li id="salessummaryreport"><a href=""><i className="bx bx-right-arrow-alt"></i>Purchase Order By Vendor</a></li>
                     <li id="salessummaryreport"><a href=""><i className="bx bx-right-arrow-alt"></i> Recurring Bill Report</a></li> --> */}
-                    <li id="expense">
-                      <a href="{% url 'Fin_expenseReport' %}"><i className="bx bx-right-arrow-alt"></i>Expense Report </a>
-                    </li>
-                    <li id="ewaybill">
-                      <a href="{% url 'Fin_ewayBillReport' %}"><i className="bx bx-right-arrow-alt"></i>EWay Bill Report </a>
-                    </li>
-                    <li id="stocksummary"><a href="{% url 'Fin_journel_report' %}"><i className="bx bx-right-arrow-alt"></i>Journal Report </a></li>
+                  <li id="expense">
+                    <a href="{% url 'Fin_expenseReport' %}">
+                      <i className="bx bx-right-arrow-alt"></i>Expense Report{" "}
+                    </a>
+                  </li>
+                  <li id="ewaybill">
+                    <a href="{% url 'Fin_ewayBillReport' %}">
+                      <i className="bx bx-right-arrow-alt"></i>EWay Bill Report{" "}
+                    </a>
+                  </li>
+                  <li id="stocksummary">
+                    <a href="{% url 'Fin_journel_report' %}">
+                      <i className="bx bx-right-arrow-alt"></i>Journal Report{" "}
+                    </a>
+                  </li>
 
-                    <li><a href="{% url 'Fin_employee_loan_statement_report' %}"><i className="bx bx-right-arrow-alt"></i>Employee Loan Statement</a></li>
-                    
-                    <li id="business" onClick={()=>showRepSubMenu('businessSub')}>
-                      <a><i className="bx bx-right-arrow-alt"></i>Business Status</a>
-                      <ul className="px-4 reportSub" id="businessSub">
-                        <li><a href="{% url 'Fin_BankReport' %}"><i className="bx bx-right-arrow-alt"></i> Bank Statement</a></li>
-                        <li><a href="{% url 'Fin_loanAccountReport' %}"><i className="bx bx-right-arrow-alt"></i> Loan Statement</a></li>
-                        
-                        <li id="discountreport"><a href="{% url 'Fin_discount_report' %}"><i className="bx bx-right-arrow-alt"></i>Discount Report </a></li>
-                      </ul>
-                    </li>
+                  <li>
+                    <a href="{% url 'Fin_employee_loan_statement_report' %}">
+                      <i className="bx bx-right-arrow-alt"></i>Employee Loan
+                      Statement
+                    </a>
+                  </li>
+
+                  <li
+                    id="business"
+                    onClick={() => showRepSubMenu("businessSub")}
+                  >
+                    <a>
+                      <i className="bx bx-right-arrow-alt"></i>Business Status
+                    </a>
+                    <ul className="px-4 reportSub" id="businessSub">
+                      <li>
+                        <a href="{% url 'Fin_BankReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Bank
+                          Statement
+                        </a>
+                      </li>
+                      <li>
+                        <a href="{% url 'Fin_loanAccountReport' %}">
+                          <i className="bx bx-right-arrow-alt"></i> Loan
+                          Statement
+                        </a>
+                      </li>
+
+                      <li id="discountreport">
+                        <a href="{% url 'Fin_discount_report' %}">
+                          <i className="bx bx-right-arrow-alt"></i>Discount
+                          Report{" "}
+                        </a>
+                      </li>
+                    </ul>
+                  </li>
                 </ul>
               </li>
-              {/* {% if allmodules.EWay_Bill == 1 %} */}
+              {modules.EWay_Bill == 1 ? (
+                <li>
+                  <a href="{% url 'Fin_Eway_bills' %}" className="has-arrow">
+                    <div className="parent-icon">
+                      <i className="bx bx-file"></i>
+                    </div>
+                    <div className="menu-title">Eway Bill</div>
+                  </a>
+                </li>
+              ) : null}
 
               <li>
-                <a href="{% url 'Fin_Eway_bills' %}" className="has-arrow">
-                  <div className="parent-icon"><i className="bx bx-file"></i>
-                  </div>
-                  <div className="menu-title">Eway Bill</div>
-                </a>
-                
-              </li>
-              {/* {% endif %} */}
-              
-              <li>
-                <a href="javascript:;" className="has-arrow" onClick={()=>{showMenu('accountingSubmenu')}}>
-                  <div className="parent-icon"><i className="bx bx-line-chart"></i>
+                <a
+                  href="javascript:;"
+                  className="has-arrow"
+                  onClick={() => {
+                    showMenu("accountingSubmenu");
+                  }}
+                >
+                  <div className="parent-icon">
+                    <i className="bx bx-line-chart"></i>
                   </div>
                   <div className="menu-title">Accounting</div>
                 </a>
                 <ul className="submenu" id="accountingSubmenu">
-                  
-
-                  {/* {% if allmodules.Chart_of_Accounts == 1 %} */}
-                  <li id="chartofaccounts"><Link to="/chart_of_accounts"><i className="bx bx-right-arrow-alt"></i>Chart of
-                      Accounts</Link>
-                  </li>
-                  {/* {% endif %} */}
-
-                  {/* {% if allmodules.Manual_Journal == 1 %} */}
-                  <li id="manualjournal"><a href="{% url 'Fin_manualJournals' %}"><i className="bx bx-right-arrow-alt"></i>Manual Journal
-                    </a>
-                  </li>
-                  {/* {% endif %} */}
-
-                  
+                  {modules.Chart_of_Accounts == 1 ? (
+                    <li id="chartofaccounts">
+                      <Link to="/chart_of_accounts">
+                        <i className="bx bx-right-arrow-alt"></i>Chart of
+                        Accounts
+                      </Link>
+                    </li>
+                  ) : null}
+                  {modules.Manual_Journal == 1 ? (
+                    <li id="manualjournal">
+                      <a href="{% url 'Fin_manualJournals' %}">
+                        <i className="bx bx-right-arrow-alt"></i>Manual Journal
+                      </a>
+                    </li>
+                  ) : null}
                 </ul>
               </li>
-            
+
               <li>
-                <a href="javascript:;" className="has-arrow" onClick={()=>{showMenu('payrollSubmenu')}}>
-                  <div className="parent-icon"><i className="bx bx-money"></i>
+                <a
+                  href="javascript:;"
+                  className="has-arrow"
+                  onClick={() => {
+                    showMenu("payrollSubmenu");
+                  }}
+                >
+                  <div className="parent-icon">
+                    <i className="bx bx-money"></i>
                   </div>
                   <div className="menu-title">Payroll</div>
                 </a>
                 <ul className="submenu" id="payrollSubmenu">
-                  
+                  {modules.Employees == 1 ? (
+                    <li id="employee">
+                      <Link to="/employee">
+                        <i className="bx bx-right-arrow-alt"></i>Employee
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Employees == 1 %} */}
-                  <li id="employee"><Link to="/employee"><i className="bx bx-right-arrow-alt"></i>Employee</Link></li>
-                  {/* {% endif %} */}
+                  {modules.Employees_Loan == 1 ? (
+                    <li id="employeeloan">
+                      <a href="{% url 'employee_loan_list' %}">
+                        <i className="bx bx-right-arrow-alt"></i>Employee Loan
+                      </a>{" "}
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Employees_Loan == 1 %} */}
-                  <li id="employeeloan"><a href="{% url 'employee_loan_list' %}"><i className="bx bx-right-arrow-alt"></i>Employee Loan</a> </li>
-                  {/* {% endif %} */}
+                  {modules.Holiday == 1 ? (
+                    <li>
+                      <a href="{% url 'holiday_list' %}">
+                        <i className="bx bx-right-arrow-alt"></i>Holidays
+                      </a>{" "}
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Holiday == 1 %} */}
-                  <li><a href="{% url 'holiday_list' %}"><i className="bx bx-right-arrow-alt"></i>Holidays</a> </li>
-                  {/* {% endif %} */}
+                  {modules.Attendance == 1 ? (
+                    <li id="attendence">
+                      <Link to="/attendence">
+                        <i className="bx bx-right-arrow-alt"></i>Attendance
+                      </Link>
+                    </li>
+                  ) : null}
 
-                  {/* {% if allmodules.Attendance == 1 %} */}
-                  <li><a href="{% url 'Fin_Attendance' %}"><i className="bx bx-right-arrow-alt"></i>Attendance</a> </li>
-                  {/* {% endif %} */}
-                  {/* {% if allmodules.Salary_Details == 1 %} */}
-                  <li><Link to="/salary_details"><i className="bx bx-right-arrow-alt"></i>Salary Details</Link></li>
-                  {/* {% endif %} */}
+                  {modules.Salary_Details == 1 ? (
+                    <li>
+                      <Link to="/salary_details">
+                        <i className="bx bx-right-arrow-alt"></i>Salary Details
+                      </Link>
+                    </li>
+                  ) : null}
                 </ul>
               </li>
             </ul>

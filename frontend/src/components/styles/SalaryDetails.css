@@ -1,0 +1,245 @@
+@media (min-width: 992px) {
+  .card-registration-2 .bg-grey {
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+}
+
+@media (max-width: 991px) {
+  .card-registration-2 .bg-grey {
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+}
+
+.vl {
+  border-left: 6px solid gray;
+}
+
+.table-row {
+  cursor: pointer;
+}
+.submitShareEmailBtn,
+.submitFileAttachBtn,
+#commentSaveBtn {
+  background: #192d3e;
+  border: 1px solid #3a4b5a;
+  border-radius: 4px;
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+}
+.submitShareEmailBtn:hover,
+.submitFileAttachBtn:hover,
+#commentSaveBtn:hover {
+  background: #3a4b5a;
+}
+.print-only {
+  /* display: none; */
+  height: auto;
+  width: auto;
+  overflow-y: auto;
+  border: none;
+  /* box-shadow: 5px 2px 5px 2px  grey; */
+}
+.ribbon .ribbon-inner {
+  text-align: center;
+  color: #fff;
+  top: -20px;
+  left: -90px;
+  width: 120px;
+  padding: 3px;
+  /* position: relative;
+    transform: rotate(-45deg); */
+}
+.ribbon .ribbon-open {
+  background-color: #268ddd;
+  border-color: #1c72b4;
+}
+:root {
+  --body-bg: rgb(204, 204, 204);
+  --white: #ffffff;
+  --darkWhite: #ccc;
+  --black: #000000;
+  --dark: #615c60;
+  --themeColor: #22b8d1;
+  --pageShadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+}
+@media print {
+  body {
+    visibility: hidden !important;
+    /* background-color: white; */
+  }
+
+  #slip {
+    margin-left: 2vh;
+    margin-right: 2vh;
+  }
+
+  .printContainer {
+    visibility: visible !important;
+    position: absolute;
+    z-index: 99999;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    font-size: large;
+  }
+}
+/* Font Include */
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@600&display=swap");
+
+body {
+  background-color: var(--body-bg);
+}
+
+.page {
+  background: var(--white);
+  display: block;
+  margin: 0 auto;
+  position: relative;
+  box-shadow: var(--pageShadow);
+}
+
+.page[size="A4"] {
+  width: 21cm;
+  height: 29.7cm;
+  overflow: hidden;
+}
+.pagesizea4 {
+    width: 21cm;
+    height: 29.7cm;
+    overflow: hidden;
+  }
+
+.bb {
+  border-bottom: 3px solid var(--darkWhite);
+}
+
+/* Product Section */
+
+
+.table td,
+.table th {
+  text-align: center;
+  vertical-align: middle;
+}
+
+tr th:first-child,
+tr td:first-child {
+  text-align: left;
+}
+
+/* Balance Info Section */
+.balance-info .table td,
+.balance-info .table th {
+  padding: 0;
+  border: 0;
+}
+
+.balance-info tr td:first-child {
+  font-weight: 600;
+}
+
+#printContent
+    {
+        background-color: rgba(255, 255, 255, 0.926);
+        padding: 40px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #whatToPrint
+    {
+        border: 1px solid #000000;
+        width: 75%;
+        
+    }
+    #whatToPrint h1{
+        font-size: 23px;
+        text-align: center;
+        letter-spacing: 1px;
+        color: #161515;
+        font-weight: 600;
+        padding-top: 10px;
+        font-family:Georgia, 'Times New Roman', Times, serif
+    }
+    .employee-details
+    {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-top: 1.3px solid #000000d9;
+        padding: 3rem 0.10rem;
+        border-bottom: 1.3px solid #000000d9;
+        color: #000000;
+    }
+    .employee-details ul li{
+        list-style: none;
+        padding-top: 12px;
+        font-size: 13px;
+        letter-spacing: 1px;
+        display: grid;
+        grid-template-columns: 2fr 0.20fr 2fr;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        font-weight: 600;
+        font-family:'Courier New', Courier, monospace
+    }
+    .employee-details ul li span{
+        text-align:start;
+    }
+    .salary-section h3{
+        font-size: 14px;
+        text-align: center;
+        letter-spacing: 1px;
+        color: #1f1d1dd4;
+        font-weight: 600;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        font-family:Georgia, 'Times New Roman', Times, serif;
+        text-transform: uppercase;
+    }
+    .paysliptable
+    {
+        border-top: 1px solid #161515;
+        border-bottom: 1px solid #161515;
+        color: #2d2d2d;
+    }
+    .paysliptable tr td,
+    .paysliptable tr th{
+        border-right: 1px solid #161515;
+    }
+    .paysliptable tr td:nth-child(2)
+    {
+        text-align: center;
+    }
+    .paysliptable tr td:last-child{
+        border-right: none;
+        text-align: center;
+    }
+    .authorization-section
+    {
+        display: grid;
+        grid-template-columns: 2fr 0.80fr;
+        padding: 20px;
+    }
+    .authorization-seal
+    {
+        text-align: center;
+        padding: 1rem;
+    }
+    .authorization-sign img{
+        padding-top: 1rem;
+    }
+    .authorization-sign p{
+     color: #161515;
+     font-size: 12px;
+     padding-top: 18px;
+     font-weight: 500;
+
+    }
+   .pay{
+    color: black;
+   }

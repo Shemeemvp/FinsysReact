@@ -209,6 +209,104 @@ function NotificationOverview() {
       });
   }
 
+    function handleTermUpdateAccept(id) {
+    let dt = {
+      id: id,
+    };
+    axios
+      .post(`${config.base_url}/accept_term_updation_request/`, dt)
+      .then((res) => {
+        if (res.data.status) {
+          Toast.fire({
+            icon: "success",
+            title: "Request Accepted.",
+          });
+          navigate("/term_extension_requests");
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR==", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  }
+
+  function handleTermUpdateReject(id) {
+    axios
+      .delete(`${config.base_url}/reject_term_updation_request/${id}/`)
+      .then((res) => {
+        if (res.data.status) {
+          Toast.fire({
+            icon: "success",
+            title: "Request Rejected.",
+          });
+          navigate("/term_extension_requests");
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR==", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  }
+
+  function handleDTermUpdateAccept(id) {
+    let dt = {
+      id: id,
+    };
+    axios
+      .post(`${config.base_url}/accept_dterm_updation_request/`, dt)
+      .then((res) => {
+        if (res.data.status) {
+          Toast.fire({
+            icon: "success",
+            title: "Request Accepted.",
+          });
+          navigate("/term_extension_requests");
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR==", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  }
+
+  function handleDTermUpdateReject(id) {
+    axios
+      .delete(`${config.base_url}/reject_dterm_updation_request/${id}/`)
+      .then((res) => {
+        if (res.data.status) {
+          Toast.fire({
+            icon: "success",
+            title: "Request Rejected.",
+          });
+          navigate("/term_extension_requests");
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR==", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  }
+
   const Toast = Swal.mixin({
     toast: true,
     position: "top-end",
@@ -1294,13 +1392,15 @@ function NotificationOverview() {
                           ACCEPT
                         </button>
                       ) : (
-                        <a
-                          href="{% url 'Fin_payment_terms_Updation_Accept' data.id %}"
+                        <button
+                          onClick={() =>
+                            handleTermUpdateAccept(`${notificationData.id}`)
+                          }
                           className="btn btn-success"
                           style={{ width: "100%" }}
                         >
                           ACCEPT
-                        </a>
+                        </button>
                       )}
                     </div>
                     <div className="col-md-3">
@@ -1315,35 +1415,41 @@ function NotificationOverview() {
                           REJECT
                         </button>
                       ) : (
-                        <a
-                          href="{% url 'Fin_payment_terms_Updation_Reject' data.id %}"
+                        <button
+                          onClick={() =>
+                            handleTermUpdateReject(`${notificationData.id}`)
+                          }
                           className="btn btn-danger"
                           style={{ width: "100%" }}
                         >
                           REJECT
-                        </a>
+                        </button>
                       )}
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="col-md-3">
-                      <a
-                        href="{% url 'Fin_ADpayment_terms_Updation_Accept' data.id %}"
-                        className="btn btn-success"
-                        style={{ width: "100%" }}
-                      >
-                        ACCEPT
-                      </a>
+                      <button
+                          onClick={() =>
+                            handleDTermUpdateAccept(`${notificationData.id}`)
+                          }
+                          className="btn btn-success"
+                          style={{ width: "100%" }}
+                        >
+                          ACCEPT
+                        </button>
                     </div>
                     <div className="col-md-3">
-                      <a
-                        href="{% url 'Fin_ADpayment_terms_Updation_Reject' data.id %}"
-                        className="btn btn-danger"
-                        style={{ width: "100%" }}
-                      >
-                        REJECT
-                      </a>
+                      <button
+                          onClick={() =>
+                            handleDTermUpdateReject(`${notificationData.id}`)
+                          }
+                          className="btn btn-danger"
+                          style={{ width: "100%" }}
+                        >
+                          REJECT
+                        </button>
                     </div>
                   </>
                 )}

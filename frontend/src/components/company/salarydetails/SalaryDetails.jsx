@@ -104,7 +104,7 @@ function SalaryDetails() {
 
   const fetchSalaryDetails = () => {
     axios
-      .get(`${config.base_url}/fetch_salary_details/${ID}/`)
+      .get(`${config.base_url}/fetch_all_salary_details/${ID}/`)
       .then((res) => {
         console.log("SO RES=", res);
         if (res.data.status) {
@@ -336,7 +336,7 @@ function SalaryDetails() {
                   salaryDetails.map((i, index) => (
                     <tr
                       className="clickable-row"
-                      onDoubleClick={() =>
+                      onClick={() =>
                         navigate(`/view_salary_details/${i.id}/`)
                       }
                       style={{ cursor: "pointer" }}

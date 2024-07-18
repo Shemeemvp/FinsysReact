@@ -651,10 +651,10 @@ function AdminBase() {
                       </Link>
                     </li>
                     <li id="termExtension">
-                      <a href="{% url 'Fin_adminTermExtensionRequests' %}">
+                      <Link to="/term_extension_requests">
                         <i className="bx bx-right-arrow-alt"></i>Extension
                         Requests
-                      </a>
+                      </Link>
                     </li>
                   </ul>
                 </li>

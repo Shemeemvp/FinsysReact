@@ -2003,6 +2003,7 @@ def Fin_login(request):
                                 {
                                     "status": False,
                                     "redirect": "wrong",
+                                    "Login_id": data.id,
                                     "message": "Terms Expired",
                                 }
                             )
@@ -2011,6 +2012,7 @@ def Fin_login(request):
                                 {
                                     "status": False,
                                     "redirect": "distributor_registration",
+                                    "Login_id": data.id,
                                     "message": "Term Updation Request is pending..",
                                 }
                             )
@@ -2051,6 +2053,7 @@ def Fin_login(request):
                             return Response(
                                 {
                                     "status": False,
+                                    "Login_id": data.id,
                                     "redirect": "wrong",
                                     "message": "Terms Expired",
                                 }
@@ -2059,6 +2062,7 @@ def Fin_login(request):
                             return Response(
                                 {
                                     "status": False,
+                                    "Login_id": data.id,
                                     "redirect": "company_registration",
                                     "message": "Term Updation Request is pending..",
                                 }
@@ -2092,6 +2096,7 @@ def Fin_login(request):
                         return Response(
                             {
                                 "status": False,
+                                "Login_id": data.id,
                                 "redirect": "staff_registration",
                                 "message": "Your account is temporarily blocked",
                             }
@@ -18610,7 +18615,7 @@ import calendar
 from calendar import monthrange, month_name
 
 @api_view(("GET",))
-def Fin_fetchSalaryDetails(request, id):
+def Fin_fetchAllSalaryDetails(request, id):
     try:
         data = Fin_Login_Details.objects.get(id=id)
         if data.User_Type == "Company":
@@ -18658,7 +18663,7 @@ def Fin_fetchSalaryDetailsData(request, id):
         months = list(calendar.month_name)[1:]
         years = list(range(2000, 2030))
         employees = Employee.objects.filter(company=cmp,employee_status='Active')
-        holiday = Holiday.objects.filter(company=cmp)
+        holiday = Fin_Holiday.objects.filter(Company=cmp)
         
         empSerializer = EmployeeSerializer(employees, many=True)
 
@@ -18747,11 +18752,11 @@ def Fin_getDays(request):
             start_date = start_date.strftime("%Y-%m-%d")
             end_date = end_date.strftime("%Y-%m-%d")
 
-            leave_count = Fin_Attendances.objects.filter(
-                employee=empid,
-                company=cmp,
-                start_date__range=(start_date, end_date),
-                status='Leave'
+            leave_count = Fin_Attendence.objects.filter(
+                Employee=empid,
+                Company=cmp,
+                Start_Date__range=(start_date, end_date),
+                Status='Leave'
             )
 
             # Clculating leave days ----------------
@@ -18768,7 +18773,7 @@ def Fin_getDays(request):
 
 
 
-            holidays_count = Holiday.objects.filter(company=cmp,start_date__range=(start_date, end_date)).count()
+            holidays_count = Fin_Holiday.objects.filter(Company=cmp,Start_Date__range=(start_date, end_date)).count()
 
             _, num_days = calendar.monthrange(year, month)
             working_days = num_days - holidays_count
@@ -18869,6 +18874,7 @@ def Fin_createSalaryDetails(request):
 
         casual_leave = int(request.data.get('casual_leave', 0))
         other_cuttings = Decimal(request.data.get('other_cuttings', 0))
+        basic_salary = Decimal(request.data.get('basic_salary', 0))
         add_bonus = Decimal(request.data.get('add_bonus', 0))
         salary_str = request.data.get('salary', '0')
         leaves_str = request.data.get('attendance', '0')
@@ -18900,6 +18906,7 @@ def Fin_createSalaryDetails(request):
                 month=month,
                 year=year,
                 casual_leave=casual_leave,
+                basic_salary=basic_salary,
                 leave=leave,
                 holiday=holiday,
                 other_cuttings=other_cuttings,
@@ -18928,3 +18935,618 @@ def Fin_createSalaryDetails(request):
             return Response({'status':False, 'message':'Salary Already Executed.'})
     except Exception as e:
         return Response({"status": False, "message": str(e)})
+
+@api_view(("GET",))
+def Fin_fetchSalaryDetails(request, id):
+    try:
+        salary_id = id
+        sal = Fin_SalaryDetails.objects.get(id=id)
+        cmp = sal.Company
+        emp = sal.Employee
+        hist = Fin_SalaryDetailsHistory.objects.filter(Salary=sal).last()
+        his = None
+        if hist:
+            his = {
+                "action": hist.action,
+                "date": hist.date,
+                "doneBy": hist.LoginDetails.First_name
+                + " "
+                + hist.LoginDetails.Last_name,
+            }
+        cmt = Employee_Comment.objects.filter(employee=emp)
+        try:
+            month_name = MONTH_NAMES.get(int(sal.month))
+        except:
+            month_name = 'Invalid Month'
+
+        if salary_id:
+            salary_details = Fin_SalaryDetails.objects.filter(Employee=emp, id=salary_id)
+        else:
+            salary_details = Fin_SalaryDetails.objects.filter(Employee=emp)
+
+        for salary_detail in salary_details:
+            td = salary_detail.other_cuttings + salary_detail.leave_deduction
+            lv = salary_detail.leave - salary_detail.casual_leave
+
+        otherDet = {
+            "employeeName": sal.Employee.first_name+' '+sal.Employee.last_name,
+            "employeeFullName": sal.Employee.title+' '+sal.Employee.first_name+' '+sal.Employee.last_name,
+            "employeeId": emp.employee_number,
+            "designation": emp.employee_designation,
+            "age": emp.age,
+            "joiningDate": emp.date_of_joining,
+            "contact": emp.mobile,
+            "email": emp.employee_mail,
+            "month": month_name,
+            "current_location": emp.employee_current_location,
+            "leave_minus_casual_leave": lv,
+            "total_deduction": td,
+            "salary": emp.salary_amount
+        }
+        salSerializer = SalarySerializer(sal)
+        commentsSerializer = EmployeeCommentsSerializer(cmt, many=True)
+        return Response(
+            {
+                "status": True,
+                "salary": salSerializer.data,
+                "history": his,
+                "comments": commentsSerializer.data,
+                "otherDetails": otherDet,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_changeSalaryStatus(request):
+    try:
+        slId = request.data["id"]
+        data = Fin_SalaryDetails.objects.get(id=slId)
+        data.status = "Saved"
+        data.save()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_addSalaryComment(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        request.data["company"] = com.id
+        serializer = EmployeeCommentsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": True, "data": serializer.data}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"status": False, "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteSalaryComment(request, id):
+    try:
+        cmt = Employee_Comment.objects.get(id=id)
+        cmt.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("GET",))
+def Fin_fetchSalaryHistory(request, id):
+    try:
+        sal = Fin_SalaryDetails.objects.get(id=id)
+        hist = Fin_SalaryDetailsHistory.objects.filter(Salary=sal)
+        his = []
+        if hist:
+            for i in hist:
+                h = {
+                    "action": i.action,
+                    "date": i.date,
+                    "name": i.LoginDetails.First_name + " " + i.LoginDetails.Last_name,
+                }
+                his.append(h)
+        salSerializer = SalarySerializer(sal)
+        return Response(
+            {"status": True, "salary": salSerializer.data, "history": his, "employee":sal.Employee.first_name},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_deleteSalary(request, id):
+    try:
+        sal = Fin_SalaryDetails.objects.get(id=id)
+        sal.delete()
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+from django.template.loader import render_to_string
+
+@api_view(("GET",))
+def Fin_salaryPdf(request):
+    try:
+        id = request.GET['Id']
+
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        employee_id = request.GET['emp_id']
+        salary_id = request.GET['sal_id']
+
+        try:
+            employee = Employee.objects.get(id=employee_id)
+            salary_details = get_object_or_404(Fin_SalaryDetails, id=salary_id, Employee=employee)
+
+            try:
+                salary_details.month = int(salary_details.month)
+                salary_details.month_name = calendar.month_name[salary_details.month]
+            except (ValueError, IndexError):
+                salary_details.month_name = 'Invalid Month'
+            
+            total_deduction = salary_details.other_cuttings + salary_details.leave_deduction
+            leave_minus_casual_leave = salary_details.leave - salary_details.casual_leave
+
+        except Fin_Company_Details.DoesNotExist:
+            return HttpResponse('Company not found', status=404)
+        except Employee.DoesNotExist:
+            return HttpResponse('Employee not found', status=404)
+
+        template_path = 'company/Fin_salarypdf.html'
+        context = {
+            'employee': employee,
+            'com': com,
+            'salary_details': [salary_details],  
+            'total_deduction': total_deduction,
+            'leave_minus_casual_leave': leave_minus_casual_leave,
+        }
+
+            # Render the template to HTML string
+        html = render_to_string(template_path, context)
+
+        fname = f"payslip_{employee.first_name}.{employee.last_name}"
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename={fname}.pdf'
+        
+        # Generate PDF from HTML string
+        pisa_status = pisa.CreatePDF(html, dest=response)
+
+        if pisa_status.err:
+            return HttpResponse('We had some errors <pre>' + html + '</pre>')
+
+        return response
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+from django.core.mail import EmailMultiAlternatives
+
+@api_view(("POST",))
+def Fin_shareSalaryToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        employee_id = request.data['emp_id']
+        salary_id = request.data['sal_id']
+
+        emails_string = request.data["email_ids"]
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(",")]
+        email_message = request.data["email_message"]
+
+        employee = Employee.objects.get(id=employee_id)
+        salary_details = get_object_or_404( Fin_SalaryDetails, id=salary_id, Employee=employee)
+
+        context = {
+            'employee': employee,
+            'com': com,
+            'salary_details': [salary_details],
+        }
+
+        template_path = 'company/Fin_salarypdf.html'
+        template = get_template(template_path)
+        html = template.render(context)
+
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+
+        filename = f'Salary_Statement_{employee.employee_number}.pdf'
+        subject = f"Salary Statement for {employee.first_name} {employee.last_name}"
+        from_email = settings.EMAIL_HOST_USER 
+        to_email = emails_list
+
+        email = EmailMultiAlternatives(subject, email_message, from_email, to_email)
+        # email.attach_alternative(html, "text/html")  # Attach HTML content
+        email.attach(filename, pdf, "application/pdf")  # Attach PDF file
+        email.send(fail_silently=False)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("PUT",))
+def Fin_updateSalaryDetails(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        sal = Fin_SalaryDetails.objects.get(id=request.data['sal_id'])
+
+        employee_id = request.data.get('Employee')
+        selected_employee = Employee.objects.get(id=employee_id)
+
+        casual_leave = int(request.data.get('casual_leave', 0))
+        other_cuttings = Decimal(request.data.get('other_cuttings', 0))
+        basic_salary = Decimal(request.data.get('basic_salary', 0))
+        add_bonus = Decimal(request.data.get('add_bonus', 0))
+        salary_str = request.data.get('salary', '0')
+        leaves_str = request.data.get('attendance', '0')
+        leave = Decimal(leaves_str)
+        holiday = int(request.data.get('holidays', 0))
+        total_working_days = int(request.data.get('working_days', 0))
+        monthly_salary_str = request.data.get('monthly_salary', '0')
+        monthly_salary = Decimal(monthly_salary_str)
+        month = int(request.data.get('month', 0))
+        year = int(request.data.get('year', 0))
+        hra = int(request.data.get('HRA', 0))
+        other_allowance = int(request.data.get('Other_Allowance', 0))
+        conveyance_allowance = int(request.data.get('Conveyance_Allowance', 0))
+
+        if selected_employee.salary_amount:
+            _, num_days = monthrange(year, month)
+            selected_employee_amount = Decimal(selected_employee.salary_amount)
+            daily_wage = selected_employee_amount / num_days
+            leave_deduction = round((leave - casual_leave) * daily_wage)
+        else:
+            leave_deduction = 0
+        print('month===',sal.month,month)
+        print('year===',sal.year,year)
+        if (int(sal.month) != int(month) or int(sal.year) != int(year)) and Fin_SalaryDetails.objects.filter(Employee=selected_employee, month=month, year=year).exists():
+            return Response({'status':False, 'message':'Salary Already Executed.'})
+        else:
+            sal.Employee=selected_employee
+            sal.salary_date=request.data.get('salary_date')
+            sal.month=month
+            sal.year=year
+            sal.casual_leave=casual_leave
+            sal.basic_salary=basic_salary
+            sal.leave=leave
+            sal.holiday=holiday
+            sal.other_cuttings=other_cuttings
+            sal.add_bonus=add_bonus
+            sal.description=request.data.get('description')
+            sal.total_salary=monthly_salary
+            sal.total_working_days=total_working_days
+            sal.leave_deduction=leave_deduction
+            sal.hra=hra
+            sal.other_allowance=other_allowance
+            sal.conveyance_allowance=conveyance_allowance
+            sal.save()
+
+            sal_history_obj = Fin_SalaryDetailsHistory()
+            sal_history_obj.Company = com
+            sal_history_obj.LoginDetails = data
+            sal_history_obj.Salary = sal
+            sal_history_obj.date = date.today()
+            sal_history_obj.action = 'Edited'
+            sal_history_obj.save()
+
+            return Response({'status':True, 'message':'Salary Details Edited.'})
+
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+# Payment Terms - updation
+
+@api_view(("GET",))
+def Fin_getLogDetails(request, id):
+    try:
+        log = {}
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+            log = {
+                "type": "Company",
+                "name": com.Company_name,
+                "endDate": com.End_date,
+                "currentPaymentTerm": str(com.Payment_Term.payment_terms_number)+' '+com.Payment_Term.payment_terms_value if com.Payment_Term else ""
+            }
+        else:
+            dist = Fin_Distributors_Details.objects.get(Login_Id=id)
+            log = {
+                "type": "Distributor",
+                "name": dist.Login_Id.First_name+' '+dist.Login_Id.Last_name,
+                "endDate": dist.End_date,
+                "currentPaymentTerm": str(dist.Payment_Term.payment_terms_number)+' '+dist.Payment_Term.payment_terms_value if dist.Payment_Term else ""
+            }
+
+        return Response(
+            {"status": True, "logDetails": log}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_createPaymentTermRequest(request):
+    try:
+        s_id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+            pt = request.data['term']
+            pay = Fin_Payment_Terms.objects.get(id=pt)
+            data1 = Fin_Payment_Terms_updation(Login_Id = data,Payment_Term = pay)
+            data1.save()
+
+            if com.Registration_Type == 'self':
+                noti = Fin_ANotification(Login_Id = data,PaymentTerms_updation = data1,Title = "Change Payment Terms",Discription = com.Company_name + " is change Payment Terms")
+                noti.save()
+            else:
+                noti = Fin_DNotification(Distributor_id = com.Distributor_id,Login_Id = data,PaymentTerms_updation = data1,Title = "Change Payment Terms",Discription = com.Company_name + " is change Payment Terms")
+                noti.save()
+            
+            module_request=Fin_Modules_List.objects.filter(company_id=com, status = 'pending')
+            if module_request:
+                module_request.delete()
+
+            return Response({"status": True, "redirect":"/term_update_modules"}, status=status.HTTP_200_OK)
+        else:
+            dist = Fin_Distributors_Details.objects.get(Login_Id=s_id)
+            pt = request.data['term']
+            pay = Fin_Payment_Terms.objects.get(id=pt)
+
+            data1 = Fin_Payment_Terms_updation(Login_Id = data,Payment_Term = pay)
+            data1.save()
+
+            noti = Fin_ANotification(Login_Id = data,PaymentTerms_updation = data1,Title = "Change Payment Terms",Discription = data.First_name + data.Last_name + " is change Payment Terms")
+            noti.save()
+
+            return Response({"status": True, "redirect":"/"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"status": False, "message": str(e)})
+
+@api_view(("POST",))
+def Fin_Term_Updation_Accept(request):
+    try:
+        id = request.data["id"]
+        data = Fin_ANotification.objects.get(id=id)
+        com = Fin_Company_Details.objects.get(Login_Id = data.Login_Id)
+        terms=Fin_Payment_Terms.objects.get(id=data.PaymentTerms_updation.Payment_Term.id)
+
+        title=['Trial Period Alert','Payment Terms Alert',]
+        cnoti = Fin_CNotification.objects.filter(Company_id = com, Title__in=title)
+        cnoti.update(status='old')
+
+        anoti= Fin_ANotification.objects.filter(Login_Id = com.Login_Id, Title__in=title) 
+        anoti.update(status='old')
+        
+        
+        start=com.End_date + timedelta(days=1)
+        com.Start_Date = start
+        days=int(terms.days)
+
+        end= start + timedelta(days=days)
+        com.End_date = end
+        com.Payment_Term = terms
+        com.save()
+
+        data.status = 'old'
+        data.save()
+
+        upt = Fin_Payment_Terms_updation.objects.get(id = data.PaymentTerms_updation.id)
+        upt.status = 'old'
+        upt.save()
+
+        # notification
+        message=f'Your new plan is activated and ends on {end}'
+        notification=Fin_CNotification.objects.create(Login_Id=com.Login_Id, Company_id=com,Title='New Plan Activated..!',Discription=message)
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_Term_Updation_Reject(request,id):
+    try:
+        data = Fin_ANotification.objects.get(id=id)
+
+        upt = Fin_Payment_Terms_updation.objects.get(id = data.PaymentTerms_updation.id)
+
+        upt.delete()
+        data.delete()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_DTerm_Updation_Accept(request):
+    try:
+        id = request.data["id"]
+        data = Fin_ANotification.objects.get(id=id)
+        com = Fin_Distributors_Details.objects.get(Login_Id = data.Login_Id)
+        terms=Fin_Payment_Terms.objects.get(id=data.PaymentTerms_updation.Payment_Term.id)
+        
+        start=com.End_date + timedelta(days=1)
+        com.Start_Date =start
+        days=int(terms.days)
+
+        end= start + timedelta(days=days)
+        com.End_date = end
+        com.Payment_Term = terms
+        com.save()
+
+        data.status = 'old'
+        data.save()
+
+        upt = Fin_Payment_Terms_updation.objects.get(id = data.PaymentTerms_updation.id)
+        upt.status = 'old'
+        upt.save()
+
+        title=['Trial Period Alert','Payment Terms Alert',]
+        dnoti = Fin_DNotification.objects.filter(Distributor_id = com,Title__in=title)
+        dnoti.update(status='old')
+
+        anoti= Fin_ANotification.objects.filter(Login_Id = com.Login_Id, Title__in=title) 
+        anoti.update(status='old')
+
+        # notification
+        message=f'Your new plan is activated and ends on {end}'
+        notification=Fin_DNotification.objects.create(Login_Id=com.Login_Id, Distributor_id=com,Title='New Plan Activated..!',Discription=message) 
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_DTerm_Updation_Reject(request,id):
+    try:
+        data = Fin_ANotification.objects.get(id=id)
+
+        upt = Fin_Payment_Terms_updation.objects.get(id = data.PaymentTerms_updation.id)
+
+        upt.delete()
+        data.delete()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("POST",))
+def Fin_Term_Updation_AcceptD(request):
+    try:
+        id = request.data["id"]
+        data = Fin_DNotification.objects.get(id=id)
+        com = Fin_Company_Details.objects.get(Login_Id = data.Login_Id)
+        terms=Fin_Payment_Terms.objects.get(id=data.PaymentTerms_updation.Payment_Term.id)
+
+        title=['Trial Period Alert','Payment Terms Alert']
+        cnoti = Fin_CNotification.objects.filter(Company_id = com, Title__in=title)
+        dnoti = Fin_DNotification.objects.filter(Distributor_id = com.Distributor_id,Login_Id=com.Login_Id,Title__in=title)
+        dnoti.update(status='old')
+
+        
+        for c in cnoti:
+            c.status = 'old'
+            c.save()  
+        
+        start=com.End_date + timedelta(days=1)
+        com.Start_Date = start
+        days=int(terms.days)
+
+        end= start + timedelta(days=days)
+        com.End_date = end
+        com.Payment_Term = terms
+        com.save()
+
+        data.status = 'old'
+        data.save()
+
+        upt = Fin_Payment_Terms_updation.objects.get(id = data.PaymentTerms_updation.id)
+        upt.status = 'old'
+        upt.save()
+
+        # notification
+        message=f'Your new plan is activated and ends on {end}'
+        notification=Fin_CNotification.objects.create(Login_Id=com.Login_Id, Company_id=com,Title='New Plan Activated..!',Discription=message)
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(("DELETE",))
+def Fin_Term_Updation_RejectD(request,id):
+    try:
+        data = Fin_DNotification.objects.get(id=id)
+
+        upt = Fin_Payment_Terms_updation.objects.get(id = data.PaymentTerms_updation.id)
+
+        upt.delete()
+        data.delete()
+
+        return Response({"status": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

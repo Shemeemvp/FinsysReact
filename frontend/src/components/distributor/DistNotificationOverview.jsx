@@ -76,8 +76,8 @@ function DistNotificationOverview() {
             const notiData = res.data.data;
             const modules = res.data.modules;
             var imageUrl = null;
-            if(notiData.image){
-                imageUrl = `${config.base_url}/${notiData.image}`;
+            if (notiData.image) {
+              imageUrl = `${config.base_url}/${notiData.image}`;
             }
             const r = {
               user: notiData.user,
@@ -94,7 +94,7 @@ function DistNotificationOverview() {
               code: notiData.code,
               id: notiData.id,
             };
-            if(notiData.moduleUpdation){
+            if (notiData.moduleUpdation) {
               const am = res.data.added_modules;
               const dm = res.data.deducted_modules;
               const m = {
@@ -187,6 +187,55 @@ function DistNotificationOverview() {
     };
     axios
       .delete(`${config.base_url}/reject_dmodule_updation_request/`, dt)
+      .then((res) => {
+        if (res.data.status) {
+          Toast.fire({
+            icon: "success",
+            title: "Request Rejected.",
+          });
+          navigate("/distributor_notifications");
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR==", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  }
+
+  function handleTermUpdateAccept(id) {
+    let dt = {
+      id: id,
+    };
+    axios
+      .post(`${config.base_url}/daccept_term_updation_request/`, dt)
+      .then((res) => {
+        if (res.data.status) {
+          Toast.fire({
+            icon: "success",
+            title: "Request Accepted.",
+          });
+          navigate("/distributor_notifications");
+        }
+      })
+      .catch((err) => {
+        console.log("ERROR==", err);
+        if (!err.response.data.status) {
+          Swal.fire({
+            icon: "error",
+            title: `${err.response.data.message}`,
+          });
+        }
+      });
+  }
+
+  function handleTermUpdateReject(id) {
+    axios
+      .delete(`${config.base_url}/dreject_term_updation_request/${id}/`)
       .then((res) => {
         if (res.data.status) {
           Toast.fire({
@@ -1272,47 +1321,51 @@ function DistNotificationOverview() {
               <div className="row pb-5 mt-5">
                 <div className="col-md-3"></div>
                 <div className="col-md-3">
-                    {notificationData.moduleUpdation ? (
-                      <button
-                        onClick={() =>
-                          handleModuleUpdateAccept(`${notificationData.id}`)
-                        }
-                        className="btn btn-success"
-                        style={{ width: "100%" }}
-                      >
-                        ACCEPT
-                      </button>
-                    ) : (
-                      <a
-                        href="{% url 'Fin_payment_terms_Updation_Accept' data.id %}"
-                        className="btn btn-success"
-                        style={{ width: "100%" }}
-                      >
-                        ACCEPT
-                      </a>
-                    )}
-                  </div>
-                  <div className="col-md-3">
-                    {notificationData.moduleUpdation ? (
-                      <button
-                        onClick={() =>
-                          handleModuleUpdateReject(`${notificationData.id}`)
-                        }
-                        className="btn btn-danger"
-                        style={{ width: "100%" }}
-                      >
-                        REJECT
-                      </button>
-                    ) : (
-                      <a
-                        href="{% url 'Fin_payment_terms_Updation_Reject' data.id %}"
-                        className="btn btn-danger"
-                        style={{ width: "100%" }}
-                      >
-                        REJECT
-                      </a>
-                    )}
-                  </div>
+                  {notificationData.moduleUpdation ? (
+                    <button
+                      onClick={() =>
+                        handleModuleUpdateAccept(`${notificationData.id}`)
+                      }
+                      className="btn btn-success"
+                      style={{ width: "100%" }}
+                    >
+                      ACCEPT
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        handleTermUpdateAccept(`${notificationData.id}`)
+                      }
+                      className="btn btn-success"
+                      style={{ width: "100%" }}
+                    >
+                      ACCEPT
+                    </button>
+                  )}
+                </div>
+                <div className="col-md-3">
+                  {notificationData.moduleUpdation ? (
+                    <button
+                      onClick={() =>
+                        handleModuleUpdateReject(`${notificationData.id}`)
+                      }
+                      className="btn btn-danger"
+                      style={{ width: "100%" }}
+                    >
+                      REJECT
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        handleTermUpdateReject(`${notificationData.id}`)
+                      }
+                      className="btn btn-danger"
+                      style={{ width: "100%" }}
+                    >
+                      REJECT
+                    </button>
+                  )}
+                </div>
                 <div className="col-md-3"></div>
               </div>
 

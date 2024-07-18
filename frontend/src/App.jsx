@@ -162,6 +162,11 @@ import PaymentMadeHistory from './components/company/paymentmade/PaymentMadeHist
 import EditPaymentMade from './components/company/paymentmade/EditPaymentMade';
 import SalaryDetails from './components/company/salarydetails/SalaryDetails';
 import AddSalaryDetails from './components/company/salarydetails/AddSalaryDetails';
+import ViewSalaryDetails from './components/company/salarydetails/ViewSalaryDetails';
+import SalaryDetailsHistory from './components/company/salarydetails/SalaryDetailsHistory';
+import EditSalaryDetails from './components/company/salarydetails/EditSalaryDetails';
+import TermUpdateModules from './components/company/TermUpdateModules';
+import TermExtensionRequests from './components/admin/TermExtensionRequests';
 
 
 function App() {
@@ -174,6 +179,7 @@ function App() {
           <Route path="/Company_Registration2" element={<CompanyReg2 />}></Route>
           <Route path="/modules_list" element={<Modules />}></Route>
           <Route path="/wrong" element={<Wrong />}></Route>
+          <Route path="/term_update_modules" element={<TermUpdateModules />}></Route>
 
           <Route path="/distributor_registration" element={<DistributorReg />}></Route>
           <Route path="/distributor_registration2" element={<DistributorReg2 />}></Route>
@@ -196,6 +202,7 @@ function App() {
             <Route path="/client_request_overview/:id/" element={<ClientReqOverview />}></Route>
             <Route path="/all_clients_overview/:id/" element={<AllClientsOverview />}></Route>
             <Route path="/anotification_overview/:id/" element={<NotificationOverview />}></Route>
+            <Route path="/term_extension_requests" element={<TermExtensionRequests />}></Route>
           </Route>
           <Route element={<DistributorPrivateRoutes />}>
             <Route path="/distributor_home" element={<DistributorHome />}></Route>
@@ -383,9 +390,9 @@ function App() {
             {/* Salary Details */}
             <Route path="/salary_details" element={<SalaryDetails />}></Route>
             <Route path="/add_salary_details" element={<AddSalaryDetails />}></Route>
-            {/* <Route path="/view_payment_made/:paymentId/" element={<ViewPaymentMade />}></Route> */}
-            {/* <Route path="/payment_made_history/:paymentId/" element={<PaymentMadeHistory />}></Route> */}
-            {/* <Route path="/edit_payment_made/:paymentId/" element={<EditPaymentMade />}></Route> */}
+            <Route path="/view_salary_details/:salaryId/" element={<ViewSalaryDetails />}></Route>
+            <Route path="/salary_details_history/:salaryId/" element={<SalaryDetailsHistory />}></Route>
+            <Route path="/edit_salary_details/:salaryId/" element={<EditSalaryDetails />}></Route>
           </Route>
         </Routes>
       </BrowserRouter>

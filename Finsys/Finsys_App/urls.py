@@ -460,10 +460,29 @@ urlpatterns = [
     path('update_payment_made/',Fin_updatePaymentMade),
 
     #Salary Details
-    path('fetch_salary_details/<int:id>/',Fin_fetchSalaryDetails),
+    path('fetch_all_salary_details/<int:id>/',Fin_fetchAllSalaryDetails),
     path('fetch_salary_details_data/<int:id>/',Fin_fetchSalaryDetailsData),
     path('get_employee_data/',Fin_getEmployeeData),
     path('get_days/',Fin_getDays),
     path('calculate_salary/',Fin_calculateSalary),
     path('create_new_salary_details/',Fin_createSalaryDetails),
+    path('fetch_salary_details/<int:id>/',Fin_fetchSalaryDetails),
+    path('change_salary_details_status/',Fin_changeSalaryStatus),
+    path('add_salary_details_comment/',Fin_addSalaryComment),
+    path('delete_salary_details_comment/<int:id>/',Fin_deleteSalaryComment),
+    path('fetch_salary_details_history/<int:id>/',Fin_fetchSalaryHistory),
+    path('delete_salary_details/<int:id>/',Fin_deleteSalary),
+    path('salary_details_pdf/',Fin_salaryPdf),
+    path('share_salary_details_email/',Fin_shareSalaryToEmail),
+    path('update_salary_details/',Fin_updateSalaryDetails),
+
+    # payment terms updation
+    path('get_log_details/<int:id>/',Fin_getLogDetails),
+    path('create_payment_term_request/',Fin_createPaymentTermRequest),
+    path('accept_term_updation_request/', Fin_Term_Updation_Accept),
+    path('reject_term_updation_request/<int:id>/', Fin_Term_Updation_Reject),
+    path('accept_dterm_updation_request/', Fin_DTerm_Updation_Accept),
+    path('reject_dterm_updation_request/<int:id>/', Fin_DTerm_Updation_Reject),
+    path('daccept_term_updation_request/', Fin_Term_Updation_AcceptD),
+    path('dreject_term_updation_request/<int:id>/', Fin_Term_Updation_RejectD),
 ]

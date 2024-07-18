@@ -98,7 +98,6 @@ function DistributorReg() {
     axios
       .post(`${config.base_url}/LogIn/`, loginData)
       .then((res) => {
-        console.log('==RESPONSE==',res)
         if(res.data.status){
           Cookies.set('User',res.data.user)
           Cookies.set('Login_id',res.data.Login_id)
@@ -106,6 +105,7 @@ function DistributorReg() {
             navigate('/'+res.data.redirect)
           }
         }else if(!res.data.status && res.data.redirect != ""){
+          Cookies.set('Login_id',res.data.Login_id)
           Swal.fire({
             icon: "error",
             title: `${res.data.message}`,
