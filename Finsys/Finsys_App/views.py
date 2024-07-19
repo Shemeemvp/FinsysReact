@@ -3327,13 +3327,16 @@ def Fin_checkDistributorPaymentTerms(request, id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-
 @api_view(("GET",))
 def Fin_getModules(request, id):
     try:
         data = Fin_Login_Details.objects.get(id=id)
-        com = Fin_Company_Details.objects.get(Login_Id=data)
-        modules = Fin_Modules_List.objects.get(Login_Id=data, status="New")
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = data.id).company_id
+        # com = Fin_Company_Details.objects.get(Login_Id=data)
+        modules = Fin_Modules_List.objects.get(company_id=com, status="New")
         module_request = Fin_Modules_List.objects.filter(
             company_id=com, status="pending"
         ).exists()
@@ -3357,7 +3360,6 @@ def Fin_getModules(request, id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
 
 @api_view(("POST",))
 def Fin_EditModules(request):
@@ -19550,3 +19552,679 @@ def Fin_Term_Updation_RejectD(request,id):
             {"status": False, "message": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+# Invoice Reports
+
+@api_view(("GET",))
+def Fin_fetchInvoiceReportDetails(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        currentDate = datetime.today()
+
+        reportData = []
+        totalinv = 0
+        totcust=0
+        totalbalance=0
+
+        inv = Fin_Invoice.objects.filter(Company=com)
+        cust = Fin_Customers.objects.filter(Company=com)
+       
+        if inv:
+            for s in inv:
+                custName = s.Customer.first_name +" "+s.Customer.last_name
+                invdate = s.invoice_date
+                ship_date = s.duedate
+                end_date = datetime.combine(s.duedate, datetime.min.time())
+
+                invno = s.invoice_no
+                salesinv =s.salesOrder_no
+                total = s.grandtotal
+                paid=s.paid_off
+                balance=s.balance
+                sta=s.status
+                
+                totalinv += float(s.grandtotal)
+                totalbalance += float(s.balance)
+                if s.status == 'Draft':
+                    st = 'Draft'
+                elif s.paid_off == 0 :
+                    st = 'Not paid'
+                    
+                elif s.paid_off == s.grandtotal:
+                    st = 'fully paid'
+                
+                elif s.paid_off > 0 and s.paid_off<s.grandtotal and end_date>currentDate:
+                    st = 'partially paid'
+                elif end_date<currentDate and s.paid_off<=s.grandtotal:
+                    st = 'overdue'
+                
+                else:
+                    st = s.status
+
+                details = {
+                    'date': invdate,
+                    'name': custName,
+                    'sales_no':salesinv,
+                    'ship_date':ship_date,
+                  
+                    'invno': invno,
+                    'total':total,
+                    'status':st,
+                    'balance':balance,
+                }
+                reportData.append(details)
+                totcust=len(cust)
+
+        det = {
+            "cmpName": com.Company_name,
+            'totalBalance':round(totalbalance, 2),
+            'totalInv':round(totalinv, 2),
+            'totalCust':totcust,
+        }        
+ 
+        return Response(
+            {
+                "status": True, 'reportData':reportData,
+                "otherDetails": det,
+                'startDate':None, 'endDate':None
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+from django.db.models import Sum,F,IntegerField,Q 
+
+@api_view(("POST",))
+def Fin_fetchInvoiceReportDetailsCustomized(request):
+    try:
+        id = request.data['Id']
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        cust = Fin_Customers.objects.filter(Company=com)
+
+        startDate = request.data.get('start_date', None)
+        endDate = request.data.get('end_date', None)
+        report= request.data.get('report')
+        status = request.data.get('status')
+
+        currentDate = datetime.today()
+
+        reportData = []
+        totalinv = 0
+        totcust = 0
+        totalbalance = 0
+
+        inv = Fin_Invoice.objects.filter(Company=com)
+        
+        if startDate and endDate:
+            inv = inv.filter(invoice_date__range=[startDate, endDate])
+     
+        if report:
+            if report == 'invdate':
+                inv= inv.filter(invoice_date__range=[startDate, endDate])
+            
+            elif report == 'duedate': 
+                inv= inv.filter(duedate__range=[startDate, endDate])
+
+
+
+        if status:
+            if status == 'Draft':
+                inv = inv.filter(status = 'Draft')
+               
+            elif status == 'fully paid':
+                inv = inv.filter(paid_off=F('grandtotal'),status='saved')
+              
+
+            elif status == 'overdue':
+                inv = inv.filter(Q(duedate__lt=currentDate) & Q(paid_off__lt=F('grandtotal')),status='saved')
+            
+
+            elif status == 'Not paid':
+                inv = inv.filter(paid_off=0, status='saved')
+             
+
+            elif status == 'partially paid':
+                inv = inv.filter(Q(paid_off__gt=0)  & Q(paid_off__lt=F('grandtotal')),status='saved')
+                
+
+        for s in inv:
+                custName = s.Customer.first_name +" "+s.Customer.last_name
+                invdate = s.invoice_date
+                ship_date = s.duedate
+                end_date = datetime.combine(s.duedate, datetime.min.time())
+
+                invno = s.invoice_no
+                salesinv =s.salesOrder_no
+                total = s.grandtotal
+                paid=s.paid_off
+                balance=s.balance
+                sta=s.status
+                
+                totalinv += float(s.grandtotal)
+                totalbalance += float(s.balance)
+                if s.status == 'Draft':
+                    st = 'Draft'
+                elif s.paid_off == 0 :
+                    st = 'Not paid'
+                    
+                elif s.paid_off == s.grandtotal:
+                    st = 'fully paid'
+                
+                elif s.paid_off > 0 and s.paid_off<s.grandtotal and end_date>currentDate:
+                    st = 'partially paid'
+                elif end_date<currentDate and s.paid_off<=s.grandtotal:
+                    st = 'overdue'
+                
+                else:
+                    st = s.status
+
+                details = {
+                    'date': invdate,
+                    'name': custName,
+                    'sales_no':salesinv,
+                    'ship_date':ship_date,
+                  
+                    'invno': invno,
+                    'total':total,
+                    'status':st,
+                    'balance':balance,
+                    
+                    
+                    
+                }
+                reportData.append(details)
+                totcust=len(cust)
+
+        det = {
+            "cmpName": com.Company_name,
+            'totalBalance':round(totalbalance, 2),
+            'totalInv':round(totalinv, 2),
+            'totalCust':totcust,
+        } 
+ 
+        return Response(
+            {
+                "status": True, 'reportData':reportData,
+                "otherDetails": det,
+                'startDate':startDate, 'endDate':endDate,
+                "filterStatus": status,
+                "report":report,
+           }       )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+             
+        )
+
+@api_view(("POST",))
+def Fin_shareInvoiceReportToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        emails_string = request.data['email_ids']
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(',')]
+        email_message = request.data['email_message']
+       
+       
+    
+        cust = Fin_Customers.objects.filter(Company=com)
+        startDate = request.data['start']
+        endDate = request.data['end']
+        status = request.data['status']
+        report = request.data['report']
+        if startDate == "":
+            startDate = None
+        if endDate == "":
+            endDate = None
+
+        currentDate = datetime.today()
+
+        reportData = []
+        totalinv = 0
+        totcust = 0
+        totalbalance = 0
+
+        inv = Fin_Invoice.objects.filter(Company=com)
+        
+        if startDate and endDate:
+            inv = inv.filter(invoice_date__range=[startDate, endDate])
+        
+
+        if report:
+            if report == 'invdate':
+                inv= inv.filter(invoice_date__range=[startDate, endDate])
+            
+            elif report == 'duedate': 
+                inv= inv.filter(duedate__range=[startDate, endDate])
+
+        if status:
+            if status == 'Draft':
+                inv = inv.filter(status = 'Draft')
+                
+            elif status == 'fully paid':
+                inv = inv.filter(paid_off=F('grandtotal'),status='saved')
+            
+
+            elif status == 'overdue':
+                inv = inv.filter(Q(duedate__lt=currentDate) & Q(paid_off__lt=F('grandtotal')),status='saved')
+            
+
+            elif status == 'Not paid':
+                inv = inv.filter(paid_off=0, status='saved')
+                print("4")
+
+            elif status == 'partially paid':
+                inv = inv.filter(Q(paid_off__gt=0) & Q(paid_off__lt=F('grandtotal')),status='saved')
+                print("5")
+
+        for s in inv:
+            custName = s.Customer.first_name +" "+s.Customer.last_name
+            invdate = s.invoice_date
+            ship_date = s.duedate
+            end_date = datetime.combine(s.duedate, datetime.min.time())
+
+            invno = s.invoice_no
+            salesinv =s.salesOrder_no
+            total = s.grandtotal 
+            paid=s.paid_off
+            balance=s.balance
+            sta=s.status
+            totalinv += float(s.grandtotal)
+            totalbalance += float(s.balance)
+            if s.status == 'Draft':
+                st = 'Draft'
+            elif s.paid_off == 0 and end_date>currentDate:
+                st = 'Not paid'
+            elif s.paid_off == s.grandtotal:
+                st = 'fully paid'
+            elif s.paid_off > 0 and s.paid_off < s.grandtotal and end_date>currentDate:
+                st = 'partially paid'
+            elif end_date < currentDate and s.paid_off <= s.grandtotal:
+                st = 'overdue'
+            else:
+                st = s.status
+
+            details = {
+                'date': invdate,
+            'name': custName,
+            'sales_no':salesinv,
+            'ship_date':ship_date,
+            
+            'invno': invno,
+            'total':total,
+            'status':st,
+            'balance':balance,
+            }
+            reportData.append(details)
+
+            totcust=len(cust)
+        
+        context = {'cmp':com, 'reportData':reportData, 'totalinv':totalinv,'totcust':totcust, 'startDate':startDate,'totalbalance':totalbalance, 'endDate':endDate}
+        template_path = 'company/Fin_invoice_report_pdf.html'
+        template = get_template(template_path)
+
+        html  = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'Report_invoice_Details'
+        subject = f"Report_invoice_Details"
+        email = EmailMessage(subject, f"Hi,\nPlease find the attached Report for - Invoice Details. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}", from_email=settings.EMAIL_HOST_USER, to=emails_list)
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True} )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            )
+    
+
+# Rec Invoice Reports
+
+@api_view(("GET",))
+def Fin_fetchRecInvoiceReportDetails(request, id):
+    try:
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        currentDate = datetime.today()
+
+        reportData = []
+        totalinv = 0
+        totcust=0
+        totalbalance=0
+
+        inv = Fin_Recurring_Invoice.objects.filter(Company=com)
+        cust = Fin_Customers.objects.filter(Company=com)
+       
+        if inv:
+            for s in inv:
+                custName = s.Customer.first_name +" "+s.Customer.last_name
+                invdate = s.start_date
+                ship_date = s.end_date
+                end_date = datetime.combine(s.end_date, datetime.min.time())
+
+                invno = s.rec_invoice_no
+                salesinv =s.salesOrder_no
+                total = s.grandtotal
+                paid=s.paid_off
+                balance=s.balance
+                sta=s.status
+                
+                totalinv += float(s.grandtotal)
+                totalbalance += float(s.balance)
+                if s.status == 'Draft':
+                    st = 'Draft'
+                elif s.paid_off == 0 :
+                    st = 'Not paid'
+                    
+                elif s.paid_off == s.grandtotal:
+                    st = 'fully paid'
+                
+                elif s.paid_off > 0 and s.paid_off<s.grandtotal and end_date>currentDate:
+                    st = 'partially paid'
+                elif end_date<currentDate and s.paid_off<=s.grandtotal:
+                    st = 'overdue'
+                
+                else:
+                    st = s.status
+
+                details = {
+                    'date': invdate,
+                    'name': custName,
+                    'sales_no':salesinv,
+                    'ship_date':ship_date,
+                  
+                    'invno': invno,
+                    'total':total,
+                    'status':st,
+                    'balance':balance,
+                }
+                reportData.append(details)
+                totcust=len(cust)
+
+        det = {
+            "cmpName": com.Company_name,
+            'totalBalance':round(totalbalance, 2),
+            'totalInv':round(totalinv, 2),
+            'totalCust':totcust,
+        }        
+ 
+        return Response(
+            {
+                "status": True, 'reportData':reportData,
+                "otherDetails": det,
+                'startDate':None, 'endDate':None
+            }, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(("POST",))
+def Fin_fetchRecInvoiceReportDetailsCustomized(request):
+    try:
+        id = request.data['Id']
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=id).company_id
+
+        cust = Fin_Customers.objects.filter(Company=com)
+
+        startDate = request.data.get('start_date', None)
+        endDate = request.data.get('end_date', None)
+        status= request.data.get('status')
+
+        currentDate = datetime.today()
+
+        reportData = []
+        totalinv = 0
+        totcust = 0
+        totalbalance = 0
+
+        inv = Fin_Recurring_Invoice.objects.filter(Company=com)
+        
+        if startDate and endDate:
+            inv = inv.filter(start_date__range=[startDate, endDate])
+
+        if status:
+            if status == 'Draft':
+                inv = inv.filter(status = 'Draft')
+               
+            elif status == 'fully paid':
+                inv = inv.filter(paid_off=F('grandtotal'),status='saved')
+              
+
+            elif status == 'overdue':
+                inv = inv.filter(Q(end_date__lt=currentDate) & Q(paid_off__lt=F('grandtotal')),status='saved')
+            
+
+            elif status == 'Not paid':
+                inv = inv.filter(paid_off=0, status='saved')
+             
+
+            elif status == 'partially paid':
+                inv = inv.filter(Q(paid_off__gt=0)  & Q(paid_off__lt=F('grandtotal')),status='saved')
+                
+
+        for s in inv:
+                custName = s.Customer.first_name +" "+s.Customer.last_name
+                invdate = s.start_date
+                ship_date = s.end_date
+                end_date = datetime.combine(s.end_date, datetime.min.time())
+
+                invno = s.rec_invoice_no
+                salesinv =s.salesOrder_no
+                total = s.grandtotal
+                paid=s.paid_off
+                balance=s.balance
+                sta=s.status
+                
+                totalinv += float(s.grandtotal)
+                totalbalance += float(s.balance)
+                if s.status == 'Draft':
+                    st = 'Draft'
+                elif s.paid_off == 0 :
+                    st = 'Not paid'
+                    
+                elif s.paid_off == s.grandtotal:
+                    st = 'fully paid'
+                
+                elif s.paid_off > 0 and s.paid_off<s.grandtotal and end_date>currentDate:
+                    st = 'partially paid'
+                elif end_date<currentDate and s.paid_off<=s.grandtotal:
+                    st = 'overdue'
+                
+                else:
+                    st = s.status
+
+                details = {
+                    'date': invdate,
+                    'name': custName,
+                    'sales_no':salesinv,
+                    'ship_date':ship_date,
+                  
+                    'invno': invno,
+                    'total':total,
+                    'status':st,
+                    'balance':balance,
+                    
+                    
+                    
+                }
+                reportData.append(details)
+                totcust=len(cust)
+
+        det = {
+            "cmpName": com.Company_name,
+            'totalBalance':round(totalbalance, 2),
+            'totalInv':round(totalinv, 2),
+            'totalCust':totcust,
+        } 
+ 
+        return Response(
+            {
+                "status": True, 'reportData':reportData,
+                "otherDetails": det,
+                'startDate':startDate, 'endDate':endDate,
+                "filterStatus": status
+           }       )
+    except Exception as e:
+        print(e)
+        return Response(
+            {"status": False, "message": str(e)},
+             
+        )
+
+@api_view(("POST",))
+def Fin_shareRecInvoiceReportToEmail(request):
+    try:
+        id = request.data["Id"]
+        data = Fin_Login_Details.objects.get(id=id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=data.id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=data.id).company_id
+
+        emails_string = request.data['email_ids']
+
+        # Split the string by commas and remove any leading or trailing whitespace
+        emails_list = [email.strip() for email in emails_string.split(',')]
+        email_message = request.data['email_message']
+       
+       
+    
+        cust = Fin_Customers.objects.filter(Company=com)
+        startDate = request.data['start']
+        endDate = request.data['end']
+        status = request.data['status']
+        if startDate == "":
+            startDate = None
+        if endDate == "":
+            endDate = None
+
+        currentDate = datetime.today()
+
+        reportData = []
+        totalinv = 0
+        totcust = 0
+        totalbalance = 0
+
+        inv = Fin_Recurring_Invoice.objects.filter(Company=com)
+        
+        if startDate and endDate:
+            inv = inv.filter(start_date__range=[startDate, endDate])
+
+        if status:
+            if status == 'Draft':
+                inv = inv.filter(status = 'Draft')
+                
+            elif status == 'fully paid':
+                inv = inv.filter(paid_off=F('grandtotal'),status='saved')
+            
+
+            elif status == 'overdue':
+                inv = inv.filter(Q(end_date__lt=currentDate) & Q(paid_off__lt=F('grandtotal')),status='saved')
+            
+
+            elif status == 'Not paid':
+                inv = inv.filter(paid_off=0, status='saved')
+                print("4")
+
+            elif status == 'partially paid':
+                inv = inv.filter(Q(paid_off__gt=0) & Q(paid_off__lt=F('grandtotal')),status='saved')
+                print("5")
+
+        for s in inv:
+            custName = s.Customer.first_name +" "+s.Customer.last_name
+            invdate = s.start_date
+            ship_date = s.end_date
+            end_date = datetime.combine(s.end_date, datetime.min.time())
+
+            invno = s.rec_invoice_no
+            salesinv =s.salesOrder_no
+            total = s.grandtotal 
+            paid=s.paid_off
+            balance=s.balance
+            sta=s.status
+            totalinv += float(s.grandtotal)
+            totalbalance += float(s.balance)
+            if s.status == 'Draft':
+                st = 'Draft'
+            elif s.paid_off == 0 and end_date>currentDate:
+                st = 'Not paid'
+            elif s.paid_off == s.grandtotal:
+                st = 'fully paid'
+            elif s.paid_off > 0 and s.paid_off < s.grandtotal and end_date>currentDate:
+                st = 'partially paid'
+            elif end_date < currentDate and s.paid_off <= s.grandtotal:
+                st = 'overdue'
+            else:
+                st = s.status
+
+            details = {
+                'date': invdate,
+            'name': custName,
+            'sales_no':salesinv,
+            'ship_date':ship_date,
+            
+            'invno': invno,
+            'total':total,
+            'status':st,
+            'balance':balance,
+            }
+            reportData.append(details)
+
+            totcust=len(cust)
+        
+        context = {'cmp':com, 'reportData':reportData, 'totalinv':totalinv,'totcust':totcust, 'startDate':startDate,'totalbalance':totalbalance, 'endDate':endDate}
+        template_path = 'company/Fin_rec_invoice_report_pdf.html'
+        template = get_template(template_path)
+
+        html  = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+        pdf = result.getvalue()
+        filename = f'Report_Recurring_invoice_Details'
+        subject = f"Report_Recurring_invoice_Details"
+        email = EmailMessage(subject, f"Hi,\nPlease find the attached Report for - Recurring Invoice Details. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}", from_email=settings.EMAIL_HOST_USER, to=emails_list)
+        email.attach(filename, pdf, "application/pdf")
+        email.send(fail_silently=False)
+
+        return Response({"status": True} )
+    except Exception as e:
+        return Response(
+            {"status": False, "message": str(e)},
+            )

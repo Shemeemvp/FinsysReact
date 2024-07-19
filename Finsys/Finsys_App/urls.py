@@ -485,4 +485,14 @@ urlpatterns = [
     path('reject_dterm_updation_request/<int:id>/', Fin_DTerm_Updation_Reject),
     path('daccept_term_updation_request/', Fin_Term_Updation_AcceptD),
     path('dreject_term_updation_request/<int:id>/', Fin_Term_Updation_RejectD),
+
+    # Invoice Reports
+    path('fetch_invoice_report_details/<int:id>/',Fin_fetchInvoiceReportDetails),
+    path('fetch_invoice_report_details_customized/',Fin_fetchInvoiceReportDetailsCustomized),
+    path('share_invoice_report_details_email/',Fin_shareInvoiceReportToEmail),
+
+    # Rec Invoice Reports
+    path('fetch_rec_invoice_report_details/<int:id>/',Fin_fetchRecInvoiceReportDetails),
+    path('fetch_rec_invoice_report_details_customized/',Fin_fetchRecInvoiceReportDetailsCustomized),
+    path('share_rec_invoice_report_details_email/',Fin_shareRecInvoiceReportToEmail),
 ]

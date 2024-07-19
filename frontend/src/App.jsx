@@ -167,6 +167,8 @@ import SalaryDetailsHistory from './components/company/salarydetails/SalaryDetai
 import EditSalaryDetails from './components/company/salarydetails/EditSalaryDetails';
 import TermUpdateModules from './components/company/TermUpdateModules';
 import TermExtensionRequests from './components/admin/TermExtensionRequests';
+import InvoiceReport from './components/company/invoicereport/InvoiceReport';
+import RecInvoiceReport from './components/company/recinvoicereport/RecInvoiceReport';
 
 
 function App() {
@@ -393,6 +395,13 @@ function App() {
             <Route path="/view_salary_details/:salaryId/" element={<ViewSalaryDetails />}></Route>
             <Route path="/salary_details_history/:salaryId/" element={<SalaryDetailsHistory />}></Route>
             <Route path="/edit_salary_details/:salaryId/" element={<EditSalaryDetails />}></Route>
+
+            {/* Invioce Report*/}
+            <Route path="/invoice_report" element={<InvoiceReport />}></Route>
+
+            {/* Recurring Invioce Report*/}
+            <Route path="/rec_invoice_report" element={<RecInvoiceReport />}></Route>
+
           </Route>
         </Routes>
       </BrowserRouter>

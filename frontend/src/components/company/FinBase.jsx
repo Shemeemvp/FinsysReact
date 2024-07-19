@@ -1668,16 +1668,16 @@ function FinBase() {
                         </a>
                       </li>
                       <li>
-                        <a href="{% url 'Fin_Invoice_Report' %}">
+                        <Link to="/invoice_report">
                           <i className="bx bx-right-arrow-alt"></i> Invoice
                           Details{" "}
-                        </a>
+                        </Link>
                       </li>
                       <li>
-                        <a href="{% url 'Fin_recInvoice_report' %}">
+                        <Link to="/rec_invoice_report">
                           <i className="bx bx-right-arrow-alt"></i>Recurring
                           Invoice Details
-                        </a>
+                        </Link>
                       </li>
                       <li>
                         <a href="{% url 'Fin_Retainer_Report' %}">
